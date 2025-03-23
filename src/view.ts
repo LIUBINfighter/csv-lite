@@ -24,6 +24,13 @@ export class CSVView extends TextFileView {
     skipEmptyLines: false // 保留空行以保持行号一致
   };
 
+  // 添加简单的编辑栏
+  private editBarEl: HTMLElement;
+  private editInput: HTMLInputElement;
+  private activeCellEl: HTMLInputElement | null = null;
+  private activeRowIndex: number = -1;
+  private activeColIndex: number = -1;
+
   getViewData() {
     // 使用 Papa Parse 将数据序列化为CSV字符串
     return Papa.unparse(this.tableData, {
@@ -187,6 +194,11 @@ export class CSVView extends TextFileView {
           }
         };
         
+        // 为表头输入框添加聚焦事件
+        headerInput.onfocus = (ev) => {
+          this.setActiveCell(0, index, ev.currentTarget as HTMLInputElement);
+        };
+        
         // 添加调整列宽的手柄
         const resizeHandle = th.createEl("div", { cls: "resize-handle" });
         
@@ -230,6 +242,12 @@ export class CSVView extends TextFileView {
             }
             
             this.tableData[i][j] = ev.currentTarget.value;
+            
+            // 如果是当前活动单元格，同步到编辑栏
+            if (this.activeCellEl === ev.currentTarget && this.editInput) {
+              this.editInput.value = ev.currentTarget.value;
+            }
+            
             this.requestSave();
             
             // 自动调整输入框高度
@@ -238,10 +256,28 @@ export class CSVView extends TextFileView {
             }
           }
         };
+        
+        // 为单元格输入框添加聚焦事件
+        input.onfocus = (ev) => {
+          this.setActiveCell(i, j, ev.currentTarget as HTMLInputElement);
+        };
       });
     }
   }
   
+  // 设置活动单元格
+  private setActiveCell(rowIndex: number, colIndex: number, cellEl: HTMLInputElement) {
+    // 设置新的活动单元格
+    this.activeRowIndex = rowIndex;
+    this.activeColIndex = colIndex;
+    this.activeCellEl = cellEl;
+    
+    // 更新编辑栏内容
+    if (this.editInput) {
+      this.editInput.value = cellEl.value;
+    }
+  }
+
   // 设置列宽调整功能
   private setupColumnResize(handle: HTMLElement, columnIndex: number) {
     let startX: number;
@@ -327,6 +363,7 @@ export class CSVView extends TextFileView {
   }
 
   async onOpen() {
+
     // 创建操作区
     this.operationEl = this.contentEl.createEl("div", { cls: "csv-operations" });
     
@@ -408,7 +445,31 @@ export class CSVView extends TextFileView {
     
     // 创建一个分隔线
     this.contentEl.createEl("hr");
+        // 创建编辑栏（在操作区之前）
+		this.editBarEl = this.contentEl.createEl("div", { cls: "csv-edit-bar" });
     
+		// 创建编辑输入框
+		this.editInput = this.editBarEl.createEl("input", { 
+		  cls: "csv-edit-input",
+		  attr: { placeholder: "编辑选中单元格..." }
+		});
+		
+		// 添加编辑栏输入处理
+		this.editInput.oninput = () => {
+		  if (this.activeCellEl && this.activeRowIndex >= 0 && this.activeColIndex >= 0) {
+			// 更新活动单元格
+			this.activeCellEl.value = this.editInput.value;
+			
+			// 更新数据
+			if (this.tableData[this.activeRowIndex][this.activeColIndex] !== this.editInput.value) {
+			  this.saveSnapshot();
+			}
+			this.tableData[this.activeRowIndex][this.activeColIndex] = this.editInput.value;
+			this.requestSave();
+		  }
+		};
+		this.contentEl.createEl("hr");
+		
     // 创建表格区域
     this.tableEl = this.contentEl.createEl("table");
     
@@ -469,9 +530,37 @@ export class CSVView extends TextFileView {
     
     // 初始化时刷新视图
     this.refresh();
+    
+    // 添加样式
+    this.addStyles();
+  }
+
+  // 添加样式
+  private addStyles() {
+    // 创建样式元素
+    const styleEl = document.head.createEl('style');
+    styleEl.id = 'csv-edit-bar-styles';
+    styleEl.textContent = `
+      .csv-edit-bar {
+        padding: 5px;
+        margin-bottom: 5px;
+        border-bottom: 1px solid var(--background-modifier-border);
+      }
+      .csv-edit-input {
+        width: 100%;
+        height: 28px;
+        padding: 0 5px;
+        border: 1px solid var(--background-modifier-border);
+        border-radius: 4px;
+      }
+    `;
   }
 
   async onClose() {
+    // 移除自定义样式
+    const styleEl = document.head.querySelector('#csv-edit-bar-styles');
+    if (styleEl) styleEl.remove();
+    
     this.contentEl.empty();
   }
   
