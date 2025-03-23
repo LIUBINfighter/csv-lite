@@ -6,3 +6,21 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+table {
+  border-collapse: collapse;
+}
+
+table,
+td {
+  border: 1px solid var(--background-modifier-border);
+}
+
+td {
+  padding: 4px 8px;
+}
+
+input {
+  background: none;
+  border: none;
+}

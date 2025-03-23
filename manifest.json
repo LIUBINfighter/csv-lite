@@ -3,7 +3,7 @@
 	"name": "csv Plugin",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Just open and edit a CSV file in Obsidian, no more.",
+	"description": "Just open and edit a CSV file in Obsidian, no more. Keep it simple.",
 	"author": "",
 	"authorUrl": "",
 	"fundingUrl": "",
