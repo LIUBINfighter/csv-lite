@@ -48,6 +48,16 @@ input {
   gap: 8px;
   flex-wrap: wrap;
 }
+.csv-edit-input {
+	width: 60%;
+	margin: 0 auto;
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	box-sizing: border-box;
+	display: block;
+	text-align: center;
+}
 
 hr {
   margin: 2px 0;
