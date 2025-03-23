@@ -1,5 +1,7 @@
 Simple enough for csv, no more fancy function you need to learn and think!
 
+[中文版本Readme](./README_zh.md)
+
 ## Introduction
 
 Keep your mind on track! Don't waste time creating fancy tables.
@@ -49,3 +51,4 @@ This plugin enhances Obsidian's functionality by allowing users to work with CSV
 ## Getting Started
 
 Install the plugin through Obsidian's community plugins section and start viewing your CSV files directly in your notes.
+

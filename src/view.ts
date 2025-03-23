@@ -309,21 +309,7 @@ export class CSVView extends TextFileView {
     // 添加列宽自动调整选项
     const settingsContainer = this.operationEl.createEl("div", { cls: "csv-settings" });
     
-    // 添加自动调整高度开关
-    const autoResizeLabel = settingsContainer.createEl("label", { cls: "csv-setting-item" });
-    autoResizeLabel.createEl("span", { text: "自动调整行高: " });
-    const autoResizeToggle = autoResizeLabel.createEl("input", { 
-      attr: { type: "checkbox", checked: this.autoResize } 
-    });
-    
-    autoResizeToggle.addEventListener("change", (e) => {
-      if (e.currentTarget instanceof HTMLInputElement) {
-        this.autoResize = e.currentTarget.checked;
-        this.refresh();
-      }
-    });
-    
-    // 重置列宽按钮
+    // 删除自动调整行高开关，只保留重置列宽按钮
     new ButtonComponent(settingsContainer)
       .setButtonText("重置列宽")
       .onClick(() => {
