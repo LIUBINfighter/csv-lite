@@ -43,26 +43,14 @@ input {
   padding: 2px 0;
 }
 
-/* 操作区样式 */
-.csv-operations {
-  padding: 10px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
 .csv-operation-buttons {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.csv-operation-buttons button {
-  margin: 0;
-}
-
 hr {
-  margin: 10px 0;
+  margin: 2px 0;
   border: none;
   border-top: 1px solid var(--background-modifier-border);
 }
@@ -83,14 +71,6 @@ hr {
   background-color: var(--interactive-accent);
 }
 
-/* 设置项容器 */
-.csv-settings {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-  margin-top: 8px;
-}
 
 /* 长文本单元格样式 */
 td input:focus {
@@ -153,17 +133,6 @@ td input:focus {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
-}
-
-.csv-advanced-settings {
-  margin-top: 16px;
-}
-
-.csv-setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 8px;
 }
 

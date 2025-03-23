@@ -1,5 +1,7 @@
-import { TextFileView, ButtonComponent, Notice, DropdownComponent, requestUrl } from "obsidian";
-import * as Papa from 'papaparse';
+import { TextFileView, ButtonComponent, Notice, DropdownComponent } from "obsidian";
+import { CSVUtils, CSVParseConfig } from './utils/csv-utils';
+import { TableHistoryManager } from './utils/history-manager';
+import { TableUtils } from './utils/table-utils';
 
 export const VIEW_TYPE_CSV = "csv-view";
 
@@ -8,49 +10,41 @@ export class CSVView extends TextFileView {
   tableEl: HTMLElement;
   operationEl: HTMLElement;
   
-  // 添加历史记录相关变量
-  private history: string[][][]; // 保存表格历史状态
-  private currentHistoryIndex: number; // 当前历史状态索引
-  private maxHistorySize: number = 50; // 最大历史记录数量
+  // 使用新的历史记录管理器
+  private historyManager: TableHistoryManager;
+  private maxHistorySize: number = 50;
 
-  // 添加列宽调整设置
+  // 列宽调整设置
   private columnWidths: number[] = [];
-  private autoResize: boolean = true; // 始终启用自动调整
+  private autoResize: boolean = true;
   
   // Papa Parse 配置选项
-  private papaConfig = {
+  private papaConfig: CSVParseConfig = {
     header: false,
-    dynamicTyping: false, // 保持所有值为字符串
-    skipEmptyLines: false // 保留空行以保持行号一致
+    dynamicTyping: false,
+    skipEmptyLines: false
   };
 
-  // 添加简单的编辑栏
+  // 编辑栏
   private editBarEl: HTMLElement;
   private editInput: HTMLInputElement;
   private activeCellEl: HTMLInputElement | null = null;
   private activeRowIndex: number = -1;
   private activeColIndex: number = -1;
 
+  constructor(leaf: any) {
+    super(leaf);
+    this.historyManager = new TableHistoryManager(undefined, this.maxHistorySize);
+  }
+
   getViewData() {
-    // 使用 Papa Parse 将数据序列化为CSV字符串
-    return Papa.unparse(this.tableData, {
-      header: false,
-      newline: "\n"
-    });
+    return CSVUtils.unparseCSV(this.tableData);
   }
 
   setViewData(data: string, clear: boolean) {
     try {
-      // 使用 Papa Parse 解析CSV数据
-      const parseResult = Papa.parse(data, this.papaConfig);
-      
-      if (parseResult.errors && parseResult.errors.length > 0) {
-        // 显示解析错误
-        console.warn("CSV解析警告:", parseResult.errors);
-        new Notice(`CSV解析提示: ${parseResult.errors[0].message}`);
-      }
-      
-      this.tableData = parseResult.data as string[][];
+      // 使用工具类解析CSV数据
+      this.tableData = CSVUtils.parseCSV(data, this.papaConfig);
       
       // 确保至少有一行一列
       if (!this.tableData || this.tableData.length === 0) {
@@ -58,103 +52,24 @@ export class CSVView extends TextFileView {
       }
       
       // 使所有行的列数一致
-      this.normalizeTableData();
+      this.tableData = CSVUtils.normalizeTableData(this.tableData);
       
       // 初始化历史记录
       if (clear) {
-        this.initHistory();
+        this.historyManager.reset(this.tableData);
       }
       
       this.refresh();
     } catch (error) {
-      console.error("CSV解析错误:", error);
-      new Notice("CSV解析失败，请检查文件格式");
+      console.error("CSV处理错误:", error);
       
       // 出错时设置为空表格
       this.tableData = [[""]];
       if (clear) {
-        this.initHistory();
+        this.historyManager.reset(this.tableData);
       }
       this.refresh();
     }
-  }
-  
-  // 确保表格数据规整（所有行有相同的列数）
-  private normalizeTableData() {
-    if (!this.tableData || this.tableData.length === 0) return;
-    
-    // 找出最大列数
-    let maxCols = 0;
-    for (const row of this.tableData) {
-      maxCols = Math.max(maxCols, row.length);
-    }
-    
-    // 确保每行都有相同的列数
-    for (let i = 0; i < this.tableData.length; i++) {
-      while (this.tableData[i].length < maxCols) {
-        this.tableData[i].push("");
-      }
-    }
-  }
-
-  // 初始化历史记录
-  private initHistory() {
-    this.history = [this.deepCloneTableData()];
-    this.currentHistoryIndex = 0;
-  }
-  
-  // 深拷贝表格数据
-  private deepCloneTableData(): string[][] {
-    return this.tableData.map(row => [...row]);
-  }
-  
-  // 保存当前状态到历史记录
-  private saveSnapshot() {
-    // 删除当前索引之后的所有历史记录（如果有的话）
-    if (this.currentHistoryIndex < this.history.length - 1) {
-      this.history = this.history.slice(0, this.currentHistoryIndex + 1);
-    }
-    
-    // 添加新的快照
-    this.history.push(this.deepCloneTableData());
-    
-    // 如果历史记录超过最大限制，删除最早的记录
-    if (this.history.length > this.maxHistorySize) {
-      this.history.shift();
-    } else {
-      this.currentHistoryIndex++;
-    }
-  }
-  
-  // 执行撤销操作
-  undo() {
-    if (this.currentHistoryIndex > 0) {
-      this.currentHistoryIndex--;
-      this.tableData = this.deepCloneTableData(this.history[this.currentHistoryIndex]);
-      this.refresh();
-      this.requestSave();
-      new Notice("已撤销上一步操作");
-    } else {
-      new Notice("没有更多可撤销的操作");
-    }
-  }
-  
-  // 执行重做操作
-  redo() {
-    if (this.currentHistoryIndex < this.history.length - 1) {
-      this.currentHistoryIndex++;
-      this.tableData = this.deepCloneTableData(this.history[this.currentHistoryIndex]);
-      this.refresh();
-      this.requestSave();
-      new Notice("已重做操作");
-    } else {
-      new Notice("没有更多可重做的操作");
-    }
-  }
-  
-  // 深拷贝特定历史记录
-  private deepCloneTableData(data?: string[][]): string[][] {
-    return data ? data.map(row => [...row]) : this.tableData.map(row => [...row]);
   }
 
   refresh() {
@@ -165,7 +80,7 @@ export class CSVView extends TextFileView {
     
     // 计算初始列宽（如果未设置）
     if (this.columnWidths.length === 0 && this.tableData[0]) {
-      this.calculateColumnWidths();
+      this.columnWidths = TableUtils.calculateColumnWidths(this.tableData);
     }
     
     // 创建表头和调整列宽的手柄
@@ -180,6 +95,7 @@ export class CSVView extends TextFileView {
         
         // 添加列标题
         const headerInput = th.createEl("input", { 
+          cls: "csv-cell-input",
           attr: { value: headerCell }
         });
         
@@ -225,6 +141,7 @@ export class CSVView extends TextFileView {
         });
         
         const input = td.createEl("input", { 
+          cls: "csv-cell-input",
           attr: { 
             value: cell,
             style: "min-height: 24px;" 
@@ -267,14 +184,28 @@ export class CSVView extends TextFileView {
   
   // 设置活动单元格
   private setActiveCell(rowIndex: number, colIndex: number, cellEl: HTMLInputElement) {
+    // 移除之前单元格的高亮
+    if (this.activeCellEl && this.activeCellEl.parentElement) {
+      this.activeCellEl.parentElement.removeClass('csv-active-cell');
+    }
+    
     // 设置新的活动单元格
     this.activeRowIndex = rowIndex;
     this.activeColIndex = colIndex;
     this.activeCellEl = cellEl;
     
+    // 高亮当前单元格
+    if (cellEl.parentElement) {
+      cellEl.parentElement.addClass('csv-active-cell');
+    }
+    
     // 更新编辑栏内容
     if (this.editInput) {
       this.editInput.value = cellEl.value;
+      
+      // 更新编辑栏的地址显示
+      const cellAddress = TableUtils.getCellAddress(rowIndex, colIndex);
+      this.editBarEl.setAttribute('data-cell-address', cellAddress);
     }
   }
 
@@ -309,23 +240,6 @@ export class CSVView extends TextFileView {
     handle.addEventListener('mousedown', onMouseDown);
   }
   
-  // 计算初始列宽
-  private calculateColumnWidths() {
-    if (!this.tableData[0]) return;
-    
-    // 初始化所有列为默认宽度
-    this.columnWidths = this.tableData[0].map(() => 100);
-    
-    // 根据内容长度进行简单调整
-    this.tableData.forEach(row => {
-      row.forEach((cell, index) => {
-        // 根据内容长度估算合适的宽度
-        const estimatedWidth = Math.max(50, Math.min(300, cell.length * 10));
-        this.columnWidths[index] = Math.max(this.columnWidths[index], estimatedWidth);
-      });
-    });
-  }
-  
   // 设置输入框自动调整高度
   private setupAutoResize(input: HTMLInputElement) {
     // 初始调整
@@ -353,9 +267,35 @@ export class CSVView extends TextFileView {
     input.style.height = `${newHeight}px`;
   }
 
+  // 保存当前状态到历史记录
+  private saveSnapshot() {
+    this.historyManager.push(this.tableData);
+  }
+
+  // 执行撤销操作
+  undo() {
+    const prevState = this.historyManager.undo();
+    if (prevState) {
+      this.tableData = prevState;
+      this.refresh();
+      this.requestSave();
+    }
+  }
+  
+  // 执行重做操作
+  redo() {
+    const nextState = this.historyManager.redo();
+    if (nextState) {
+      this.tableData = nextState;
+      this.refresh();
+      this.requestSave();
+    }
+  }
+
   clear() {
-    this.tableData = [];
-    this.initHistory();
+    this.tableData = [[""]];
+    this.historyManager.reset(this.tableData);
+    this.refresh();
   }
 
   getViewType() {
@@ -363,64 +303,46 @@ export class CSVView extends TextFileView {
   }
 
   async onOpen() {
-
     // 创建操作区
     this.operationEl = this.contentEl.createEl("div", { cls: "csv-operations" });
     
-    // 创建两个标签页容器
-    const tabsContainer = this.operationEl.createEl("div", { cls: "csv-tabs" });
-    
-    // 创建标签头部
-    const tabHeaders = tabsContainer.createEl("div", { cls: "csv-tab-headers" });
-    const contentTabHeader = tabHeaders.createEl("div", { cls: "csv-tab-header csv-tab-active", text: "内容" });
-    const appearanceTabHeader = tabHeaders.createEl("div", { cls: "csv-tab-header", text: "外观" });
-    
-    // 创建内容标签页面板
-    const contentTabPanel = tabsContainer.createEl("div", { cls: "csv-tab-panel csv-tab-panel-active" });
-    
-    // 添加内容相关操作按钮
-    const contentButtonContainer = contentTabPanel.createEl("div", { cls: "csv-operation-buttons" });
+    // 创建操作按钮容器
+    const buttonContainer = this.operationEl.createEl("div", { cls: "csv-operation-buttons" });
     
     // 撤销按钮
-    new ButtonComponent(contentButtonContainer)
+    new ButtonComponent(buttonContainer)
       .setButtonText("撤销")
       .setIcon("undo")
       .onClick(() => this.undo());
       
     // 重做按钮
-    new ButtonComponent(contentButtonContainer)
+    new ButtonComponent(buttonContainer)
       .setButtonText("重做")
       .setIcon("redo")
       .onClick(() => this.redo());
     
     // 添加行按钮
-    new ButtonComponent(contentButtonContainer)
+    new ButtonComponent(buttonContainer)
       .setButtonText("添加行")
       .onClick(() => this.addRow());
     
     // 删除行按钮
-    new ButtonComponent(contentButtonContainer)
+    new ButtonComponent(buttonContainer)
       .setButtonText("删除行")
       .onClick(() => this.deleteRow());
     
     // 添加列按钮
-    new ButtonComponent(contentButtonContainer)
+    new ButtonComponent(buttonContainer)
       .setButtonText("添加列")
       .onClick(() => this.addColumn());
     
     // 删除列按钮
-    new ButtonComponent(contentButtonContainer)
+    new ButtonComponent(buttonContainer)
       .setButtonText("删除列")
       .onClick(() => this.deleteColumn());
     
-    // 创建外观标签页面板
-    const appearanceTabPanel = tabsContainer.createEl("div", { cls: "csv-tab-panel" });
-    
-    // 添加外观相关设置
-    const appearanceSettings = appearanceTabPanel.createEl("div", { cls: "csv-settings" });
-    
     // 重置列宽按钮
-    new ButtonComponent(appearanceSettings)
+    new ButtonComponent(buttonContainer)
       .setButtonText("重置列宽")
       .onClick(() => {
         this.columnWidths = [];
@@ -428,72 +350,8 @@ export class CSVView extends TextFileView {
         this.refresh();
       });
     
-    // 添加标签切换功能
-    contentTabHeader.addEventListener("click", () => {
-      contentTabHeader.addClass("csv-tab-active");
-      appearanceTabHeader.removeClass("csv-tab-active");
-      contentTabPanel.addClass("csv-tab-panel-active");
-      appearanceTabPanel.removeClass("csv-tab-panel-active");
-    });
-    
-    appearanceTabHeader.addEventListener("click", () => {
-      appearanceTabHeader.addClass("csv-tab-active");
-      contentTabHeader.removeClass("csv-tab-active");
-      appearanceTabPanel.addClass("csv-tab-panel-active");
-      contentTabPanel.removeClass("csv-tab-panel-active");
-    });
-    
-    // 创建一个分隔线
-    this.contentEl.createEl("hr");
-        // 创建编辑栏（在操作区之前）
-		this.editBarEl = this.contentEl.createEl("div", { cls: "csv-edit-bar" });
-    
-		// 创建编辑输入框
-		this.editInput = this.editBarEl.createEl("input", { 
-		  cls: "csv-edit-input",
-		  attr: { placeholder: "编辑选中单元格..." }
-		});
-		
-		// 添加编辑栏输入处理
-		this.editInput.oninput = () => {
-		  if (this.activeCellEl && this.activeRowIndex >= 0 && this.activeColIndex >= 0) {
-			// 更新活动单元格
-			this.activeCellEl.value = this.editInput.value;
-			
-			// 更新数据
-			if (this.tableData[this.activeRowIndex][this.activeColIndex] !== this.editInput.value) {
-			  this.saveSnapshot();
-			}
-			this.tableData[this.activeRowIndex][this.activeColIndex] = this.editInput.value;
-			this.requestSave();
-		  }
-		};
-		this.contentEl.createEl("hr");
-		
-    // 创建表格区域
-    this.tableEl = this.contentEl.createEl("table");
-    
-    // 初始化历史记录
-    this.initHistory();
-    
-    // 添加键盘事件监听器
-    this.registerDomEvent(document, 'keydown', (event: KeyboardEvent) => {
-      // 检测Ctrl+Z (或Mac上的Cmd+Z)
-      if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
-        if (event.shiftKey) {
-          // Ctrl+Shift+Z 或 Cmd+Shift+Z 重做
-          event.preventDefault();
-          this.redo();
-        } else {
-          // Ctrl+Z 或 Cmd+Z 撤销
-          event.preventDefault();
-          this.undo();
-        }
-      }
-    });
-    
-    // 添加CSV导入导出选项到内容标签页
-    const exportImportContainer = contentTabPanel.createEl("div", { cls: "csv-export-import" });
+    // CSV导入导出选项
+    const exportImportContainer = this.operationEl.createEl("div", { cls: "csv-export-import" });
     
     // 添加分隔符选择
     const delimiterContainer = exportImportContainer.createEl("div", { cls: "csv-delimiter-container" });
@@ -511,19 +369,50 @@ export class CSVView extends TextFileView {
       this.refresh();
     });
     
-    // 添加高级解析设置
-    const advancedContainer = appearanceSettings.createEl("div", { cls: "csv-advanced-settings" });
+    // 创建编辑栏（在操作区之后）
+    this.editBarEl = this.contentEl.createEl("div", { cls: "csv-edit-bar" });
     
-    // 添加首行作为表头选项
-    const headerOption = advancedContainer.createEl("div", { cls: "csv-setting-item" });
-    headerOption.createEl("span", { text: "首行作为表头" });
-    const headerToggle = headerOption.createEl("input", { attr: { type: "checkbox" } });
+    // 创建编辑输入框
+    this.editInput = this.editBarEl.createEl("input", { 
+      cls: "csv-edit-input",
+      attr: { placeholder: "编辑选中单元格..." }
+    });
     
-    headerToggle.addEventListener("change", e => {
-      if (e.currentTarget instanceof HTMLInputElement) {
-        const headerRow = document.querySelector("thead tr");
-        if (headerRow) {
-          headerRow.toggleClass("csv-header-row", e.currentTarget.checked);
+    // 添加编辑栏输入处理
+    this.editInput.oninput = () => {
+      if (this.activeCellEl && this.activeRowIndex >= 0 && this.activeColIndex >= 0) {
+        // 更新活动单元格
+        this.activeCellEl.value = this.editInput.value;
+        
+        // 更新数据
+        if (this.tableData[this.activeRowIndex][this.activeColIndex] !== this.editInput.value) {
+          this.saveSnapshot();
+        }
+        this.tableData[this.activeRowIndex][this.activeColIndex] = this.editInput.value;
+        this.requestSave();
+      }
+    };
+    
+    // 创建表格区域
+    this.tableEl = this.contentEl.createEl("table");
+    
+    // 初始化历史记录
+    if (!this.historyManager) {
+      this.historyManager = new TableHistoryManager(this.tableData, this.maxHistorySize);
+    }
+    
+    // 添加键盘事件监听器
+    this.registerDomEvent(document, 'keydown', (event: KeyboardEvent) => {
+      // 检测Ctrl+Z (或Mac上的Cmd+Z)
+      if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+        if (event.shiftKey) {
+          // Ctrl+Shift+Z 或 Cmd+Shift+Z 重做
+          event.preventDefault();
+          this.redo();
+        } else {
+          // Ctrl+Z 或 Cmd+Z 撤销
+          event.preventDefault();
+          this.undo();
         }
       }
     });
@@ -535,25 +424,9 @@ export class CSVView extends TextFileView {
     this.addStyles();
   }
 
-  // 添加样式
-  private addStyles() {
-    // 创建样式元素
-    const styleEl = document.head.createEl('style');
-    styleEl.id = 'csv-edit-bar-styles';
-    styleEl.textContent = `
-      .csv-edit-bar {
-        padding: 5px;
-        margin-bottom: 5px;
-        border-bottom: 1px solid var(--background-modifier-border);
-      }
-      .csv-edit-input {
-        width: 100%;
-        height: 28px;
-        padding: 0 5px;
-        border: 1px solid var(--background-modifier-border);
-        border-radius: 4px;
-      }
-    `;
+  // 需要添加calculateColumnWidths方法
+  private calculateColumnWidths() {
+    this.columnWidths = TableUtils.calculateColumnWidths(this.tableData);
   }
 
   async onClose() {
@@ -564,58 +437,32 @@ export class CSVView extends TextFileView {
     this.contentEl.empty();
   }
   
-  // 修改现有方法，添加快照保存
+  // 表格操作方法
   addRow() {
-    // 保存当前状态到历史记录
     this.saveSnapshot();
-    
-    // 获取最大列数
-    const colCount = this.tableData.length > 0
-      ? this.tableData[0].length
-      : 1;
-    
-    // 在表格末尾添加一个空行
-    const newRow = Array(colCount).fill("");
-    this.tableData.push(newRow);
+    this.tableData = TableUtils.addRow(this.tableData);
     this.refresh();
     this.requestSave();
   }
   
   deleteRow() {
-    // 删除最后一行（如果有超过一行）
-    if (this.tableData.length > 1) {
-      // 保存当前状态到历史记录
-      this.saveSnapshot();
-      
-      this.tableData.pop();
-      this.refresh();
-      this.requestSave();
-    } else {
-      new Notice("至少需要保留一行");
-    }
+    this.saveSnapshot();
+    this.tableData = TableUtils.deleteRow(this.tableData);
+    this.refresh();
+    this.requestSave();
   }
   
   addColumn() {
-    // 保存当前状态到历史记录
     this.saveSnapshot();
-    
-    // 在每一行末尾添加一个空列
-    this.tableData.forEach(row => row.push(""));
+    this.tableData = TableUtils.addColumn(this.tableData);
     this.refresh();
     this.requestSave();
   }
   
   deleteColumn() {
-    // 删除最后一列（如果有超过一列）
-    if (this.tableData[0].length > 1) {
-      // 保存当前状态到历史记录
-      this.saveSnapshot();
-      
-      this.tableData.forEach(row => row.pop());
-      this.refresh();
-      this.requestSave();
-    } else {
-      new Notice("至少需要保留一列");
-    }
+    this.saveSnapshot();
+    this.tableData = TableUtils.deleteColumn(this.tableData);
+    this.refresh();
+    this.requestSave();
   }
 }
