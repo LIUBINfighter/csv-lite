@@ -1,4 +1,4 @@
-import { TextFileView, ButtonComponent, Notice, DropdownComponent } from "obsidian";
+import { TextFileView, ButtonComponent, Notice, DropdownComponent, getIcon, IconName } from "obsidian";
 import { CSVUtils, CSVParseConfig } from './utils/csv-utils';
 import { TableHistoryManager } from './utils/history-manager';
 import { TableUtils } from './utils/table-utils';
@@ -37,6 +37,9 @@ export class CSVView extends TextFileView {
     this.historyManager = new TableHistoryManager(undefined, this.maxHistorySize);
   }
 
+getIcon(): IconName {
+	return "table";
+}
   getViewData() {
     return CSVUtils.unparseCSV(this.tableData);
   }
@@ -352,22 +355,7 @@ export class CSVView extends TextFileView {
     
     // CSV导入导出选项
     const exportImportContainer = this.operationEl.createEl("div", { cls: "csv-export-import" });
-    
-    // 添加分隔符选择
-    const delimiterContainer = exportImportContainer.createEl("div", { cls: "csv-delimiter-container" });
-    delimiterContainer.createEl("span", { text: "分隔符: " });
-    
-    const delimiterDropdown = new DropdownComponent(delimiterContainer);
-    delimiterDropdown.addOption(",", "逗号 (,)");
-    delimiterDropdown.addOption(";", "分号 (;)");
-    delimiterDropdown.addOption("\t", "制表符 (Tab)");
-    delimiterDropdown.setValue(",");
-    
-    // 设置分隔符改变时的处理函数
-    delimiterDropdown.onChange(value => {
-      this.papaConfig.delimiter = value;
-      this.refresh();
-    });
+
     
     // 创建编辑栏（在操作区之后）
     this.editBarEl = this.contentEl.createEl("div", { cls: "csv-edit-bar" });
