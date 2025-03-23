@@ -2,6 +2,7 @@ import { TextFileView, ButtonComponent, Notice, DropdownComponent, getIcon, Icon
 import { CSVUtils, CSVParseConfig } from './utils/csv-utils';
 import { TableHistoryManager } from './utils/history-manager';
 import { TableUtils } from './utils/table-utils';
+import { i18n } from './i18n'; // 修正导入路径
 
 export const VIEW_TYPE_CSV = "csv-view";
 
@@ -314,39 +315,39 @@ getIcon(): IconName {
     
     // 撤销按钮
     new ButtonComponent(buttonContainer)
-      .setButtonText("撤销")
+      .setButtonText(i18n.t('buttons.undo'))
       .setIcon("undo")
       .onClick(() => this.undo());
       
     // 重做按钮
     new ButtonComponent(buttonContainer)
-      .setButtonText("重做")
+      .setButtonText(i18n.t('buttons.redo'))
       .setIcon("redo")
       .onClick(() => this.redo());
     
     // 添加行按钮
     new ButtonComponent(buttonContainer)
-      .setButtonText("添加行")
+      .setButtonText(i18n.t('buttons.addRow'))
       .onClick(() => this.addRow());
     
     // 删除行按钮
     new ButtonComponent(buttonContainer)
-      .setButtonText("删除行")
+      .setButtonText(i18n.t('buttons.deleteRow'))
       .onClick(() => this.deleteRow());
     
     // 添加列按钮
     new ButtonComponent(buttonContainer)
-      .setButtonText("添加列")
+      .setButtonText(i18n.t('buttons.addColumn'))
       .onClick(() => this.addColumn());
     
     // 删除列按钮
     new ButtonComponent(buttonContainer)
-      .setButtonText("删除列")
+      .setButtonText(i18n.t('buttons.deleteColumn'))
       .onClick(() => this.deleteColumn());
     
     // 重置列宽按钮
     new ButtonComponent(buttonContainer)
-      .setButtonText("重置列宽")
+      .setButtonText(i18n.t('buttons.resetColumnWidth'))
       .onClick(() => {
         this.columnWidths = [];
         this.calculateColumnWidths();
@@ -363,7 +364,7 @@ getIcon(): IconName {
     // 创建编辑输入框
     this.editInput = this.editBarEl.createEl("input", { 
       cls: "csv-edit-input",
-      attr: { placeholder: "编辑选中单元格..." }
+      attr: { placeholder: i18n.t('editBar.placeholder') }
     });
     
     // 添加编辑栏输入处理
