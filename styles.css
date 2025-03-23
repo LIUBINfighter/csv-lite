@@ -7,20 +7,98 @@ If your plugin does not need CSS, delete this file.
 
 */
 
+/* 表格样式 */
 table {
   border-collapse: collapse;
+  width: 100%;
+  margin-top: 10px;
+  table-layout: fixed; /* 使用固定表格布局 */
 }
 
 table,
-td {
+td,
+th {
   border: 1px solid var(--background-modifier-border);
 }
 
-td {
+td, th {
   padding: 4px 8px;
+  position: relative;
+  overflow: visible;
+}
+
+th {
+  background-color: var(--background-secondary);
+  font-weight: bold;
 }
 
 input {
   background: none;
   border: none;
+  width: 100%;
+  resize: none;
+  overflow: hidden;
+  min-height: 24px;
+  line-height: 1.5;
+  padding: 2px 0;
+}
+
+/* 操作区样式 */
+.csv-operations {
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.csv-operation-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.csv-operation-buttons button {
+  margin: 0;
+}
+
+hr {
+  margin: 10px 0;
+  border: none;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+/* 列宽调整手柄 */
+.resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background-color: transparent;
+  cursor: col-resize;
+}
+
+.resize-handle:hover, 
+.resize-handle:active {
+  background-color: var(--interactive-accent);
+}
+
+/* 设置项容器 */
+.csv-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+/* 长文本单元格样式 */
+td input:focus {
+  white-space: pre-wrap;
+}
+
+/* 表格容器，允许水平滚动 */
+.table-container {
+  max-width: 100%;
+  overflow-x: auto;
 }
