@@ -1,7 +1,8 @@
+Simple enough for csv, no more fancy function you need to learn and think!
 
 ## Introduction
 
-Simple enough for csv, no more fancy feature you need to learn!
+Keep your mind on track! Don't waste time creating fancy tables.
 
 A plugin designed to view and edit CSV files directly within Obsidian.
 
@@ -9,18 +10,28 @@ A plugin designed to view and edit CSV files directly within Obsidian.
 
 There are so many csv plugin, why you need this one?
 
-Because i want to keep it simple and stupid.
+Because I want to keep it simple and stupid. And keep up with the newest obsidian api and typings.
 
 No fancy feature, just open and edit.
 
 ## Philosophy
 
-Simplicity and integration. We believe that:
-
-1. Data management should be straightforward and accessible
-2. Users shouldn't need to leave their workflow environment
-3. CSV manipulation should be as natural as text editing
-4. The interface should remain minimal yet functional
+- No fancy UI, SAY NO TO
+    - modals
+	- sidebar
+	- settingTab
+	- Readme
+	- Online docs & tutorials
+    - All functions of the ui components above will be covered in a single File view.
+- All in TextFileView/workspace.
+- No more pollution to your vault, all metadata store in `./.obsidian/plugins/csv` in json format.
+- Every function must be completed within 3 steps:
+	1. Click/Hotkey
+	2. Input (if needed)
+	3. Confirm
+- The interface should remain minimal yet functional
+- Users shouldn't need to leave their workflow environment
+- CSV manipulation should be as natural as text editing.
 
 ## Features
 
