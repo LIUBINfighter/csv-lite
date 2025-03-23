@@ -410,7 +410,7 @@ getIcon(): IconName {
     this.refresh();
     
     // 添加样式
-    this.addStyles();
+    // this.addStyles();
   }
 
   // 需要添加calculateColumnWidths方法
