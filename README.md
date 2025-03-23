@@ -10,7 +10,9 @@ A plugin designed to view and edit CSV files directly within Obsidian.
 
 There are so many csv plugin, why you need this one?
 
-Because I want to keep it simple and stupid. And keep up with the newest obsidian api and typings.
+Because I want to keep it **simple and stupid**. 
+
+And keep up with the **newest obsidian api and typings**.
 
 No fancy feature, just open and edit.
 
