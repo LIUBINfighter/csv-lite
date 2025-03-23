@@ -1,12 +1,15 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, Setting, WorkspaceLeaf } from 'obsidian';
 import { CSVView, VIEW_TYPE_CSV } from "./view";
+import { i18n, Locale } from './i18n';
 
 interface CSVPluginSettings {
 	csvSettings: string;
+	locale: Locale; // 添加语言设置
 }
 
 const DEFAULT_SETTINGS: CSVPluginSettings = {
-	csvSettings: 'default'
+	csvSettings: 'default',
+	locale: 'en' // 默认使用英文
 }
 
 export default class CSVPlugin extends Plugin {
@@ -14,6 +17,9 @@ export default class CSVPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+		
+		// 设置语言
+		i18n.setLocale(this.settings.locale);
 		
 		// 注册CSV视图类型
 		this.registerView(
@@ -23,6 +29,7 @@ export default class CSVPlugin extends Plugin {
 		
 		// 将.csv文件扩展名与视图类型绑定
 		this.registerExtensions(["csv"], VIEW_TYPE_CSV);
+		
 	}
 
 	onunload() {
@@ -38,4 +45,3 @@ export default class CSVPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 }
-
