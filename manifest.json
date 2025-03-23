@@ -1,11 +1,11 @@
 {
-	"id": "csv-plugin",
-	"name": "csv Plugin",
+	"id": "csv-lite",
+	"name": "CSV Lite",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Just open and edit a CSV file in Obsidian, no more. Keep it simple.",
-	"author": "",
-	"authorUrl": "",
+	"author": "Jay Bridge",
+	"authorUrl": "https://github.com/LIUBINfighter",
 	"fundingUrl": "",
-	"isDesktopOnly": false
+	"isDesktopOnly": true
 }
