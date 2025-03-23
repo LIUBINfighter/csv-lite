@@ -1,4 +1,5 @@
-import { TextFileView, ButtonComponent, Notice, DropdownComponent } from "obsidian";
+import { TextFileView, ButtonComponent, Notice, DropdownComponent, requestUrl } from "obsidian";
+import * as Papa from 'papaparse';
 
 export const VIEW_TYPE_CSV = "csv-view";
 
@@ -15,20 +16,78 @@ export class CSVView extends TextFileView {
   // 添加列宽调整设置
   private columnWidths: number[] = [];
   private autoResize: boolean = true; // 始终启用自动调整
+  
+  // Papa Parse 配置选项
+  private papaConfig = {
+    header: false,
+    dynamicTyping: false, // 保持所有值为字符串
+    skipEmptyLines: false // 保留空行以保持行号一致
+  };
 
   getViewData() {
-    return this.tableData.map((row) => row.join(",")).join("\n");
+    // 使用 Papa Parse 将数据序列化为CSV字符串
+    return Papa.unparse(this.tableData, {
+      header: false,
+      newline: "\n"
+    });
   }
 
   setViewData(data: string, clear: boolean) {
-    this.tableData = data.split("\n").map((line) => line.split(","));
+    try {
+      // 使用 Papa Parse 解析CSV数据
+      const parseResult = Papa.parse(data, this.papaConfig);
+      
+      if (parseResult.errors && parseResult.errors.length > 0) {
+        // 显示解析错误
+        console.warn("CSV解析警告:", parseResult.errors);
+        new Notice(`CSV解析提示: ${parseResult.errors[0].message}`);
+      }
+      
+      this.tableData = parseResult.data as string[][];
+      
+      // 确保至少有一行一列
+      if (!this.tableData || this.tableData.length === 0) {
+        this.tableData = [[""]];
+      }
+      
+      // 使所有行的列数一致
+      this.normalizeTableData();
+      
+      // 初始化历史记录
+      if (clear) {
+        this.initHistory();
+      }
+      
+      this.refresh();
+    } catch (error) {
+      console.error("CSV解析错误:", error);
+      new Notice("CSV解析失败，请检查文件格式");
+      
+      // 出错时设置为空表格
+      this.tableData = [[""]];
+      if (clear) {
+        this.initHistory();
+      }
+      this.refresh();
+    }
+  }
+  
+  // 确保表格数据规整（所有行有相同的列数）
+  private normalizeTableData() {
+    if (!this.tableData || this.tableData.length === 0) return;
     
-    // 初始化历史记录
-    if (clear) {
-      this.initHistory();
+    // 找出最大列数
+    let maxCols = 0;
+    for (const row of this.tableData) {
+      maxCols = Math.max(maxCols, row.length);
     }
     
-    this.refresh();
+    // 确保每行都有相同的列数
+    for (let i = 0; i < this.tableData.length; i++) {
+      while (this.tableData[i].length < maxCols) {
+        this.tableData[i].push("");
+      }
+    }
   }
 
   // 初始化历史记录
@@ -271,53 +330,82 @@ export class CSVView extends TextFileView {
     // 创建操作区
     this.operationEl = this.contentEl.createEl("div", { cls: "csv-operations" });
     
-    // 添加常用操作按钮
-    const buttonContainer = this.operationEl.createEl("div", { cls: "csv-operation-buttons" });
+    // 创建两个标签页容器
+    const tabsContainer = this.operationEl.createEl("div", { cls: "csv-tabs" });
+    
+    // 创建标签头部
+    const tabHeaders = tabsContainer.createEl("div", { cls: "csv-tab-headers" });
+    const contentTabHeader = tabHeaders.createEl("div", { cls: "csv-tab-header csv-tab-active", text: "内容" });
+    const appearanceTabHeader = tabHeaders.createEl("div", { cls: "csv-tab-header", text: "外观" });
+    
+    // 创建内容标签页面板
+    const contentTabPanel = tabsContainer.createEl("div", { cls: "csv-tab-panel csv-tab-panel-active" });
+    
+    // 添加内容相关操作按钮
+    const contentButtonContainer = contentTabPanel.createEl("div", { cls: "csv-operation-buttons" });
     
     // 撤销按钮
-    new ButtonComponent(buttonContainer)
+    new ButtonComponent(contentButtonContainer)
       .setButtonText("撤销")
       .setIcon("undo")
       .onClick(() => this.undo());
       
     // 重做按钮
-    new ButtonComponent(buttonContainer)
+    new ButtonComponent(contentButtonContainer)
       .setButtonText("重做")
       .setIcon("redo")
       .onClick(() => this.redo());
     
     // 添加行按钮
-    new ButtonComponent(buttonContainer)
+    new ButtonComponent(contentButtonContainer)
       .setButtonText("添加行")
       .onClick(() => this.addRow());
     
     // 删除行按钮
-    new ButtonComponent(buttonContainer)
+    new ButtonComponent(contentButtonContainer)
       .setButtonText("删除行")
       .onClick(() => this.deleteRow());
     
     // 添加列按钮
-    new ButtonComponent(buttonContainer)
+    new ButtonComponent(contentButtonContainer)
       .setButtonText("添加列")
       .onClick(() => this.addColumn());
     
     // 删除列按钮
-    new ButtonComponent(buttonContainer)
+    new ButtonComponent(contentButtonContainer)
       .setButtonText("删除列")
       .onClick(() => this.deleteColumn());
-
-    // 添加列宽自动调整选项
-    const settingsContainer = this.operationEl.createEl("div", { cls: "csv-settings" });
     
-    // 删除自动调整行高开关，只保留重置列宽按钮
-    new ButtonComponent(settingsContainer)
+    // 创建外观标签页面板
+    const appearanceTabPanel = tabsContainer.createEl("div", { cls: "csv-tab-panel" });
+    
+    // 添加外观相关设置
+    const appearanceSettings = appearanceTabPanel.createEl("div", { cls: "csv-settings" });
+    
+    // 重置列宽按钮
+    new ButtonComponent(appearanceSettings)
       .setButtonText("重置列宽")
       .onClick(() => {
         this.columnWidths = [];
         this.calculateColumnWidths();
         this.refresh();
       });
-
+    
+    // 添加标签切换功能
+    contentTabHeader.addEventListener("click", () => {
+      contentTabHeader.addClass("csv-tab-active");
+      appearanceTabHeader.removeClass("csv-tab-active");
+      contentTabPanel.addClass("csv-tab-panel-active");
+      appearanceTabPanel.removeClass("csv-tab-panel-active");
+    });
+    
+    appearanceTabHeader.addEventListener("click", () => {
+      appearanceTabHeader.addClass("csv-tab-active");
+      contentTabHeader.removeClass("csv-tab-active");
+      appearanceTabPanel.addClass("csv-tab-panel-active");
+      contentTabPanel.removeClass("csv-tab-panel-active");
+    });
+    
     // 创建一个分隔线
     this.contentEl.createEl("hr");
     
@@ -343,6 +431,42 @@ export class CSVView extends TextFileView {
       }
     });
     
+    // 添加CSV导入导出选项到内容标签页
+    const exportImportContainer = contentTabPanel.createEl("div", { cls: "csv-export-import" });
+    
+    // 添加分隔符选择
+    const delimiterContainer = exportImportContainer.createEl("div", { cls: "csv-delimiter-container" });
+    delimiterContainer.createEl("span", { text: "分隔符: " });
+    
+    const delimiterDropdown = new DropdownComponent(delimiterContainer);
+    delimiterDropdown.addOption(",", "逗号 (,)");
+    delimiterDropdown.addOption(";", "分号 (;)");
+    delimiterDropdown.addOption("\t", "制表符 (Tab)");
+    delimiterDropdown.setValue(",");
+    
+    // 设置分隔符改变时的处理函数
+    delimiterDropdown.onChange(value => {
+      this.papaConfig.delimiter = value;
+      this.refresh();
+    });
+    
+    // 添加高级解析设置
+    const advancedContainer = appearanceSettings.createEl("div", { cls: "csv-advanced-settings" });
+    
+    // 添加首行作为表头选项
+    const headerOption = advancedContainer.createEl("div", { cls: "csv-setting-item" });
+    headerOption.createEl("span", { text: "首行作为表头" });
+    const headerToggle = headerOption.createEl("input", { attr: { type: "checkbox" } });
+    
+    headerToggle.addEventListener("change", e => {
+      if (e.currentTarget instanceof HTMLInputElement) {
+        const headerRow = document.querySelector("thead tr");
+        if (headerRow) {
+          headerRow.toggleClass("csv-header-row", e.currentTarget.checked);
+        }
+      }
+    });
+    
     // 初始化时刷新视图
     this.refresh();
   }
@@ -356,8 +480,13 @@ export class CSVView extends TextFileView {
     // 保存当前状态到历史记录
     this.saveSnapshot();
     
+    // 获取最大列数
+    const colCount = this.tableData.length > 0
+      ? this.tableData[0].length
+      : 1;
+    
     // 在表格末尾添加一个空行
-    const newRow = Array(this.tableData[0]?.length || 1).fill("");
+    const newRow = Array(colCount).fill("");
     this.tableData.push(newRow);
     this.refresh();
     this.requestSave();

@@ -102,3 +102,73 @@ td input:focus {
   max-width: 100%;
   overflow-x: auto;
 }
+
+/* 标签页样式 */
+.csv-tabs {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.csv-tab-headers {
+  display: flex;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.csv-tab-header {
+  padding: 8px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-right: 8px;
+  font-weight: 500;
+}
+
+.csv-tab-header:hover {
+  color: var(--interactive-accent);
+}
+
+.csv-tab-header.csv-tab-active {
+  color: var(--interactive-accent);
+  border-bottom-color: var(--interactive-accent);
+}
+
+.csv-tab-panel {
+  display: none;
+  padding: 12px 0;
+}
+
+.csv-tab-panel-active {
+  display: block;
+}
+
+/* CSV导入导出选项样式 */
+.csv-export-import {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--background-modifier-border);
+}
+
+.csv-delimiter-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.csv-advanced-settings {
+  margin-top: 16px;
+}
+
+.csv-setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+/* 表头行样式 */
+.csv-header-row th {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
