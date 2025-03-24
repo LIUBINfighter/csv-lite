@@ -1,7 +1,10 @@
 
-# CSV Lite
+# Obsidian CSV Lite
 
 Simple enough for csv, no more fancy function you need to learn and think!
+
+![image](https://github.com/user-attachments/assets/6d956e79-4be7-4172-92e2-6f14ddba0dda)
+
 
 [中文版本Readme](./README_zh.md)
 
