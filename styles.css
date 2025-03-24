@@ -9,145 +9,146 @@ If your plugin does not need CSS, delete this file.
 
 /* 表格样式 */
 table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-top: 10px;
-  table-layout: fixed; /* 使用固定表格布局 */
-}
-
-table,
-td,
-th {
-  border: 1px solid var(--background-modifier-border);
-}
-
-td, th {
-  padding: 4px 8px;
-  position: relative;
-  overflow: visible;
-}
-
-th {
-  background-color: var(--background-secondary);
-  font-weight: bold;
-}
-
-input {
-  background: none;
-  border: none;
-  width: 100%;
-  resize: none;
-  overflow: hidden;
-  min-height: 24px;
-  line-height: 1.5;
-  padding: 2px 0;
-}
-
-.csv-operation-buttons {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.csv-edit-input {
-	width: 75%;
-	margin: 0 auto;
-	padding: 4px 8px;
+	border-collapse: collapse;
+	width: 100%;
+	margin-top: 10px;
+	table-layout: fixed; /* 使用固定表格布局 */
+  }
+  
+  table,
+  td,
+  th {
 	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	box-sizing: border-box;
+  }
+  
+  td, th {
+	padding: 4px 8px;
+	position: relative;
+	overflow: visible;
+  }
+  
+  th {
+	background-color: var(--background-secondary);
+	font-weight: bold;
+  }
+  
+  input {
+	background: none;
+	border: none;
+	width: 100%;
+	resize: none;
+	overflow: hidden;
+	min-height: 24px;
+	line-height: 1.5;
+	padding: 2px 0;
+  }
+  
+  .csv-operation-buttons {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+  }
+  .csv-edit-input {
+	  width: 75%;
+	  margin: 0 auto;
+	  padding: 4px 8px;
+	  border: 1px solid var(--background-modifier-border);
+	  border-radius: 4px;
+	  box-sizing: border-box;
+	  display: block;
+	  text-align: center;
+  }
+  
+  hr {
+	margin: 2px 0;
+	border: none;
+	border-top: 1px solid var(--background-modifier-border);
+  }
+  
+  /* 列宽调整手柄 */
+  .resize-handle {
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	width: 5px;
+	background-color: transparent;
+	cursor: col-resize;
+  }
+  
+  .resize-handle:hover, 
+  .resize-handle:active {
+	background-color: var(--interactive-accent);
+  }
+  
+  
+  /* 长文本单元格样式 */
+  td input:focus {
+	white-space: pre-wrap;
+  }
+  
+  /* 表格容器，允许水平滚动 */
+  .table-container {
+	max-width: 100%;
+	overflow-x: auto;
+  }
+  
+  /* 标签页样式 */
+  .csv-tabs {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	margin-bottom: 10px;
+  }
+  
+  .csv-tab-headers {
+	display: flex;
+	border-bottom: 1px solid var(--background-modifier-border);
+  }
+  
+  .csv-tab-header {
+	padding: 8px 16px;
+	cursor: pointer;
+	border-bottom: 2px solid transparent;
+	margin-right: 8px;
+	font-weight: 500;
+  }
+  
+  .csv-tab-header:hover {
+	color: var(--interactive-accent);
+  }
+  
+  .csv-tab-header.csv-tab-active {
+	color: var(--interactive-accent);
+	border-bottom-color: var(--interactive-accent);
+  }
+  
+  .csv-tab-panel {
+	display: none;
+	padding: 12px 0;
+  }
+  
+  .csv-tab-panel-active {
 	display: block;
-	text-align: center;
-}
-
-hr {
-  margin: 2px 0;
-  border: none;
-  border-top: 1px solid var(--background-modifier-border);
-}
-
-/* 列宽调整手柄 */
-.resize-handle {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-  background-color: transparent;
-  cursor: col-resize;
-}
-
-.resize-handle:hover, 
-.resize-handle:active {
-  background-color: var(--interactive-accent);
-}
-
-
-/* 长文本单元格样式 */
-td input:focus {
-  white-space: pre-wrap;
-}
-
-/* 表格容器，允许水平滚动 */
-.table-container {
-  max-width: 100%;
-  overflow-x: auto;
-}
-
-/* 标签页样式 */
-.csv-tabs {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.csv-tab-headers {
-  display: flex;
-  border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.csv-tab-header {
-  padding: 8px 16px;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-right: 8px;
-  font-weight: 500;
-}
-
-.csv-tab-header:hover {
-  color: var(--interactive-accent);
-}
-
-.csv-tab-header.csv-tab-active {
-  color: var(--interactive-accent);
-  border-bottom-color: var(--interactive-accent);
-}
-
-.csv-tab-panel {
-  display: none;
-  padding: 12px 0;
-}
-
-.csv-tab-panel-active {
-  display: block;
-}
-
-/* CSV导入导出选项样式 */
-.csv-export-import {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--background-modifier-border);
-}
-
-.csv-delimiter-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-/* 表头行样式 */
-.csv-header-row th {
-  background-color: var(--interactive-accent);
-  color: var(--text-on-accent);
-}
+  }
+  
+  /* CSV导入导出选项样式 */
+  .csv-export-import {
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px dashed var(--background-modifier-border);
+  }
+  
+  .csv-delimiter-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+  }
+  
+  /* 表头行样式 */
+  .csv-header-row th {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+  }
+  
