@@ -92,6 +92,7 @@ getIcon(): IconName {
       this.tableData[0].forEach((headerCell, index) => {
         const th = headerRow.createEl("th", { 
           cls: "csv-th",
+		  attr: { style: `width: ${this.columnWidths[index] || 100}px` }
         });
         
         // 添加列标题
@@ -135,7 +136,9 @@ getIcon(): IconName {
       const tableRow = tableBody.createEl("tr");
       
       row.forEach((cell, j) => {
-        const td = tableRow.createEl("td");
+        const td = tableRow.createEl("td",{
+			attr: { style: `width: ${this.columnWidths[j] || 100}px` }
+		});
         
         const input = td.createEl("input", { 
           cls: "csv-cell-input",
