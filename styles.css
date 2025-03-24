@@ -42,7 +42,12 @@ table {
 	line-height: 1.5;
 	padding: 2px 0;
   }
-  
+  .csv-cell-input {
+    height: auto;
+  }
+  /* .csv-cell-input {
+	height: var(--cell-height);
+} */
   .csv-operation-buttons {
 	display: flex;
 	gap: 8px;

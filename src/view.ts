@@ -254,7 +254,7 @@ getIcon(): IconName {
   
   // 调整输入框高度
   private adjustInputHeight(input: HTMLInputElement) {
-    input.style.height = 'auto';
+	// Style moved to styles.css: input.style.height = 'auto';
     
     // 获取内容行数
     const lineCount = (input.value.match(/\n/g) || []).length + 1;
@@ -263,7 +263,6 @@ getIcon(): IconName {
     
     // 设置高度，确保能显示所有内容
     const newHeight = Math.max(minHeight, lineCount * lineHeight);
-    input.style.height = `${newHeight}px`;
   }
 
   // 保存当前状态到历史记录
