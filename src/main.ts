@@ -16,10 +16,10 @@ export default class CSVPlugin extends Plugin {
     async onload() {
         await this.loadSettings();
 
-        // 设置语言 - 使用系统语言
-        // 注意：如果升级到 Obsidian 1.8.0 或更高版本，可以使用 this.app.getLanguage()
-        const systemLang = navigator.language || "en";
-        i18n.setLocale(systemLang);
+        // 设置语言 - 使用 Obsidian 的语言设置
+        // @ts-ignore - getLanguage方法存在但可能没有在TypeScript定义中正确声明
+        const obsidianLang = this.app.getLanguage ? this.app.getLanguage() : navigator.language || "en";
+        i18n.setLocale(obsidianLang);
 
         // 注册CSV视图类型
         this.registerView(
