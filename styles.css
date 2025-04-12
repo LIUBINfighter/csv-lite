@@ -76,7 +76,7 @@ If your plugin does not need CSS, delete this file.
 	gap: 8px;
 	flex-wrap: wrap;
   }
-  
+
   /* 列宽调整手柄 */
   .resize-handle {
 	position: absolute;
@@ -86,25 +86,64 @@ If your plugin does not need CSS, delete this file.
 	width: 5px;
 	background-color: transparent;
 	cursor: col-resize;
+	transition: background-color 0.1s ease;
   }
-  
-  .resize-handle:hover, 
+
+  .resize-handle:hover {
+	background-color: var(--interactive-accent-hover);
+  }
+
+  .resize-handle.resize-active,
   .resize-handle:active {
 	background-color: var(--interactive-accent);
   }
-  
-  
+
+  /* 当调整列宽时显示边界线 */
+  .resize-active::before {
+	content: '';
+	position: absolute;
+	top: -5000px;
+	bottom: -5000px;
+	right: 0;
+	width: 2px;
+	background-color: var(--interactive-accent);
+	z-index: 10;
+  }
+
+
   /* 长文本单元格样式 */
   td input:focus {
 	white-space: pre-wrap;
   }
-  
+
   /* 表格容器，允许水平滚动 */
   .table-container {
 	max-width: 100%;
 	overflow-x: auto;
+	margin-bottom: 20px;
+	border-radius: 4px;
+	position: relative;
   }
-  
+
+  /* 滚动条样式 */
+  .table-container::-webkit-scrollbar {
+	height: 8px;
+  }
+
+  .table-container::-webkit-scrollbar-track {
+	background: var(--background-secondary);
+	border-radius: 4px;
+  }
+
+  .table-container::-webkit-scrollbar-thumb {
+	background: var(--background-modifier-border);
+	border-radius: 4px;
+  }
+
+  .table-container::-webkit-scrollbar-thumb:hover {
+	background: var(--interactive-accent);
+  }
+
   /* 标签页样式 */
   .csv-tabs {
 	display: flex;
@@ -112,12 +151,12 @@ If your plugin does not need CSS, delete this file.
 	width: 100%;
 	margin-bottom: 10px;
   }
-  
+
   .csv-tab-headers {
 	display: flex;
 	border-bottom: 1px solid var(--background-modifier-border);
   }
-  
+
   .csv-tab-header {
 	padding: 8px 16px;
 	cursor: pointer;
@@ -125,43 +164,43 @@ If your plugin does not need CSS, delete this file.
 	margin-right: 8px;
 	font-weight: 500;
   }
-  
+
   .csv-tab-header:hover {
 	color: var(--interactive-accent);
   }
-  
+
   .csv-tab-header.csv-tab-active {
 	color: var(--interactive-accent);
 	border-bottom-color: var(--interactive-accent);
   }
-  
+
   .csv-tab-panel {
 	display: none;
 	padding: 12px 0;
   }
-  
+
   .csv-tab-panel-active {
 	display: block;
   }
-  
+
   /* CSV导入导出选项样式 */
   .csv-export-import {
 	margin-top: 12px;
 	padding-top: 12px;
 	border-top: 1px dashed var(--background-modifier-border);
   }
-  
+
   .csv-delimiter-container {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	margin-bottom: 8px;
   }
-  
+
   /* 表头行样式 */
   .csv-header-row th {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
   }
-  
+
 
