@@ -37,32 +37,44 @@ If your plugin does not need CSS, delete this file.
 .csv-lite-cell-long {
 	white-space: pre-wrap;
 }
-  .csv-cell-input {
+  /* 输入框共享样式 */
+  .csv-cell-input,
+  .csv-edit-input {
     height: auto;
+    padding: 4px 8px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    background: var(--background-primary);
+    color: var(--text-normal);
+    font-size: inherit;
+    line-height: 1.4;
   }
-  /* .csv-cell-input {
-	height: var(--cell-height);
-} */
+
+  /* csv-cell-input 特有样式（宽度由 JS 控制） */
+  .csv-cell-input {
+    width: 100%;
+  }
+
+  /* csv-edit-input 特有样式 */
+  .csv-edit-input {
+    width: 75%;
+    margin: 0 auto;
+    display: block;
+    text-align: center;
+  }
+
+  /* 焦点状态样式 */
+  .csv-cell-input:focus,
+  .csv-edit-input:focus {
+    outline: none;
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+  }
   .csv-operation-buttons {
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
-  }
-  .csv-edit-input {
-	  width: 75%;
-	  margin: 0 auto;
-	  padding: 4px 8px;
-	  border: 1px solid var(--background-modifier-border);
-	  border-radius: 4px;
-	  box-sizing: border-box;
-	  display: block;
-	  text-align: center;
-  }
-  
-  hr {
-	margin: 2px 0;
-	border: none;
-	border-top: 1px solid var(--background-modifier-border);
   }
   
   /* 列宽调整手柄 */
@@ -152,3 +164,4 @@ If your plugin does not need CSS, delete this file.
 	color: var(--text-on-accent);
   }
   
+
