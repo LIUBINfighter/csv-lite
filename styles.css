@@ -8,40 +8,35 @@ If your plugin does not need CSS, delete this file.
 */
 
 /* 表格样式 */
-table {
+.csv-lite-table {
 	border-collapse: collapse;
 	width: 100%;
 	margin-top: 10px;
-	table-layout: fixed; /* 使用固定表格布局 */
-  }
-  
-  table,
-  td,
-  th {
+	table-layout: fixed;
+}
+
+.csv-lite-table td,
+.csv-lite-table th {
 	border: 1px solid var(--background-modifier-border);
-  }
-  
-  td, th {
 	padding: 4px 8px;
 	position: relative;
 	overflow: visible;
-  }
-  
-  th {
+}
+
+.csv-lite-table th {
 	background-color: var(--background-secondary);
 	font-weight: bold;
-  }
-  
-  input {
-	background: none;
+}
+
+.csv-lite-divider {
+	margin: 2px 0;
 	border: none;
-	width: 100%;
-	resize: none;
-	overflow: hidden;
-	min-height: 24px;
-	line-height: 1.5;
-	padding: 2px 0;
-  }
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.csv-lite-cell-long {
+	white-space: pre-wrap;
+}
   .csv-cell-input {
     height: auto;
   }
