@@ -2,11 +2,11 @@ export const enUS = {
   buttons: {
     undo: 'Undo',
     redo: 'Redo',
-    addRow: 'Add Row',
-    deleteRow: 'Delete Row',
-    addColumn: 'Add Column',
-    deleteColumn: 'Delete Column',
-    resetColumnWidth: 'Reset Column Width'
+    addRow: 'Add row',
+    deleteRow: 'Delete row',
+    addColumn: 'Add column',
+    deleteColumn: 'Delete column',
+    resetColumnWidth: 'Reset column width'
   },
   editBar: {
     placeholder: 'Edit selected cell...'
