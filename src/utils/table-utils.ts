@@ -12,9 +12,10 @@ export class TableUtils {
 
         const colCount = tableData[0].length;
 
-        // 如果列数很多，调整最小列宽
+        // 如果列数很多，调整最小列宽，但不要调整得太小
         if (colCount > 10) {
-            minColWidth = Math.max(30, minColWidth - Math.floor(colCount / 10) * 5);
+            // 最多减小到10px，确保最小列宽不会小于30px
+            minColWidth = Math.max(30, minColWidth - Math.min(10, Math.floor(colCount / 15) * 2));
         }
 
         // 初始化所有列为默认宽度

@@ -79,15 +79,7 @@ getIcon(): IconName {
   refresh() {
     this.tableEl.empty();
 
-    // 创建表格容器，允许水平滚动
-    const tableContainer = this.contentEl.querySelector('.table-container');
-    if (!tableContainer) {
-      // 如果容器不存在，创建它
-      const existingTable = this.tableEl;
-      const container = createDiv({ cls: 'table-container' });
-      existingTable.parentElement?.insertBefore(container, existingTable);
-      container.appendChild(existingTable);
-    }
+    // 表格容器已经在onOpen中创建，不需要再创建
 
     // 创建表头行用于调整列宽
     const headerRow = this.tableEl.createEl("thead").createEl("tr");
@@ -96,7 +88,12 @@ getIcon(): IconName {
     if (this.columnWidths.length === 0 && this.tableData[0]) {
       // 获取容器宽度作为参考
       const containerWidth = this.contentEl.clientWidth - 40; // 减去一些填充空间
-      this.columnWidths = TableUtils.calculateColumnWidths(this.tableData, containerWidth);
+
+      // 如果列数很多，使用更小的最小列宽
+      const colCount = this.tableData[0].length;
+      const minColWidth = colCount > 20 ? 30 : 40;
+
+      this.columnWidths = TableUtils.calculateColumnWidths(this.tableData, containerWidth, minColWidth);
     }
 
     // 创建表头和调整列宽的手柄
@@ -246,7 +243,15 @@ getIcon(): IconName {
 
     const onMouseMove = (e: MouseEvent) => {
       // 计算新宽度
-      const minWidth = this.tableData[0]?.length > 10 ? 30 : 40; // 如果列数多，使用更小的最小宽度
+      // 根据列数动态调整最小宽度，但确保不会太小
+      const colCount = this.tableData[0]?.length || 1;
+      let minWidth = 40; // 默认最小宽度
+
+      if (colCount > 10) {
+        // 最多减小到10px，确保最小列宽不会小于30px
+        minWidth = Math.max(30, minWidth - Math.min(10, Math.floor(colCount / 15) * 2));
+      }
+
       const width = Math.max(minWidth, startWidth + (e.clientX - startX));
 
       // 更新列宽数组
@@ -381,8 +386,20 @@ getIcon(): IconName {
     new ButtonComponent(buttonContainer)
       .setButtonText(i18n.t('buttons.resetColumnWidth'))
       .onClick(() => {
+        // 重置列宽数组
         this.columnWidths = [];
-        this.calculateColumnWidths();
+
+        // 获取容器宽度作为参考
+        const containerWidth = this.contentEl.clientWidth - 40;
+
+        // 根据列数决定最小列宽
+        const colCount = this.tableData[0]?.length || 0;
+        const minColWidth = colCount > 20 ? 30 : 40;
+
+        // 重新计算列宽
+        this.columnWidths = TableUtils.calculateColumnWidths(this.tableData, containerWidth, minColWidth);
+
+        // 刷新表格
         this.refresh();
       });
 
@@ -414,8 +431,9 @@ getIcon(): IconName {
       }
     };
 
-    // 创建表格区域
-    this.tableEl = this.contentEl.createEl("table");
+    // 创建表格容器和表格
+    const tableContainer = this.contentEl.createEl("div", { cls: "table-container" });
+    this.tableEl = tableContainer.createEl("table");
 
     // 初始化历史记录
     if (!this.historyManager) {
@@ -445,10 +463,7 @@ getIcon(): IconName {
     // this.addStyles();
   }
 
-  // 需要添加calculateColumnWidths方法
-  private calculateColumnWidths() {
-    this.columnWidths = TableUtils.calculateColumnWidths(this.tableData);
-  }
+  // 列宽计算已经直接使用TableUtils.calculateColumnWidths
 
   async onClose() {
     // 移除自定义样式

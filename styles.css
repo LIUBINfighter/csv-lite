@@ -8,24 +8,29 @@ If your plugin does not need CSS, delete this file.
 */
 
 /* 表格样式 */
-.csv-lite-table {
+table {
 	border-collapse: collapse;
-	width: 100%;
+	width: max-content; /* 允许表格根据内容扩展 */
+	min-width: 100%; /* 至少填充容器宽度 */
 	margin-top: 10px;
 	table-layout: fixed;
 }
 
-.csv-lite-table td,
-.csv-lite-table th {
+table td,
+table th {
 	border: 1px solid var(--background-modifier-border);
 	padding: 4px 8px;
 	position: relative;
 	overflow: visible;
+	min-width: 30px; /* 确保单元格有最小宽度 */
 }
 
-.csv-lite-table th {
+table th {
 	background-color: var(--background-secondary);
 	font-weight: bold;
+	position: sticky; /* 表头固定 */
+	top: 0; /* 固定在顶部 */
+	z-index: 10; /* 确保表头在单元格之上 */
 }
 
 .csv-lite-divider {
@@ -42,18 +47,20 @@ If your plugin does not need CSS, delete this file.
   .csv-edit-input {
     height: auto;
     padding: 4px 8px;
-    border: 1px solid var(--background-modifier-border);
+    border: 1px solid transparent; /* 默认透明边框 */
     border-radius: 4px;
     box-sizing: border-box;
-    background: var(--background-primary);
+    background: transparent; /* 默认透明背景 */
     color: var(--text-normal);
     font-size: inherit;
     line-height: 1.4;
+    min-width: 30px; /* 确保最小宽度 */
   }
 
-  /* csv-cell-input 特有样式（宽度由 JS 控制） */
+  /* csv-cell-input 特有样式 */
   .csv-cell-input {
     width: 100%;
+    display: block; /* 确保占据整个单元格 */
   }
 
   /* csv-edit-input 特有样式 */
@@ -62,6 +69,8 @@ If your plugin does not need CSS, delete this file.
     margin: 0 auto;
     display: block;
     text-align: center;
+    border: 1px solid var(--background-modifier-border); /* 编辑栏输入框显示边框 */
+    background: var(--background-primary); /* 编辑栏输入框显示背景 */
   }
 
   /* 焦点状态样式 */
@@ -69,7 +78,14 @@ If your plugin does not need CSS, delete this file.
   .csv-edit-input:focus {
     outline: none;
     border-color: var(--interactive-accent);
+    background: var(--background-primary); /* 聚焦时显示背景 */
     box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+  }
+
+  /* 悬停状态 */
+  .csv-cell-input:hover {
+    border-color: var(--background-modifier-border);
+    background: var(--background-primary-alt);
   }
   .csv-operation-buttons {
 	display: flex;
@@ -123,6 +139,8 @@ If your plugin does not need CSS, delete this file.
 	margin-bottom: 20px;
 	border-radius: 4px;
 	position: relative;
+	padding-bottom: 10px; /* 添加底部填充，为滚动条留出空间 */
+	background: var(--background-primary); /* 确保容器有背景色 */
   }
 
   /* 滚动条样式 */
