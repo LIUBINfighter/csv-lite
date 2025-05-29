@@ -6,6 +6,7 @@ export interface CSVParseConfig {
     dynamicTyping: boolean;
     skipEmptyLines: boolean;
     delimiter?: string;
+    quoteChar?: string;
 }
 
 export class CSVUtils {
@@ -13,7 +14,8 @@ export class CSVUtils {
     static defaultConfig: CSVParseConfig = {
         header: false,
         dynamicTyping: false,
-        skipEmptyLines: false
+        skipEmptyLines: false,
+        quoteChar: '"'
     };
 
     /**
