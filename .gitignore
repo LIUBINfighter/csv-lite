@@ -20,5 +20,14 @@ data.json
 ./csv_metadata/
 csv_metadata
 
+# scripts for dev
+scripts
+
+# test
+*.csv
+
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
+
+# Test coverage reports
+coverage/
