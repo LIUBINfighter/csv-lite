@@ -1,7 +1,7 @@
 {
 	"id": "csv-lite",
 	"name": "CSV Lite",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "1.8.0",
 	"description": "Just open and edit CSV files directly, no more. Keep it simple.",
 	"author": "Jay Bridge",
