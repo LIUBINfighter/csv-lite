@@ -3,13 +3,12 @@
 
 Simple enough for csv, no more fancy function you need to learn and think!
 
+[中文版本Readme](./README_zh.md)
 <!-- ![image](https://github.com/user-attachments/assets/6d956e79-4be7-4172-92e2-6f14ddba0dda) -->
 
 ![test-sample](./asssets/test-sample.png)
 
 > if you encounter any problems, download `test/test-sample.csv` to see what's different from the test csv file. Issue with an screenshot will help us fix it faster.
-
-[中文版本Readme](./README_zh.md)
 
 ## Introduction
 
