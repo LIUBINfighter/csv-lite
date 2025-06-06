@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Plugin, WorkspaceLeaf, moment } from 'obsidian';
 import { CSVView, VIEW_TYPE_CSV } from "./view";
 import { i18n } from './i18n';
 
@@ -16,10 +16,11 @@ export default class CSVPlugin extends Plugin {
     async onload() {
         await this.loadSettings();
 
-        // 设置语言 - 使用 Obsidian 的语言设置
-        // @ts-ignore - getLanguage方法存在但可能没有在TypeScript定义中正确声明
-        const obsidianLang = this.app.getLanguage ? this.app.getLanguage() : navigator.language || "en";
+        // 使用 moment.locale() 来安全地获取 Obsidian 的当前语言设置
+        const obsidianLang = moment.locale();
         i18n.setLocale(obsidianLang);
+        console.log(`CSV Plugin: Setting locale to '${obsidianLang}'`);
+        console.log(`CSV Plugin: Test translation - buttons.undo: '${i18n.t('buttons.undo')}'`);
 
         // 注册CSV视图类型
         this.registerView(
