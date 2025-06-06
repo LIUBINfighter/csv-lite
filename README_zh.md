@@ -5,6 +5,10 @@
 
 [English Version Readme](./README.md)
 
+![test-sample](./asssets/test-sample.png)
+
+> 如果你遇到任何问题，请下载 `test/test-sample.csv`，对比你的 CSV 文件和测试文件有何不同。提交带有截图的问题可以帮助我们更快地修复。
+
 ## 简介
 
 保持专注！不要浪费时间创建花哨的表格。
