@@ -37,48 +37,48 @@ If your plugin does not need CSS, delete this file.
 .csv-lite-cell-long {
 	white-space: pre-wrap;
 }
-  /* 输入框共享样式 */
-  .csv-cell-input,
-  .csv-edit-input {
-    height: auto;
-    padding: 4px 8px;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
-    box-sizing: border-box;
-    background: var(--background-primary);
-    color: var(--text-normal);
-    font-size: inherit;
-    line-height: 1.4;
-  }
+/* 输入框共享样式 */
+.csv-cell-input,
+.csv-edit-input {
+	height: auto;
+	padding: 4px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	box-sizing: border-box;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: inherit;
+	line-height: 1.4;
+}
 
-  /* csv-cell-input 特有样式（宽度由 JS 控制） */
-  .csv-cell-input {
-    width: 100%;
-  }
+/* csv-cell-input 特有样式（宽度由 JS 控制） */
+.csv-cell-input {
+	width: 100%;
+}
 
-  /* csv-edit-input 特有样式 */
-  .csv-edit-input {
-    width: 75%;
-    margin: 0 auto;
-    display: block;
-    text-align: center;
-  }
+/* csv-edit-input 特有样式 */
+.csv-edit-input {
+	width: 75%;
+	margin: 0 auto;
+	display: block;
+	text-align: center;
+}
 
-  /* 焦点状态样式 */
-  .csv-cell-input:focus,
-  .csv-edit-input:focus {
-    outline: none;
-    border-color: var(--interactive-accent);
-    box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
-  }
-  .csv-operation-buttons {
+/* 焦点状态样式 */
+.csv-cell-input:focus,
+.csv-edit-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+.csv-operation-buttons {
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
-  }
-  
-  /* 列宽调整手柄 */
-  .resize-handle {
+}
+
+/* 列宽调整手柄 */
+.resize-handle {
 	position: absolute;
 	right: 0;
 	top: 0;
@@ -86,104 +86,102 @@ If your plugin does not need CSS, delete this file.
 	width: 5px;
 	background-color: transparent;
 	cursor: col-resize;
-  }
-  
-  .resize-handle:hover, 
-  .resize-handle:active {
+}
+
+.resize-handle:hover,
+.resize-handle:active {
 	background-color: var(--interactive-accent);
-  }
-  
-  
-  /* 长文本单元格样式 */
-  td input:focus {
+}
+
+/* 长文本单元格样式 */
+td input:focus {
 	white-space: pre-wrap;
-  }
-  
-  /* 表格容器，允许水平滚动 */
-  .table-container {
+}
+
+/* 表格容器，允许水平滚动 */
+.table-container {
 	max-width: 100%;
 	overflow-x: auto;
-  }
-  
-  /* 标签页样式 */
-  .csv-tabs {
+}
+
+/* 标签页样式 */
+.csv-tabs {
 	display: flex;
 	flex-direction: column;
 	width: 100%;
 	margin-bottom: 10px;
-  }
-  
-  .csv-tab-headers {
+}
+
+.csv-tab-headers {
 	display: flex;
 	border-bottom: 1px solid var(--background-modifier-border);
-  }
-  
-  .csv-tab-header {
+}
+
+.csv-tab-header {
 	padding: 8px 16px;
 	cursor: pointer;
 	border-bottom: 2px solid transparent;
 	margin-right: 8px;
 	font-weight: 500;
-  }
-  
-  .csv-tab-header:hover {
+}
+
+.csv-tab-header:hover {
 	color: var(--interactive-accent);
-  }
-  
-  .csv-tab-header.csv-tab-active {
+}
+
+.csv-tab-header.csv-tab-active {
 	color: var(--interactive-accent);
 	border-bottom-color: var(--interactive-accent);
-  }
-  
-  .csv-tab-panel {
+}
+
+.csv-tab-panel {
 	display: none;
 	padding: 12px 0;
-  }
-  
-  .csv-tab-panel-active {
+}
+
+.csv-tab-panel-active {
 	display: block;
-  }
-  
-  /* CSV导入导出选项样式 */
-  .csv-export-import {
+}
+
+/* CSV导入导出选项样式 */
+.csv-export-import {
 	margin-top: 12px;
 	padding-top: 12px;
 	border-top: 1px dashed var(--background-modifier-border);
-  }
-  
-  .csv-delimiter-container {
+}
+
+.csv-delimiter-container {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	margin-bottom: 8px;
-  }
-  
-  /* 表头行样式 */
-  .csv-header-row th {
+}
+
+/* 表头行样式 */
+.csv-header-row th {
 	background-color: var(--interactive-accent);
 	color: var(--text-on-accent);
-  }
-  
-  /* 解析器设置样式 */
+}
+
+/* 解析器设置样式 暂时注释掉 */
 .csv-parser-settings {
-  margin-bottom: 16px;
-  padding: 12px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 6px;
-  background-color: var(--background-secondary);
+	display: none;
+	margin-bottom: 16px;
+	padding: 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background-color: var(--background-secondary);
 }
 
 .csv-parser-settings .setting-item {
-  border: none;
-  padding: 8px 0;
+	border: none;
+	padding: 8px 0;
 }
 
 .csv-parser-settings .setting-item-info {
-  margin-right: 16px;
+	margin-right: 16px;
 }
 
 .csv-parser-settings .setting-item-control input {
-  max-width: 200px;
+	max-width: 200px;
 }
-
-
