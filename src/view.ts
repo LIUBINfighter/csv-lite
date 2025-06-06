@@ -1,4 +1,4 @@
-import { TextFileView, ButtonComponent, Notice, DropdownComponent, getIcon, IconName } from "obsidian";
+import { TextFileView, ButtonComponent, Notice, DropdownComponent, getIcon, IconName, Setting } from "obsidian";
 import { CSVUtils, CSVParseConfig } from './utils/csv-utils';
 import { TableHistoryManager } from './utils/history-manager';
 import { TableUtils } from './utils/table-utils';
@@ -20,12 +20,9 @@ export class CSVView extends TextFileView {
   private columnWidths: number[] = [];
   private autoResize: boolean = true;
 
-  // Papa Parse 配置选项
-  private papaConfig: CSVParseConfig = {
-    header: false,
-    dynamicTyping: false,
-    skipEmptyLines: false
-  };
+  // 新增：解析器设置状态
+  private delimiter: string = ',';
+  private quoteChar: string = '"';
 
   // 编辑栏
   private editBarEl: HTMLElement;
@@ -78,8 +75,11 @@ getIcon(): IconName {
 
   setViewData(data: string, clear: boolean) {
     try {
-      // 使用工具类解析CSV数据
-      this.tableData = CSVUtils.parseCSV(data, this.papaConfig);
+      // 使用新的分隔符设置解析CSV数据
+      this.tableData = CSVUtils.parseCSV(data, { 
+        delimiter: this.delimiter,
+        quoteChar: this.quoteChar 
+      });
 
       // 确保至少有一行一列
       if (!this.tableData || this.tableData.length === 0) {
@@ -105,6 +105,13 @@ getIcon(): IconName {
       }
       this.refresh();
     }
+  }
+
+  // 新增：重新解析和刷新视图的方法
+  private reparseAndRefresh() {
+    // 获取原始数据并用新设置重新解析
+    const rawData = this.data;
+    this.setViewData(rawData, false); // 重新运行setViewData但不清除历史
   }
 
   refresh() {
@@ -352,6 +359,34 @@ getIcon(): IconName {
       // 创建操作区
       this.operationEl = this.contentEl.createEl("div", { cls: "csv-operations" });
 
+      // 新增：解析器设置UI
+      const parserSettingsEl = this.operationEl.createEl("div", { cls: "csv-parser-settings" });
+      
+      new Setting(parserSettingsEl)
+        .setName("字段分隔符")
+        .setDesc("用于分隔字段的字符（例如：逗号、分号、制表符）")
+        .addText(text => {
+            text.setValue(this.delimiter)
+                .setPlaceholder("例如：, 或 ; 或 \\t 表示制表符")
+                .onChange(async (value) => {
+                    // 处理制表符的特殊情况
+                    this.delimiter = value === '\\t' ? '\t' : value;
+                    this.reparseAndRefresh();
+                });
+        });
+
+      new Setting(parserSettingsEl)
+        .setName("引号字符")
+        .setDesc("用于包围含有特殊字符的字段")
+        .addText(text => {
+            text.setValue(this.quoteChar)
+                .setPlaceholder('默认为双引号 "')
+                .onChange(async (value) => {
+                    this.quoteChar = value || '"';
+                    this.reparseAndRefresh();
+                });
+        });
+
       // 创建操作按钮容器
       const buttonContainer = this.operationEl.createEl("div", { cls: "csv-operation-buttons" });
 
@@ -456,8 +491,6 @@ getIcon(): IconName {
       // 初始化时刷新视图
       this.refresh();
 
-      // 添加样式
-      // this.addStyles();
     } catch (error) {
       console.error("Error in onOpen:", error);
       new Notice(`Failed to open CSV view: ${error.message}`);

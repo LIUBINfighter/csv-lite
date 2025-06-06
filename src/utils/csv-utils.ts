@@ -1,21 +1,25 @@
 import * as Papa from 'papaparse';
 import { Notice } from 'obsidian';
+import { i18n } from '../i18n';
 
 export interface CSVParseConfig {
     header: boolean;
     dynamicTyping: boolean;
     skipEmptyLines: boolean;
     delimiter?: string;
-    quoteChar?: string;
+    quoteChar: string;
+    escapeChar: string;
 }
 
 export class CSVUtils {
-    // 默认解析配置
+    // 现在这是默认设置的唯一权威来源
     static defaultConfig: CSVParseConfig = {
         header: false,
         dynamicTyping: false,
         skipEmptyLines: false,
-        quoteChar: '"'
+        delimiter: ',',
+        quoteChar: '"', // 关键：这是修复报告bug的关键
+        escapeChar: '"',
     };
 
     /**
@@ -34,8 +38,8 @@ export class CSVUtils {
             return parseResult.data as string[][];
         } catch (error) {
             console.error("CSV解析错误:", error);
-            new Notice("CSV解析失败，请检查文件格式");
-            return [[""]]; // 返回一个空表格
+            new Notice(`${i18n.t('csv.error')}: CSV解析失败，请检查文件格式`);
+            return [[""]];
         }
     }
 
@@ -60,12 +64,14 @@ export class CSVUtils {
         // 找出最大列数
         let maxCols = 0;
         for (const row of tableData) {
-            maxCols = Math.max(maxCols, row.length);
+            if (row) {
+                maxCols = Math.max(maxCols, row.length);
+            }
         }
         
         // 确保每行都有相同的列数
         const normalizedData = tableData.map(row => {
-            const newRow = [...row];
+            const newRow = row ? [...row] : [];
             while (newRow.length < maxCols) {
                 newRow.push("");
             }

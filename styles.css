@@ -164,4 +164,26 @@ If your plugin does not need CSS, delete this file.
 	color: var(--text-on-accent);
   }
   
+  /* 解析器设置样式 */
+.csv-parser-settings {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background-color: var(--background-secondary);
+}
+
+.csv-parser-settings .setting-item {
+  border: none;
+  padding: 8px 0;
+}
+
+.csv-parser-settings .setting-item-info {
+  margin-right: 16px;
+}
+
+.csv-parser-settings .setting-item-control input {
+  max-width: 200px;
+}
+
 
