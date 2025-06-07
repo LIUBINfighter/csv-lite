@@ -317,20 +317,22 @@ td input:focus {
 
 /* 选中行的所有单元格高亮 */
 .csv-row-selected td {
-	background-color: var(--background-modifier-hover);
+	background-color: var(--interactive-accent-hover);
 }
 
 /* 选中列的所有单元格高亮 */
 .csv-col-selected {
-	background-color: var(--background-modifier-hover);
+	background-color: var(--interactive-accent-hover);
 }
 
 /* 选中行的输入框样式调整 */
 .csv-row-selected td .csv-cell-input {
 	background-color: var(--background-primary);
+	border: 1px solid var(--interactive-accent);
 }
 
 /* 选中列的输入框样式调整 */
 .csv-col-selected .csv-cell-input {
 	background-color: var(--background-primary);
+	border: 1px solid var(--interactive-accent);
 }
