@@ -59,7 +59,7 @@ If your plugin does not need CSS, delete this file.
 /* csv-edit-input 特有样式 */
 .csv-edit-input {
 	width: 75%;
-	margin: 0 auto;
+	margin: 0 auto 12px auto; /* 添加底部边距 */
 	display: block;
 	text-align: center;
 }
@@ -98,10 +98,60 @@ td input:focus {
 	white-space: pre-wrap;
 }
 
-/* 表格容器，允许水平滚动 */
+/* 表格容器 */
 .table-container {
-	max-width: 100%;
-	overflow-x: auto;
+    width: 100%;
+}
+
+/* 表格包装器，包含滚动条和主表格 */
+.table-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+}
+
+/* 顶部滚动条样式 */
+.scroll-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-height: 8px;  /* 减小高度 */
+    max-height: 8px;  /* 减小高度 */
+    scrollbar-width: thin; /* Firefox 细滚动条 */
+    scrollbar-color: var(--background-modifier-border) transparent;
+}
+
+/* Webkit (Chrome/Safari) 滚动条样式 */
+.scroll-container::-webkit-scrollbar {
+    height: 6px; /* 更细的滚动条 */
+}
+
+.scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+    background-color: var(--background-modifier-border);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+.scroll-container::-webkit-scrollbar-thumb:hover {
+    background-color: var(--background-modifier-border-hover);
+}
+
+/* 主表格滚动区域 */
+.main-scroll {
+    overflow-y: auto;  /* 只保留垂直滚动 */
+    flex-grow: 1;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+}
+
+/* 清除之前的 margin 设置，使用 gap 代替 */
+.top-scroll, .bottom-scroll {
+    margin: 0;
 }
 
 /* 标签页样式 */

@@ -267,6 +267,31 @@ export class CSVView extends TextFileView {
 				};
 			});
 		}
+
+		// 在完成表格渲染后，更新滚动条容器的宽度
+		// 找到包裹表格的容器元素
+		const tableWrapper = this.tableEl.closest('.table-wrapper');
+		if (tableWrapper) {
+			// 获取表格实际宽度
+			const tableWidth = this.tableEl.offsetWidth;
+			
+			// 更新顶部滚动条容器的宽度
+			const topScroll = tableWrapper.querySelector('.top-scroll');
+			
+			if (topScroll) {
+				// 创建一个与表格等宽的占位div
+				const createSpacer = () => {
+					const spacer = document.createElement('div');
+					spacer.style.width = tableWidth + 'px';
+					spacer.style.height = '1px';
+					return spacer;
+				};
+
+				// 清空并添加新的占位元素
+				topScroll.empty();
+				topScroll.appendChild(createSpacer());
+			}
+		}
 	}
 
 	// 设置活动单元格
@@ -518,8 +543,27 @@ export class CSVView extends TextFileView {
 				}
 			};
 
-			// 创建表格区域 - IMPORTANT: Create this before calling refresh()
-			this.tableEl = this.contentEl.createEl("table");
+			// 创建表格区域 - 只使用顶部滚动条
+			const tableWrapper = this.contentEl.createEl("div", {
+				cls: "table-wrapper",
+			});
+			
+			// 顶部滚动条
+			const topScrollContainer = tableWrapper.createEl("div", {
+				cls: "scroll-container top-scroll",
+			});
+			
+			// 主表格容器
+			const tableContainer = tableWrapper.createEl("div", {
+				cls: "table-container main-scroll",
+			});
+			
+			this.tableEl = tableContainer.createEl("table", {
+				cls: "csv-lite-table",
+			});
+
+			// 设置滚动同步
+			this.setupScrollSync(topScrollContainer, tableContainer);
 
 			// 初始化历史记录
 			if (!this.historyManager) {
@@ -577,6 +621,19 @@ export class CSVView extends TextFileView {
 			this.tableEl = this.contentEl.createEl("table");
 			this.refresh();
 		}
+	}
+
+	// 简化滚动同步方法
+	private setupScrollSync(topScroll: HTMLElement, mainScroll: HTMLElement) {
+		// 监听主表格容器的滚动事件，同步到顶部滚动条
+		mainScroll.addEventListener('scroll', () => {
+			topScroll.scrollLeft = mainScroll.scrollLeft;
+		});
+
+		// 监听顶部滚动条的滚动事件，同步到主表格
+		topScroll.addEventListener('scroll', () => {
+			mainScroll.scrollLeft = topScroll.scrollLeft;
+		});
 	}
 
 	// 需要添加calculateColumnWidths方法
