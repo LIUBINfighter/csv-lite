@@ -20,5 +20,15 @@ export const enUS = {
     fieldSeparatorDesc: 'The character used to separate fields (e.g., comma, semicolon, tab)',
     quoteChar: 'Quote Character',
     quoteCharDesc: 'Character used to enclose fields containing special characters'
+  },
+  search: {
+    placeholder: 'Search table content...',
+    noResults: 'No matching results found',
+    moreResults: '{count} more results...',
+    rowColumn: 'Row {row}, Column {col}'
+  },
+  table: {
+    headerRow: 'Header Row',
+    dataRow: 'Data Row'
   }
 };

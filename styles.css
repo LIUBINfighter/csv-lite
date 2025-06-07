@@ -78,6 +78,7 @@ If your plugin does not need CSS, delete this file.
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
+	align-items: center;
 }
 
 /* 列宽调整手柄 */
@@ -335,4 +336,104 @@ td input:focus {
 .csv-col-selected .csv-cell-input {
 	background-color: var(--background-primary);
 	border: 1px solid var(--interactive-accent);
+}
+
+/* 搜索相关样式 */
+.csv-search-container {
+	position: relative;
+	width: 250px;
+	margin-left: auto; /* 将搜索框推到右侧 */
+}
+
+.csv-search-input {
+	width: 100%;
+	padding: 6px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 13px;
+	height: 32px; /* 与按钮高度保持一致 */
+	box-sizing: border-box;
+}
+
+.csv-search-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.csv-search-results {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	border-top: none;
+	max-height: 300px;
+	overflow-y: auto;
+	z-index: 1000;
+	display: none;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.csv-search-results.show {
+	display: block;
+}
+
+.csv-search-result-item {
+	padding: 8px 12px;
+	cursor: pointer;
+	border-bottom: 1px solid var(--background-modifier-border);
+	transition: background-color 0.15s ease;
+}
+
+.csv-search-result-item:last-child {
+	border-bottom: none;
+}
+
+.csv-search-result-item:hover,
+.csv-search-result-item.csv-search-result-hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.csv-search-result-cell {
+	font-weight: 600;
+	color: var(--interactive-accent);
+	margin-right: 8px;
+}
+
+.csv-search-result-address {
+	font-size: 11px;
+	color: var(--text-muted);
+	margin-left: 8px;
+}
+
+.csv-search-result-preview {
+	margin-top: 4px;
+	font-size: 12px;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.csv-search-highlight {
+	background-color: var(--text-highlight-bg);
+	color: var(--text-accent);
+	padding: 1px 2px;
+	border-radius: 2px;
+	font-weight: 600;
+}
+
+/* 搜索时高亮当前单元格 */
+.csv-search-current {
+	background-color: var(--text-highlight-bg) !important;
+	border: 2px solid var(--interactive-accent) !important;
+}
+
+.csv-search-current .csv-cell-input {
+	background-color: var(--text-highlight-bg) !important;
 }

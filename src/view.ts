@@ -43,6 +43,13 @@ export class CSVView extends TextFileView {
 	private selectedRow: number = -1;
 	private selectedCol: number = -1;
 
+	// 新增：搜索相关属性
+	private searchInput: HTMLInputElement;
+	private searchResults: HTMLElement;
+	private searchContainer: HTMLElement;
+	private searchMatches: Array<{row: number, col: number, value: string}> = [];
+	private currentSearchIndex: number = -1;
+
 	constructor(leaf: any) {
 		super(leaf);
 		this.historyManager = new TableHistoryManager(
@@ -556,8 +563,8 @@ export class CSVView extends TextFileView {
 			});
 
 			new Setting(parserSettingsEl)
-				.setName("字段分隔符")
-				.setDesc("用于分隔字段的字符（例如：逗号、分号、制表符）")
+				.setName(i18n.t("settings.fieldSeparator"))
+				.setDesc(i18n.t("settings.fieldSeparatorDesc"))
 				.addText((text) => {
 					text.setValue(this.delimiter)
 						.setPlaceholder("例如：, 或 ; 或 \\t 表示制表符")
@@ -569,8 +576,8 @@ export class CSVView extends TextFileView {
 				});
 
 			new Setting(parserSettingsEl)
-				.setName("引号字符")
-				.setDesc("用于包围含有特殊字符的字段")
+				.setName(i18n.t("settings.quoteChar"))
+				.setDesc(i18n.t("settings.quoteCharDesc"))
 				.addText((text) => {
 					text.setValue(this.quoteChar)
 						.setPlaceholder('默认为双引号 "')
@@ -625,6 +632,9 @@ export class CSVView extends TextFileView {
 					this.calculateColumnWidths();
 					this.refresh();
 				});
+
+			// 新增：在操作按钮容器中创建搜索容器
+			this.createSearchContainer(buttonContainer);
 
 			// CSV导入导出选项
 			this.operationEl.createEl("div", { cls: "csv-export-import" });
@@ -744,6 +754,310 @@ export class CSVView extends TextFileView {
 		}
 	}
 
+	// 新增：创建搜索容器，接受父容器参数
+	private createSearchContainer(parentContainer?: HTMLElement) {
+		// 如果提供了父容器，在其中创建搜索框，否则在contentEl中创建
+		const container = parentContainer || this.contentEl;
+		
+		this.searchContainer = container.createEl("div", {
+			cls: "csv-search-container",
+		});
+
+		// 创建搜索输入框
+		this.searchInput = this.searchContainer.createEl("input", {
+			cls: "csv-search-input",
+			attr: {
+				type: "text",
+				placeholder: i18n.t("search.placeholder"),
+			},
+		});
+
+		// 创建搜索结果下拉列表
+		this.searchResults = this.searchContainer.createEl("div", {
+			cls: "csv-search-results",
+		});
+
+		// 设置搜索输入事件
+		this.setupSearchEvents();
+	}
+
+	// 新增：设置搜索事件
+	private setupSearchEvents() {
+		let searchTimeout: NodeJS.Timeout;
+
+		// 输入事件 - 防抖搜索
+		this.searchInput.addEventListener("input", () => {
+			clearTimeout(searchTimeout);
+			searchTimeout = setTimeout(() => {
+				this.performSearch(this.searchInput.value);
+			}, 300);
+		});
+
+		// 焦点事件 - 显示结果
+		this.searchInput.addEventListener("focus", () => {
+			if (this.searchMatches.length > 0) {
+				this.searchResults.addClass("show");
+			}
+		});
+
+		// 键盘导航
+		this.searchInput.addEventListener("keydown", (e) => {
+			if (e.key === "ArrowDown") {
+				e.preventDefault();
+				this.navigateSearchResults(1);
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				this.navigateSearchResults(-1);
+			} else if (e.key === "Enter") {
+				e.preventDefault();
+				this.selectCurrentSearchResult();
+			} else if (e.key === "Escape") {
+				this.hideSearchResults();
+			}
+		});
+
+		// 点击外部隐藏结果
+		document.addEventListener("click", (e) => {
+			if (!this.searchContainer.contains(e.target as Node)) {
+				this.hideSearchResults();
+			}
+		});
+	}
+
+	// 新增：执行搜索
+	private performSearch(query: string) {
+		this.searchMatches = [];
+		this.currentSearchIndex = -1;
+
+		if (!query.trim()) {
+			this.hideSearchResults();
+			this.clearSearchHighlights();
+			return;
+		}
+
+		const searchTerm = query.toLowerCase().trim();
+		
+		// 搜索所有单元格
+		for (let i = 0; i < this.tableData.length; i++) {
+			for (let j = 0; j < this.tableData[i].length; j++) {
+				const cellValue = this.tableData[i][j];
+				if (cellValue.toLowerCase().includes(searchTerm)) {
+					this.searchMatches.push({
+						row: i,
+						col: j,
+						value: cellValue
+					});
+				}
+			}
+		}
+
+		this.displaySearchResults(query);
+	}
+
+	// 新增：显示搜索结果
+	private displaySearchResults(query: string) {
+		this.searchResults.empty();
+
+		if (this.searchMatches.length === 0) {
+			const noResults = this.searchResults.createEl("div", {
+				cls: "csv-search-result-item",
+				text: i18n.t("search.noResults"),
+			});
+			noResults.style.color = "var(--text-muted)";
+			this.searchResults.addClass("show");
+			return;
+		}
+
+		// 限制显示前10个结果
+		const displayMatches = this.searchMatches.slice(0, 10);
+		
+		displayMatches.forEach((match, index) => {
+			const resultItem = this.searchResults.createEl("div", {
+				cls: "csv-search-result-item",
+			});
+
+			// 单元格地址和预览
+			const cellInfo = resultItem.createEl("div");
+			
+			const cellAddress = cellInfo.createEl("span", {
+				cls: "csv-search-result-cell",
+				text: this.getCellAddress(match.row, match.col),
+			});
+
+			const addressSpan = cellInfo.createEl("span", {
+				cls: "csv-search-result-address",
+				text: i18n.t("search.rowColumn", { 
+					row: (match.row + 1).toString(), 
+					col: (match.col + 1).toString() 
+				}),
+			});
+
+			// 内容预览（高亮搜索词）
+			const preview = resultItem.createEl("div", {
+				cls: "csv-search-result-preview",
+			});
+			
+			const highlightedText = this.highlightSearchTerm(match.value, query);
+			preview.innerHTML = highlightedText;
+
+			// 点击跳转
+			resultItem.addEventListener("click", () => {
+				this.jumpToCell(match.row, match.col);
+				this.hideSearchResults();
+			});
+
+			// 保存索引用于键盘导航
+			resultItem.setAttribute("data-index", index.toString());
+		});
+
+		if (this.searchMatches.length > 10) {
+			const moreResults = this.searchResults.createEl("div", {
+				cls: "csv-search-result-item",
+				text: i18n.t("search.moreResults", { 
+					count: (this.searchMatches.length - 10).toString() 
+				}),
+			});
+			moreResults.style.color = "var(--text-muted)";
+			moreResults.style.fontStyle = "italic";
+		}
+
+		this.searchResults.addClass("show");
+	}
+
+	// 新增：高亮搜索词
+	private highlightSearchTerm(text: string, searchTerm: string): string {
+		if (!searchTerm.trim()) return text;
+		
+		const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+		return text.replace(regex, '<span class="csv-search-highlight">$1</span>');
+	}
+
+	// 新增：获取单元格地址
+	private getCellAddress(row: number, col: number): string {
+		return `${this.getColumnLabel(col)}${row + 1}`;
+	}
+
+	// 新增：键盘导航搜索结果
+	private navigateSearchResults(direction: number) {
+		const items = this.searchResults.querySelectorAll(".csv-search-result-item[data-index]");
+		if (items.length === 0) return;
+
+		// 移除当前高亮
+		items.forEach(item => item.removeClass("csv-search-result-hover"));
+
+		// 计算新索引
+		this.currentSearchIndex = Math.max(0, Math.min(
+			items.length - 1,
+			this.currentSearchIndex + direction
+		));
+
+		// 高亮当前项
+		const currentItem = items[this.currentSearchIndex] as HTMLElement;
+		if (currentItem) {
+			currentItem.addClass("csv-search-result-hover");
+			currentItem.scrollIntoView({ block: "nearest" });
+		}
+	}
+
+	// 新增：选择当前搜索结果
+	private selectCurrentSearchResult() {
+		if (this.currentSearchIndex >= 0 && this.currentSearchIndex < this.searchMatches.length) {
+			const match = this.searchMatches[this.currentSearchIndex];
+			this.jumpToCell(match.row, match.col);
+			this.hideSearchResults();
+		}
+	}
+
+	// 新增：跳转到指定单元格
+	private jumpToCell(row: number, col: number) {
+		// 清除之前的高亮
+		this.clearSearchHighlights();
+
+		// 找到目标单元格
+		const targetInput = this.findCellInput(row, col);
+		if (targetInput) {
+			// 滚动到视图中
+			targetInput.scrollIntoView({ 
+				behavior: "smooth", 
+				block: "center", 
+				inline: "center" 
+			});
+
+			// 聚焦并选中
+			setTimeout(() => {
+				targetInput.focus();
+				targetInput.select();
+				
+				// 添加高亮效果
+				if (targetInput.parentElement) {
+					targetInput.parentElement.addClass("csv-search-current");
+					
+					// 3秒后移除高亮
+					setTimeout(() => {
+						if (targetInput.parentElement) {
+							targetInput.parentElement.removeClass("csv-search-current");
+						}
+					}, 3000);
+				}
+			}, 100);
+		}
+	}
+
+	// 新增：查找单元格输入框
+	private findCellInput(row: number, col: number): HTMLInputElement | null {
+		// 根据行列位置查找对应的输入框
+		const tableRows = this.tableEl.querySelectorAll("tr");
+		
+		// 考虑表头行的偏移
+		const targetRowIndex = row === 0 ? 1 : row + 1; // 第一行是列号行，第二行是表头数据行
+		
+		if (targetRowIndex < tableRows.length) {
+			const targetRow = tableRows[targetRowIndex];
+			const cells = targetRow.querySelectorAll("td, th");
+			
+			// +1 因为第一列是行号列
+			const targetCellIndex = col + 1;
+			
+			if (targetCellIndex < cells.length) {
+				const targetCell = cells[targetCellIndex];
+				return targetCell.querySelector("input") as HTMLInputElement;
+			}
+		}
+		
+		return null;
+	}
+
+	// 新增：隐藏搜索结果
+	private hideSearchResults() {
+		this.searchResults.removeClass("show");
+		this.currentSearchIndex = -1;
+	}
+
+	// 新增：清除搜索高亮
+	private clearSearchHighlights() {
+		this.tableEl.querySelectorAll(".csv-search-current").forEach(el => {
+			if (el instanceof HTMLElement) {
+				el.removeClass("csv-search-current");
+			}
+		});
+	}
+
+	// 设置表格内容
+	setTableContent(content: string[][]) {
+		this.tableData = content;
+		this.refresh();
+	}
+
+	// 获取表格内容
+	getTableContent(): string[][] {
+		return this.tableData;
+	}
+
+	// 计算列宽
+	calculateColumnWidths() {
+		this.columnWidths = TableUtils.calculateColumnWidths(this.tableData);
+	}
+
 	// 简化滚动同步方法
 	private setupScrollSync(topScroll: HTMLElement, mainScroll: HTMLElement) {
 		// 监听主表格容器的滚动事件，同步到顶部滚动条
@@ -755,11 +1069,6 @@ export class CSVView extends TextFileView {
 		topScroll.addEventListener('scroll', () => {
 			mainScroll.scrollLeft = topScroll.scrollLeft;
 		});
-	}
-
-	// 需要添加calculateColumnWidths方法
-	private calculateColumnWidths() {
-		this.columnWidths = TableUtils.calculateColumnWidths(this.tableData);
 	}
 
 	async onClose() {

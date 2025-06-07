@@ -38,7 +38,7 @@ export class I18n {
     }
   }
 
-  t(key: string): string {
+  t(key: string, params?: Record<string, string | number>): string {
     // 尝试从当前语言获取翻译
     let translatedText = this.getTranslation(key, this.locale);
 
@@ -49,7 +49,17 @@ export class I18n {
     }
 
     // 如果最终还是没找到（例如英语文件也漏了），则返回 key 本身
-    return translatedText ?? key;
+    let result = translatedText ?? key;
+
+    // 如果提供了参数，进行字符串插值
+    if (params) {
+      Object.keys(params).forEach(paramKey => {
+        const placeholder = `{${paramKey}}`;
+        result = result.replace(new RegExp(placeholder, 'g'), String(params[paramKey]));
+      });
+    }
+
+    return result;
   }
 
   // 辅助方法，用于查找翻译

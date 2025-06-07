@@ -20,5 +20,15 @@ export const zhCN = {
     fieldSeparatorDesc: '用于分隔字段的字符（例如：逗号、分号、制表符）',
     quoteChar: '引号字符',
     quoteCharDesc: '用于包围含有特殊字符的字段'
+  },
+  search: {
+    placeholder: '搜索表格内容...',
+    noResults: '未找到匹配结果',
+    moreResults: '还有 {count} 个结果...',
+    rowColumn: '第{row}行，第{col}列'
+  },
+  table: {
+    headerRow: '表头行',
+    dataRow: '数据行'
   }
 };
