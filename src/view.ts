@@ -39,6 +39,10 @@ export class CSVView extends TextFileView {
 	private activeRowIndex: number = -1;
 	private activeColIndex: number = -1;
 
+	// 新增：选中状态
+	private selectedRow: number = -1;
+	private selectedCol: number = -1;
+
 	constructor(leaf: any) {
 		super(leaf);
 		this.historyManager = new TableHistoryManager(
@@ -148,7 +152,7 @@ export class CSVView extends TextFileView {
 
 		this.tableEl.empty();
 
-		// 创建表头行用于调整列宽
+		// 创建表头行（包含列号）
 		const headerRow = this.tableEl.createEl("thead").createEl("tr");
 
 		// 计算初始列宽（如果未设置）
@@ -158,10 +162,44 @@ export class CSVView extends TextFileView {
 			);
 		}
 
-		// 创建表头和调整列宽的手柄
+		// 添加左上角单元格
+		const cornerCell = headerRow.createEl("th", {
+			cls: "csv-corner-cell",
+		});
+
+		// 创建列号行
 		if (this.tableData[0]) {
 			this.tableData[0].forEach((headerCell, index) => {
 				const th = headerRow.createEl("th", {
+					cls: "csv-col-number",
+					attr: {
+						style: `width: ${this.columnWidths[index] || 100}px`,
+					},
+				});
+
+				// 显示列号（A, B, C...）
+				th.textContent = this.getColumnLabel(index);
+
+				// 添加列选择功能
+				th.onclick = () => {
+					this.selectColumn(index);
+				};
+			});
+		}
+
+		// 创建表头数据行
+		const dataHeaderRow = this.tableEl.createEl("thead").createEl("tr");
+		
+		// 添加行号列（表头行）
+		const headerRowNumber = dataHeaderRow.createEl("th", {
+			cls: "csv-row-number",
+		});
+		headerRowNumber.textContent = "0";
+
+		// 添加表头输入框
+		if (this.tableData[0]) {
+			this.tableData[0].forEach((headerCell, index) => {
+				const th = dataHeaderRow.createEl("th", {
 					cls: "csv-th",
 					attr: {
 						style: `width: ${this.columnWidths[index] || 100}px`,
@@ -216,6 +254,18 @@ export class CSVView extends TextFileView {
 			const row = this.tableData[i];
 			const tableRow = tableBody.createEl("tr");
 
+			// 添加行号列
+			const rowNumberCell = tableRow.createEl("td", {
+				cls: "csv-row-number",
+			});
+			rowNumberCell.textContent = i.toString();
+
+			// 添加行选择功能
+			rowNumberCell.onclick = () => {
+				this.selectRow(i);
+			};
+
+			// 添加数据单元格
 			row.forEach((cell, j) => {
 				const td = tableRow.createEl("td", {
 					attr: { style: `width: ${this.columnWidths[j] || 100}px` },
@@ -292,6 +342,77 @@ export class CSVView extends TextFileView {
 				topScroll.appendChild(createSpacer());
 			}
 		}
+	}
+
+	// 新增：获取列标签（A, B, C, ... Z, AA, AB, ...）
+	private getColumnLabel(index: number): string {
+		let result = '';
+		let num = index;
+		do {
+			result = String.fromCharCode(65 + (num % 26)) + result;
+			num = Math.floor(num / 26) - 1;
+		} while (num >= 0);
+		return result;
+	}
+
+	// 新增：选择行
+	private selectRow(rowIndex: number) {
+		// 如果点击的是已选中的行，则取消选择
+		if (this.selectedRow === rowIndex) {
+			this.clearSelection();
+			return;
+		}
+		
+		// 清除之前的选择
+		this.clearSelection();
+		
+		this.selectedRow = rowIndex;
+		
+		// 添加选中样式到整行
+		const rows = this.tableEl.querySelectorAll('tbody tr');
+		const targetRowIndex = rowIndex - 1; // 因为数据行从索引1开始，tbody中的索引需要-1
+		
+		if (rows[targetRowIndex]) {
+			rows[targetRowIndex].addClass('csv-row-selected');
+		}
+	}
+
+	// 新增：选择列
+	private selectColumn(colIndex: number) {
+		// 如果点击的是已选中的列，则取消选择
+		if (this.selectedCol === colIndex) {
+			this.clearSelection();
+			return;
+		}
+		
+		// 清除之前的选择
+		this.clearSelection();
+		
+		this.selectedCol = colIndex;
+		
+		// 添加选中样式到整列（包括列号和所有数据单元格）
+		// colIndex + 2 是因为有行号列(+1)和从0开始的索引(+1)
+		const columnCells = this.tableEl.querySelectorAll(`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`);
+		
+		columnCells.forEach(cell => {
+			if (cell instanceof HTMLElement) {
+				cell.addClass('csv-col-selected');
+			}
+		});
+	}
+
+	// 新增：清除选择
+	private clearSelection() {
+		this.selectedRow = -1;
+		this.selectedCol = -1;
+		
+		// 移除所有选中样式
+		this.tableEl.querySelectorAll('.csv-row-selected, .csv-col-selected').forEach(el => {
+			if (el instanceof HTMLElement) {
+				el.removeClass('csv-row-selected');
+				el.removeClass('csv-col-selected');
+			}
+		});
 	}
 
 	// 设置活动单元格

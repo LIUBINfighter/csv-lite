@@ -13,6 +13,7 @@ If your plugin does not need CSS, delete this file.
 	width: 100%;
 	margin-top: 10px;
 	table-layout: fixed;
+	position: relative;
 }
 
 .csv-lite-table td,
@@ -240,4 +241,96 @@ td input:focus {
 
 .csv-lite-table th .csv-cell-input {
 	background: var(--background-modifier-box-shadow-hover);
+}
+
+/* 行号和列号样式 */
+.csv-row-number,
+.csv-col-number {
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: 0.85em;
+	text-align: center;
+	font-weight: 500;
+	user-select: none;
+	cursor: default;
+}
+
+.csv-row-number {
+	width: 40px;
+	min-width: 40px;
+	max-width: 40px;
+	border-right: 2px solid var(--background-modifier-border);
+	position: sticky;
+	left: 0;
+	z-index: 10;
+}
+
+.csv-col-number {
+	height: 25px;
+	min-height: 25px;
+	max-height: 25px;
+	border-bottom: 2px solid var(--background-modifier-border);
+	position: sticky;
+	top: 0;
+	z-index: 9;
+}
+
+/* 左上角交叉单元格 */
+.csv-corner-cell {
+	background-color: var(--background-secondary);
+	border-right: 2px solid var(--background-modifier-border);
+	border-bottom: 2px solid var(--background-modifier-border);
+	position: sticky;
+	left: 0;
+	top: 0;
+	z-index: 11;
+	width: 40px;
+	min-width: 40px;
+	max-width: 40px;
+	height: 25px;
+	min-height: 25px;
+	max-height: 25px;
+}
+
+/* 调整普通单元格的z-index */
+.csv-lite-table td,
+.csv-lite-table th:not(.csv-row-number):not(.csv-col-number):not(.csv-corner-cell) {
+	/* ...existing code... */
+	z-index: 1;
+}
+
+/* 行号列点击高亮效果 */
+.csv-row-number:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.csv-col-number:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* 选中行/列的高亮效果 - 统一样式 */
+.csv-row-selected .csv-row-number,
+.csv-col-selected.csv-col-number {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+/* 选中行的所有单元格高亮 */
+.csv-row-selected td {
+	background-color: var(--background-modifier-hover);
+}
+
+/* 选中列的所有单元格高亮 */
+.csv-col-selected {
+	background-color: var(--background-modifier-hover);
+}
+
+/* 选中行的输入框样式调整 */
+.csv-row-selected td .csv-cell-input {
+	background-color: var(--background-primary);
+}
+
+/* 选中列的输入框样式调整 */
+.csv-col-selected .csv-cell-input {
+	background-color: var(--background-primary);
 }
