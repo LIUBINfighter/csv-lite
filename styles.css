@@ -13,12 +13,13 @@ If your plugin does not need CSS, delete this file.
 	width: 100%;
 	margin-top: 10px;
 	table-layout: fixed;
+	position: relative;
 }
 
 .csv-lite-table td,
 .csv-lite-table th {
 	border: 1px solid var(--background-modifier-border);
-	padding: 4px 8px;
+	padding: 2px 4px;
 	position: relative;
 	overflow: visible;
 }
@@ -41,8 +42,8 @@ If your plugin does not need CSS, delete this file.
 .csv-cell-input,
 .csv-edit-input {
 	height: auto;
-	padding: 4px 8px;
-	border: 1px solid var(--background-modifier-border);
+	padding: 2px 4px;
+	border: none; /* 移除输入框边框 */
 	border-radius: 4px;
 	box-sizing: border-box;
 	background: var(--background-primary);
@@ -58,23 +59,26 @@ If your plugin does not need CSS, delete this file.
 
 /* csv-edit-input 特有样式 */
 .csv-edit-input {
-	width: 75%;
-	margin: 0 auto;
+	width: 80%;
+	margin: 0 auto 12px auto; /* 添加底部边距 */
 	display: block;
 	text-align: center;
+	border: 1px solid var(--background-modifier-box-shadow);
 }
 
 /* 焦点状态样式 */
 .csv-cell-input:focus,
-.csv-edit-input:focus {
+.csv-edit-input:focus,
+.csv-lite-table th .csv-cell-input:focus {
 	outline: none;
-	border-color: var(--interactive-accent);
-	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2); /* 保留焦点状态的视觉效果 */
 }
+
 .csv-operation-buttons {
 	display: flex;
 	gap: 8px;
 	flex-wrap: wrap;
+	align-items: center;
 }
 
 /* 列宽调整手柄 */
@@ -98,10 +102,60 @@ td input:focus {
 	white-space: pre-wrap;
 }
 
-/* 表格容器，允许水平滚动 */
+/* 表格容器 */
 .table-container {
-	max-width: 100%;
-	overflow-x: auto;
+    width: 100%;
+}
+
+/* 表格包装器，包含滚动条和主表格 */
+.table-wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+}
+
+/* 顶部滚动条样式 */
+.scroll-container {
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-height: 8px;  /* 减小高度 */
+    max-height: 8px;  /* 减小高度 */
+    scrollbar-width: thin; /* Firefox 细滚动条 */
+    scrollbar-color: var(--background-modifier-border) transparent;
+}
+
+/* Webkit (Chrome/Safari) 滚动条样式 */
+.scroll-container::-webkit-scrollbar {
+    height: 6px; /* 更细的滚动条 */
+}
+
+.scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 3px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+    background-color: var(--background-modifier-border);
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+.scroll-container::-webkit-scrollbar-thumb:hover {
+    background-color: var(--background-modifier-border-hover);
+}
+
+/* 主表格滚动区域 */
+.main-scroll {
+    overflow-y: auto;  /* 只保留垂直滚动 */
+    flex-grow: 1;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 4px;
+}
+
+/* 清除之前的 margin 设置，使用 gap 代替 */
+.top-scroll, .bottom-scroll {
+    margin: 0;
 }
 
 /* 标签页样式 */
@@ -184,4 +238,202 @@ td input:focus {
 
 .csv-parser-settings .setting-item-control input {
 	max-width: 200px;
+}
+
+.csv-lite-table th .csv-cell-input {
+	background: var(--background-modifier-box-shadow-hover);
+}
+
+/* 行号和列号样式 */
+.csv-row-number,
+.csv-col-number {
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: 0.85em;
+	text-align: center;
+	font-weight: 500;
+	user-select: none;
+	cursor: default;
+}
+
+.csv-row-number {
+	width: 40px;
+	min-width: 40px;
+	max-width: 40px;
+	border-right: 2px solid var(--background-modifier-border);
+	position: sticky;
+	left: 0;
+	z-index: 10;
+}
+
+.csv-col-number {
+	height: 25px;
+	min-height: 25px;
+	max-height: 25px;
+	border-bottom: 2px solid var(--background-modifier-border);
+	position: sticky;
+	top: 0;
+	z-index: 9;
+}
+
+/* 左上角交叉单元格 */
+.csv-corner-cell {
+	background-color: var(--background-secondary);
+	border-right: 2px solid var(--background-modifier-border);
+	border-bottom: 2px solid var(--background-modifier-border);
+	position: sticky;
+	left: 0;
+	top: 0;
+	z-index: 11;
+	width: 40px;
+	min-width: 40px;
+	max-width: 40px;
+	height: 25px;
+	min-height: 25px;
+	max-height: 25px;
+}
+
+/* 调整普通单元格的z-index */
+.csv-lite-table td,
+.csv-lite-table th:not(.csv-row-number):not(.csv-col-number):not(.csv-corner-cell) {
+	/* ...existing code... */
+	z-index: 1;
+}
+
+/* 行号列点击高亮效果 */
+.csv-row-number:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.csv-col-number:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+/* 选中行/列的高亮效果 - 统一样式 */
+.csv-row-selected .csv-row-number,
+.csv-col-selected.csv-col-number {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+/* 选中行的所有单元格高亮 */
+.csv-row-selected td {
+	background-color: var(--interactive-accent-hover);
+}
+
+/* 选中列的所有单元格高亮 */
+.csv-col-selected {
+	background-color: var(--interactive-accent-hover);
+}
+
+/* 选中行的输入框样式调整 */
+.csv-row-selected td .csv-cell-input {
+	background-color: var(--background-primary);
+	border: 1px solid var(--interactive-accent);
+}
+
+/* 选中列的输入框样式调整 */
+.csv-col-selected .csv-cell-input {
+	background-color: var(--background-primary);
+	border: 1px solid var(--interactive-accent);
+}
+
+/* 搜索相关样式 */
+.csv-search-container {
+	position: relative;
+	width: 250px;
+	margin-left: auto; /* 将搜索框推到右侧 */
+}
+
+.csv-search-input {
+	width: 100%;
+	padding: 6px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: 13px;
+	height: 32px; /* 与按钮高度保持一致 */
+	box-sizing: border-box;
+}
+
+.csv-search-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+}
+
+.csv-search-results {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	right: 0;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	border-top: none;
+	max-height: 300px;
+	overflow-y: auto;
+	z-index: 1000;
+	display: none;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.csv-search-results.show {
+	display: block;
+}
+
+.csv-search-result-item {
+	padding: 8px 12px;
+	cursor: pointer;
+	border-bottom: 1px solid var(--background-modifier-border);
+	transition: background-color 0.15s ease;
+}
+
+.csv-search-result-item:last-child {
+	border-bottom: none;
+}
+
+.csv-search-result-item:hover,
+.csv-search-result-item.csv-search-result-hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.csv-search-result-cell {
+	font-weight: 600;
+	color: var(--interactive-accent);
+	margin-right: 8px;
+}
+
+.csv-search-result-address {
+	font-size: 11px;
+	color: var(--text-muted);
+	margin-left: 8px;
+}
+
+.csv-search-result-preview {
+	margin-top: 4px;
+	font-size: 12px;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.csv-search-highlight {
+	background-color: var(--text-highlight-bg);
+	color: var(--text-accent);
+	padding: 1px 2px;
+	border-radius: 2px;
+	font-weight: 600;
+}
+
+/* 搜索时高亮当前单元格 */
+.csv-search-current {
+	background-color: var(--text-highlight-bg) !important;
+	border: 2px solid var(--interactive-accent) !important;
+}
+
+.csv-search-current .csv-cell-input {
+	background-color: var(--text-highlight-bg) !important;
 }

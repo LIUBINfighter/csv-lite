@@ -24,10 +24,13 @@ csv_metadata
 scripts
 
 # test
-*.csv
+# *.csv
 
 # Exclude macOS Finder (System Explorer) View States
 .DS_Store
 
 # Test coverage reports
 coverage/
+
+# currently local
+test/complex-test.csv

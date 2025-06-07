@@ -39,6 +39,17 @@ export class CSVView extends TextFileView {
 	private activeRowIndex: number = -1;
 	private activeColIndex: number = -1;
 
+	// 新增：选中状态
+	private selectedRow: number = -1;
+	private selectedCol: number = -1;
+
+	// 新增：搜索相关属性
+	private searchInput: HTMLInputElement;
+	private searchResults: HTMLElement;
+	private searchContainer: HTMLElement;
+	private searchMatches: Array<{row: number, col: number, value: string}> = [];
+	private currentSearchIndex: number = -1;
+
 	constructor(leaf: any) {
 		super(leaf);
 		this.historyManager = new TableHistoryManager(
@@ -148,7 +159,7 @@ export class CSVView extends TextFileView {
 
 		this.tableEl.empty();
 
-		// 创建表头行用于调整列宽
+		// 创建表头行（包含列号）
 		const headerRow = this.tableEl.createEl("thead").createEl("tr");
 
 		// 计算初始列宽（如果未设置）
@@ -158,10 +169,44 @@ export class CSVView extends TextFileView {
 			);
 		}
 
-		// 创建表头和调整列宽的手柄
+		// 添加左上角单元格
+		const cornerCell = headerRow.createEl("th", {
+			cls: "csv-corner-cell",
+		});
+
+		// 创建列号行
 		if (this.tableData[0]) {
 			this.tableData[0].forEach((headerCell, index) => {
 				const th = headerRow.createEl("th", {
+					cls: "csv-col-number",
+					attr: {
+						style: `width: ${this.columnWidths[index] || 100}px`,
+					},
+				});
+
+				// 显示列号（A, B, C...）
+				th.textContent = this.getColumnLabel(index);
+
+				// 添加列选择功能
+				th.onclick = () => {
+					this.selectColumn(index);
+				};
+			});
+		}
+
+		// 创建表头数据行
+		const dataHeaderRow = this.tableEl.createEl("thead").createEl("tr");
+		
+		// 添加行号列（表头行）
+		const headerRowNumber = dataHeaderRow.createEl("th", {
+			cls: "csv-row-number",
+		});
+		headerRowNumber.textContent = "0";
+
+		// 添加表头输入框
+		if (this.tableData[0]) {
+			this.tableData[0].forEach((headerCell, index) => {
+				const th = dataHeaderRow.createEl("th", {
 					cls: "csv-th",
 					attr: {
 						style: `width: ${this.columnWidths[index] || 100}px`,
@@ -216,6 +261,18 @@ export class CSVView extends TextFileView {
 			const row = this.tableData[i];
 			const tableRow = tableBody.createEl("tr");
 
+			// 添加行号列
+			const rowNumberCell = tableRow.createEl("td", {
+				cls: "csv-row-number",
+			});
+			rowNumberCell.textContent = i.toString();
+
+			// 添加行选择功能
+			rowNumberCell.onclick = () => {
+				this.selectRow(i);
+			};
+
+			// 添加数据单元格
 			row.forEach((cell, j) => {
 				const td = tableRow.createEl("td", {
 					attr: { style: `width: ${this.columnWidths[j] || 100}px` },
@@ -267,6 +324,102 @@ export class CSVView extends TextFileView {
 				};
 			});
 		}
+
+		// 在完成表格渲染后，更新滚动条容器的宽度
+		// 找到包裹表格的容器元素
+		const tableWrapper = this.tableEl.closest('.table-wrapper');
+		if (tableWrapper) {
+			// 获取表格实际宽度
+			const tableWidth = this.tableEl.offsetWidth;
+			
+			// 更新顶部滚动条容器的宽度
+			const topScroll = tableWrapper.querySelector('.top-scroll');
+			
+			if (topScroll) {
+				// 创建一个与表格等宽的占位div
+				const createSpacer = () => {
+					const spacer = document.createElement('div');
+					spacer.style.width = tableWidth + 'px';
+					spacer.style.height = '1px';
+					return spacer;
+				};
+
+				// 清空并添加新的占位元素
+				topScroll.empty();
+				topScroll.appendChild(createSpacer());
+			}
+		}
+	}
+
+	// 新增：获取列标签（A, B, C, ... Z, AA, AB, ...）
+	private getColumnLabel(index: number): string {
+		let result = '';
+		let num = index;
+		do {
+			result = String.fromCharCode(65 + (num % 26)) + result;
+			num = Math.floor(num / 26) - 1;
+		} while (num >= 0);
+		return result;
+	}
+
+	// 新增：选择行
+	private selectRow(rowIndex: number) {
+		// 如果点击的是已选中的行，则取消选择
+		if (this.selectedRow === rowIndex) {
+			this.clearSelection();
+			return;
+		}
+		
+		// 清除之前的选择
+		this.clearSelection();
+		
+		this.selectedRow = rowIndex;
+		
+		// 添加选中样式到整行
+		const rows = this.tableEl.querySelectorAll('tbody tr');
+		const targetRowIndex = rowIndex - 1; // 因为数据行从索引1开始，tbody中的索引需要-1
+		
+		if (rows[targetRowIndex]) {
+			rows[targetRowIndex].addClass('csv-row-selected');
+		}
+	}
+
+	// 新增：选择列
+	private selectColumn(colIndex: number) {
+		// 如果点击的是已选中的列，则取消选择
+		if (this.selectedCol === colIndex) {
+			this.clearSelection();
+			return;
+		}
+		
+		// 清除之前的选择
+		this.clearSelection();
+		
+		this.selectedCol = colIndex;
+		
+		// 添加选中样式到整列（包括列号和所有数据单元格）
+		// colIndex + 2 是因为有行号列(+1)和从0开始的索引(+1)
+		const columnCells = this.tableEl.querySelectorAll(`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`);
+		
+		columnCells.forEach(cell => {
+			if (cell instanceof HTMLElement) {
+				cell.addClass('csv-col-selected');
+			}
+		});
+	}
+
+	// 新增：清除选择
+	private clearSelection() {
+		this.selectedRow = -1;
+		this.selectedCol = -1;
+		
+		// 移除所有选中样式
+		this.tableEl.querySelectorAll('.csv-row-selected, .csv-col-selected').forEach(el => {
+			if (el instanceof HTMLElement) {
+				el.removeClass('csv-row-selected');
+				el.removeClass('csv-col-selected');
+			}
+		});
 	}
 
 	// 设置活动单元格
@@ -410,8 +563,8 @@ export class CSVView extends TextFileView {
 			});
 
 			new Setting(parserSettingsEl)
-				.setName("字段分隔符")
-				.setDesc("用于分隔字段的字符（例如：逗号、分号、制表符）")
+				.setName(i18n.t("settings.fieldSeparator"))
+				.setDesc(i18n.t("settings.fieldSeparatorDesc"))
 				.addText((text) => {
 					text.setValue(this.delimiter)
 						.setPlaceholder("例如：, 或 ; 或 \\t 表示制表符")
@@ -423,8 +576,8 @@ export class CSVView extends TextFileView {
 				});
 
 			new Setting(parserSettingsEl)
-				.setName("引号字符")
-				.setDesc("用于包围含有特殊字符的字段")
+				.setName(i18n.t("settings.quoteChar"))
+				.setDesc(i18n.t("settings.quoteCharDesc"))
 				.addText((text) => {
 					text.setValue(this.quoteChar)
 						.setPlaceholder('默认为双引号 "')
@@ -480,6 +633,9 @@ export class CSVView extends TextFileView {
 					this.refresh();
 				});
 
+			// 新增：在操作按钮容器中创建搜索容器
+			this.createSearchContainer(buttonContainer);
+
 			// CSV导入导出选项
 			this.operationEl.createEl("div", { cls: "csv-export-import" });
 
@@ -518,8 +674,27 @@ export class CSVView extends TextFileView {
 				}
 			};
 
-			// 创建表格区域 - IMPORTANT: Create this before calling refresh()
-			this.tableEl = this.contentEl.createEl("table");
+			// 创建表格区域 - 只使用顶部滚动条
+			const tableWrapper = this.contentEl.createEl("div", {
+				cls: "table-wrapper",
+			});
+			
+			// 顶部滚动条
+			const topScrollContainer = tableWrapper.createEl("div", {
+				cls: "scroll-container top-scroll",
+			});
+			
+			// 主表格容器
+			const tableContainer = tableWrapper.createEl("div", {
+				cls: "table-container main-scroll",
+			});
+			
+			this.tableEl = tableContainer.createEl("table", {
+				cls: "csv-lite-table",
+			});
+
+			// 设置滚动同步
+			this.setupScrollSync(topScrollContainer, tableContainer);
 
 			// 初始化历史记录
 			if (!this.historyManager) {
@@ -579,9 +754,321 @@ export class CSVView extends TextFileView {
 		}
 	}
 
-	// 需要添加calculateColumnWidths方法
-	private calculateColumnWidths() {
+	// 新增：创建搜索容器，接受父容器参数
+	private createSearchContainer(parentContainer?: HTMLElement) {
+		// 如果提供了父容器，在其中创建搜索框，否则在contentEl中创建
+		const container = parentContainer || this.contentEl;
+		
+		this.searchContainer = container.createEl("div", {
+			cls: "csv-search-container",
+		});
+
+		// 创建搜索输入框
+		this.searchInput = this.searchContainer.createEl("input", {
+			cls: "csv-search-input",
+			attr: {
+				type: "text",
+				placeholder: i18n.t("search.placeholder"),
+			},
+		});
+
+		// 创建搜索结果下拉列表
+		this.searchResults = this.searchContainer.createEl("div", {
+			cls: "csv-search-results",
+		});
+
+		// 设置搜索输入事件
+		this.setupSearchEvents();
+	}
+
+	// 新增：设置搜索事件
+	private setupSearchEvents() {
+		let searchTimeout: NodeJS.Timeout;
+
+		// 输入事件 - 防抖搜索
+		this.searchInput.addEventListener("input", () => {
+			clearTimeout(searchTimeout);
+			searchTimeout = setTimeout(() => {
+				this.performSearch(this.searchInput.value);
+			}, 300);
+		});
+
+		// 焦点事件 - 显示结果
+		this.searchInput.addEventListener("focus", () => {
+			if (this.searchMatches.length > 0) {
+				this.searchResults.addClass("show");
+			}
+		});
+
+		// 键盘导航
+		this.searchInput.addEventListener("keydown", (e) => {
+			if (e.key === "ArrowDown") {
+				e.preventDefault();
+				this.navigateSearchResults(1);
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault();
+				this.navigateSearchResults(-1);
+			} else if (e.key === "Enter") {
+				e.preventDefault();
+				this.selectCurrentSearchResult();
+			} else if (e.key === "Escape") {
+				this.hideSearchResults();
+			}
+		});
+
+		// 点击外部隐藏结果
+		document.addEventListener("click", (e) => {
+			if (!this.searchContainer.contains(e.target as Node)) {
+				this.hideSearchResults();
+			}
+		});
+	}
+
+	// 新增：执行搜索
+	private performSearch(query: string) {
+		this.searchMatches = [];
+		this.currentSearchIndex = -1;
+
+		if (!query.trim()) {
+			this.hideSearchResults();
+			this.clearSearchHighlights();
+			return;
+		}
+
+		const searchTerm = query.toLowerCase().trim();
+		
+		// 搜索所有单元格
+		for (let i = 0; i < this.tableData.length; i++) {
+			for (let j = 0; j < this.tableData[i].length; j++) {
+				const cellValue = this.tableData[i][j];
+				if (cellValue.toLowerCase().includes(searchTerm)) {
+					this.searchMatches.push({
+						row: i,
+						col: j,
+						value: cellValue
+					});
+				}
+			}
+		}
+
+		this.displaySearchResults(query);
+	}
+
+	// 新增：显示搜索结果
+	private displaySearchResults(query: string) {
+		this.searchResults.empty();
+
+		if (this.searchMatches.length === 0) {
+			const noResults = this.searchResults.createEl("div", {
+				cls: "csv-search-result-item",
+				text: i18n.t("search.noResults"),
+			});
+			noResults.style.color = "var(--text-muted)";
+			this.searchResults.addClass("show");
+			return;
+		}
+
+		// 限制显示前10个结果
+		const displayMatches = this.searchMatches.slice(0, 10);
+		
+		displayMatches.forEach((match, index) => {
+			const resultItem = this.searchResults.createEl("div", {
+				cls: "csv-search-result-item",
+			});
+
+			// 单元格地址和预览
+			const cellInfo = resultItem.createEl("div");
+			
+			const cellAddress = cellInfo.createEl("span", {
+				cls: "csv-search-result-cell",
+				text: this.getCellAddress(match.row, match.col),
+			});
+
+			const addressSpan = cellInfo.createEl("span", {
+				cls: "csv-search-result-address",
+				text: i18n.t("search.rowColumn", { 
+					row: (match.row + 1).toString(), 
+					col: (match.col + 1).toString() 
+				}),
+			});
+
+			// 内容预览（高亮搜索词）
+			const preview = resultItem.createEl("div", {
+				cls: "csv-search-result-preview",
+			});
+			
+			const highlightedText = this.highlightSearchTerm(match.value, query);
+			preview.innerHTML = highlightedText;
+
+			// 点击跳转
+			resultItem.addEventListener("click", () => {
+				this.jumpToCell(match.row, match.col);
+				this.hideSearchResults();
+			});
+
+			// 保存索引用于键盘导航
+			resultItem.setAttribute("data-index", index.toString());
+		});
+
+		if (this.searchMatches.length > 10) {
+			const moreResults = this.searchResults.createEl("div", {
+				cls: "csv-search-result-item",
+				text: i18n.t("search.moreResults", { 
+					count: (this.searchMatches.length - 10).toString() 
+				}),
+			});
+			moreResults.style.color = "var(--text-muted)";
+			moreResults.style.fontStyle = "italic";
+		}
+
+		this.searchResults.addClass("show");
+	}
+
+	// 新增：高亮搜索词
+	private highlightSearchTerm(text: string, searchTerm: string): string {
+		if (!searchTerm.trim()) return text;
+		
+		const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+		return text.replace(regex, '<span class="csv-search-highlight">$1</span>');
+	}
+
+	// 新增：获取单元格地址
+	private getCellAddress(row: number, col: number): string {
+		return `${this.getColumnLabel(col)}${row + 1}`;
+	}
+
+	// 新增：键盘导航搜索结果
+	private navigateSearchResults(direction: number) {
+		const items = this.searchResults.querySelectorAll(".csv-search-result-item[data-index]");
+		if (items.length === 0) return;
+
+		// 移除当前高亮
+		items.forEach(item => item.removeClass("csv-search-result-hover"));
+
+		// 计算新索引
+		this.currentSearchIndex = Math.max(0, Math.min(
+			items.length - 1,
+			this.currentSearchIndex + direction
+		));
+
+		// 高亮当前项
+		const currentItem = items[this.currentSearchIndex] as HTMLElement;
+		if (currentItem) {
+			currentItem.addClass("csv-search-result-hover");
+			currentItem.scrollIntoView({ block: "nearest" });
+		}
+	}
+
+	// 新增：选择当前搜索结果
+	private selectCurrentSearchResult() {
+		if (this.currentSearchIndex >= 0 && this.currentSearchIndex < this.searchMatches.length) {
+			const match = this.searchMatches[this.currentSearchIndex];
+			this.jumpToCell(match.row, match.col);
+			this.hideSearchResults();
+		}
+	}
+
+	// 新增：跳转到指定单元格
+	private jumpToCell(row: number, col: number) {
+		// 清除之前的高亮
+		this.clearSearchHighlights();
+
+		// 找到目标单元格
+		const targetInput = this.findCellInput(row, col);
+		if (targetInput) {
+			// 滚动到视图中
+			targetInput.scrollIntoView({ 
+				behavior: "smooth", 
+				block: "center", 
+				inline: "center" 
+			});
+
+			// 聚焦并选中
+			setTimeout(() => {
+				targetInput.focus();
+				targetInput.select();
+				
+				// 添加高亮效果
+				if (targetInput.parentElement) {
+					targetInput.parentElement.addClass("csv-search-current");
+					
+					// 3秒后移除高亮
+					setTimeout(() => {
+						if (targetInput.parentElement) {
+							targetInput.parentElement.removeClass("csv-search-current");
+						}
+					}, 3000);
+				}
+			}, 100);
+		}
+	}
+
+	// 新增：查找单元格输入框
+	private findCellInput(row: number, col: number): HTMLInputElement | null {
+		// 根据行列位置查找对应的输入框
+		const tableRows = this.tableEl.querySelectorAll("tr");
+		
+		// 考虑表头行的偏移
+		const targetRowIndex = row === 0 ? 1 : row + 1; // 第一行是列号行，第二行是表头数据行
+		
+		if (targetRowIndex < tableRows.length) {
+			const targetRow = tableRows[targetRowIndex];
+			const cells = targetRow.querySelectorAll("td, th");
+			
+			// +1 因为第一列是行号列
+			const targetCellIndex = col + 1;
+			
+			if (targetCellIndex < cells.length) {
+				const targetCell = cells[targetCellIndex];
+				return targetCell.querySelector("input") as HTMLInputElement;
+			}
+		}
+		
+		return null;
+	}
+
+	// 新增：隐藏搜索结果
+	private hideSearchResults() {
+		this.searchResults.removeClass("show");
+		this.currentSearchIndex = -1;
+	}
+
+	// 新增：清除搜索高亮
+	private clearSearchHighlights() {
+		this.tableEl.querySelectorAll(".csv-search-current").forEach(el => {
+			if (el instanceof HTMLElement) {
+				el.removeClass("csv-search-current");
+			}
+		});
+	}
+
+	// 设置表格内容
+	setTableContent(content: string[][]) {
+		this.tableData = content;
+		this.refresh();
+	}
+
+	// 获取表格内容
+	getTableContent(): string[][] {
+		return this.tableData;
+	}
+
+	// 计算列宽
+	calculateColumnWidths() {
 		this.columnWidths = TableUtils.calculateColumnWidths(this.tableData);
+	}
+
+	// 简化滚动同步方法
+	private setupScrollSync(topScroll: HTMLElement, mainScroll: HTMLElement) {
+		// 监听主表格容器的滚动事件，同步到顶部滚动条
+		mainScroll.addEventListener('scroll', () => {
+			topScroll.scrollLeft = mainScroll.scrollLeft;
+		});
+
+		// 监听顶部滚动条的滚动事件，同步到主表格
+		topScroll.addEventListener('scroll', () => {
+			mainScroll.scrollLeft = topScroll.scrollLeft;
+		});
 	}
 
 	async onClose() {
