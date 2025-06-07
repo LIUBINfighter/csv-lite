@@ -18,7 +18,7 @@ If your plugin does not need CSS, delete this file.
 .csv-lite-table td,
 .csv-lite-table th {
 	border: 1px solid var(--background-modifier-border);
-	padding: 4px 8px;
+	padding: 2px 4px;
 	position: relative;
 	overflow: visible;
 }
@@ -41,8 +41,8 @@ If your plugin does not need CSS, delete this file.
 .csv-cell-input,
 .csv-edit-input {
 	height: auto;
-	padding: 4px 8px;
-	border: 1px solid var(--background-modifier-border);
+	padding: 2px 4px;
+	border: none; /* 移除输入框边框 */
 	border-radius: 4px;
 	box-sizing: border-box;
 	background: var(--background-primary);
@@ -58,19 +58,21 @@ If your plugin does not need CSS, delete this file.
 
 /* csv-edit-input 特有样式 */
 .csv-edit-input {
-	width: 75%;
+	width: 80%;
 	margin: 0 auto 12px auto; /* 添加底部边距 */
 	display: block;
 	text-align: center;
+	border: 1px solid var(--background-modifier-box-shadow);
 }
 
 /* 焦点状态样式 */
 .csv-cell-input:focus,
-.csv-edit-input:focus {
+.csv-edit-input:focus,
+.csv-lite-table th .csv-cell-input:focus {
 	outline: none;
-	border-color: var(--interactive-accent);
-	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+	box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2); /* 保留焦点状态的视觉效果 */
 }
+
 .csv-operation-buttons {
 	display: flex;
 	gap: 8px;
@@ -234,4 +236,8 @@ td input:focus {
 
 .csv-parser-settings .setting-item-control input {
 	max-width: 200px;
+}
+
+.csv-lite-table th .csv-cell-input {
+	background: var(--background-modifier-box-shadow-hover);
 }
