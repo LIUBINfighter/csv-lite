@@ -5,7 +5,9 @@
 
 [English Version Readme](./README.md)
 
-![test-sample](./asssets/test-sample.png)
+<!-- ![test-sample](./asssets/test-sample.png) -->
+
+![v1.0.2 support searching](./asssets/searching.png)
 
 > 如果你遇到任何问题，请下载 `test/test-sample.csv`，对比你的 CSV 文件和测试文件有何不同。提交带有截图的问题可以帮助我们更快地修复。
 
