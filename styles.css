@@ -85,42 +85,42 @@ If your plugin does not need CSS, delete this file.
 
 /* 工具栏吸顶样式 */
 .csv-toolbar-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: var(--background-primary);
-  box-shadow: 0 2px 6px -2px rgba(0,0,0,0.06);
-  padding-bottom: 4px;
+	position: sticky;
+	top: 0;
+	z-index: 20;
+	background: var(--background-primary);
+	box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.06);
+	padding-bottom: 4px;
 }
 
 /* 按钮组样式 */
 .csv-buttons-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 /* 搜索栏样式 */
 .csv-search-bar-container {
-  display: flex;
-  justify-content: flex-end;
-  flex: 1 1 220px;
-  min-width: 180px;
-  max-width: 320px;
+	display: flex;
+	justify-content: flex-end;
+	flex: 1 1 220px;
+	min-width: 180px;
+	max-width: 320px;
 }
 
 .csv-search-bar-container .csv-search-container {
-  width: 100%;
+	width: 100%;
 }
 
 /* 让搜索输入和按钮高度一致 */
 .csv-search-input {
-  height: 32px;
-  font-size: 1em;
-  padding: 0 8px;
-  border-radius: 4px;
-  border: 1px solid var(--background-modifier-border);
-  background: var(--background-secondary);
+	height: 32px;
+	font-size: 1em;
+	padding: 0 8px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
 }
 
 /* 列宽调整手柄 */
@@ -146,60 +146,61 @@ td input:focus {
 
 /* 表格容器 */
 .table-container {
-    width: 100%;
-    position: relative; /* 确保可以使用 z-index */
-    z-index: 5; /* 设置表格的层级 */
+	width: 100%;
+	position: relative; /* 确保可以使用 z-index */
+	z-index: 5; /* 设置表格的层级 */
 }
 
 /* 表格包装器，包含滚动条和主表格 */
 .table-wrapper {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    gap: 8px;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	gap: 8px;
 }
 
 /* 顶部滚动条样式 */
 .scroll-container {
-    overflow-x: auto;
-    overflow-y: hidden;
-    min-height: 8px;  /* 减小高度 */
-    max-height: 8px;  /* 减小高度 */
-    scrollbar-width: thin; /* Firefox 细滚动条 */
-    scrollbar-color: var(--background-modifier-border) transparent;
+	overflow-x: auto;
+	overflow-y: hidden;
+	min-height: 8px; /* 减小高度 */
+	max-height: 8px; /* 减小高度 */
+	scrollbar-width: thin; /* Firefox 细滚动条 */
+	scrollbar-color: var(--background-modifier-border) transparent;
 }
 
 /* Webkit (Chrome/Safari) 滚动条样式 */
 .scroll-container::-webkit-scrollbar {
-    height: 6px; /* 更细的滚动条 */
+	height: 6px; /* 更细的滚动条 */
 }
 
 .scroll-container::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 3px;
+	background: transparent;
+	border-radius: 3px;
 }
 
 .scroll-container::-webkit-scrollbar-thumb {
-    background-color: var(--background-modifier-border);
-    border-radius: 3px;
-    transition: background-color 0.2s ease;
+	background-color: var(--background-modifier-border);
+	border-radius: 3px;
+	transition: background-color 0.2s ease;
 }
 
 .scroll-container::-webkit-scrollbar-thumb:hover {
-    background-color: var(--background-modifier-border-hover);
+	background-color: var(--background-modifier-border-hover);
 }
 
 /* 主表格滚动区域 */
 .main-scroll {
-    overflow-y: auto;  /* 只保留垂直滚动 */
-    flex-grow: 1;
-    border: 1px solid var(--background-modifier-border);
-    border-radius: 4px;
+	overflow-y: auto; /* 只保留垂直滚动 */
+	flex-grow: 1;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
 }
 
 /* 清除之前的 margin 设置，使用 gap 代替 */
-.top-scroll, .bottom-scroll {
-    margin: 0;
+.top-scroll,
+.bottom-scroll {
+	margin: 0;
 }
 
 /* 标签页样式 */
@@ -325,7 +326,8 @@ td input:focus {
 
 /* 调整普通单元格的z-index */
 .csv-lite-table td,
-.csv-lite-table th:not(.csv-row-number):not(.csv-col-number):not(.csv-corner-cell) {
+.csv-lite-table
+	th:not(.csv-row-number):not(.csv-col-number):not(.csv-corner-cell) {
 	/* ...existing code... */
 	z-index: 1;
 }
@@ -470,69 +472,97 @@ td input:focus {
 
 /* 源码模式样式 */
 .csv-source-mode {
-  font-family: var(--font-monospace, monospace);
-  font-size: 1em;
-  width: 100%;
-  min-height: 300px;
-  resize: vertical;
-  box-sizing: border-box;
-  margin: 1em 0;
-  padding: 0.5em;
-  background: var(--background-secondary);
-  color: var(--text-normal);
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
+	font-family: var(--font-monospace, monospace);
+	font-size: 1em;
+	width: 100%;
+	min-height: 300px;
+	resize: vertical;
+	box-sizing: border-box;
+	margin: 1em 0;
+	padding: 0.5em;
+	background: var(--background-secondary);
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
 }
 
 /* 暂时隐藏行和列操作按钮 */
-.csv-insert-row-btn,
+/* .csv-insert-row-btn,
 .csv-insert-col-btn,
 .csv-del-row-btn,
 .csv-del-col-btn {
   display: none !important;
-}
+} */
 
 /* 插入/删除行列按钮样式 */
 .csv-insert-row-btn,
 .csv-insert-col-btn,
 .csv-del-row-btn,
 .csv-del-col-btn {
-  display: none;
-  position: absolute;
-  z-index: 20;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  margin: 0 2px;
-  border: none;
-  border-radius: 50%;
-  background: var(--background-secondary-alt, #f0f0f0);
-  color: var(--text-muted);
-  font-size: 14px;
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+	display: none;
+	position: absolute;
+	z-index: 20;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	margin: 0 2px;
+	border: none;
+	border-radius: 50%;
+	background: var(--background-secondary-alt, #f0f0f0);
+	color: var(--text-muted);
+	font-size: 14px;
+	cursor: pointer;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+	transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 .csv-insert-row-btn:hover,
 .csv-insert-col-btn:hover,
 .csv-del-row-btn:hover,
 .csv-del-col-btn:hover {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* 行按钮定位调整 */
-.csv-insert-row-btn.above { top: -12px; left: 0%; transform: translateX(-50%); }
-.csv-insert-row-btn.below { bottom: -12px; left: 0%; transform: translateX(-50%); }
-.csv-del-row-btn { top: 50%; left: 0%; transform: translateY(-50%); }
+.csv-insert-row-btn.above {
+	top: -20px;
+	left: 50%;
+	transform: translate(-50%, 0);
+	z-index: 30;
+}
+.csv-insert-row-btn.below {
+	bottom: -20px;
+	left: 50%;
+	transform: translate(-50%, 0);
+	z-index: 30;
+}
+.csv-del-row-btn {
+	top: 50%;
+	left: -20px;
+	transform: translate(0, -50%);
+	z-index: 30;
+}
 
 /* 列按钮定位 */
-.csv-col-number { position: relative; }
-.csv-insert-col-btn.left { left: -10px; top: 0px; transform: translateY(-50%); }
-.csv-insert-col-btn.right { right: -10px; top: 0px; transform: translateY(-50%); }
-.csv-del-col-btn { top: -20px; left: 50%; transform: translateX(-50%); background: #ffeaea; color: #d00; }
-.csv-del-col-btn:hover { background: #ffb3b3; color: #fff; }
+.csv-insert-col-btn.left {
+	left: 0px;
+	top: 50%;
+	transform: translate(0, -50%);
+	z-index: 30;
+}
+.csv-insert-col-btn.right {
+	right: 0px;
+	top: 50%;
+	transform: translate(0, -50%);
+	z-index: 30;
+}
+.csv-del-col-btn {
+	top: -10px;
+	left: 50%;
+	transform: translate(-50%, 0);
+	z-index: 30;
+}
 
 /* 提升插入列按钮的 z-index */
 .csv-insert-col-btn.left,
@@ -540,7 +570,7 @@ td input:focus {
 .csv-col-number:hover .csv-insert-col-btn,
 .csv-col-selected.csv-col-number .csv-insert-col-btn,
 .csv-dragging-col .csv-insert-col-btn {
-  z-index: 25; /* 提高层级，确保不会被遮挡 */
+	z-index: 25; /* 提高层级，确保不会被遮挡 */
 }
 
 /* 仅在悬浮或选中时显示按钮 */
@@ -548,44 +578,44 @@ td input:focus {
 .csv-row-number:hover .csv-del-row-btn,
 .csv-row-selected .csv-row-number .csv-insert-row-btn,
 .csv-row-selected .csv-row-number .csv-del-row-btn {
-  display: inline-block;
+	display: inline-block;
 }
 .csv-col-number:hover .csv-insert-col-btn,
 .csv-col-number:hover .csv-del-col-btn,
 .csv-col-selected.csv-col-number .csv-insert-col-btn,
 .csv-col-selected.csv-col-number .csv-del-col-btn {
-  display: inline-block;
+	display: inline-block;
 }
 
 /* 确保操作按钮位于最前面 */
 .button-container {
-  position: relative; /* 确保可以使用 z-index */
-  z-index: 10; /* 提高操作按钮的层级，确保位于表格之上 */
+	position: relative; /* 确保可以使用 z-index */
+	z-index: 10; /* 提高操作按钮的层级，确保位于表格之上 */
 }
 
 /* 如果需要进一步调整按钮的布局 */
 .button-container .action-button {
-  position: absolute; /* 根据需要调整布局 */
-  top: 0; /* 根据实际情况调整位置 */
-  left: 0; /* 根据实际情况调整位置 */
+	position: absolute; /* 根据需要调整布局 */
+	top: 0; /* 根据实际情况调整位置 */
+	left: 0; /* 根据实际情况调整位置 */
 }
 
 /* 拖拽排序视觉反馈 */
 .csv-col-number.dragging,
 .csv-row-number.dragging {
-  opacity: 0.5;
-  background: var(--color-accent-2, #e0e0e0);
+	opacity: 0.5;
+	background: var(--color-accent-2, #e0e0e0);
 }
 .csv-col-number.drag-over,
 .csv-row-number.drag-over {
-  outline: 2px dashed var(--color-accent, #888);
-  background: var(--color-accent-1, #f0f0f0);
+	outline: 2px dashed var(--color-accent, #888);
+	background: var(--color-accent-1, #f0f0f0);
 }
 
 /* 拖拽时整行/列高亮 */
 .csv-dragging-highlight {
-  background: var(--color-accent-1, #e6f7ff) !important;
-  box-shadow: 0 0 0 2px var(--color-accent, #1890ff) inset;
+	background: var(--color-accent-1, #e6f7ff) !important;
+	box-shadow: 0 0 0 2px var(--color-accent, #1890ff) inset;
 }
 
 /* 拖拽时隐藏所有插入/删除按钮 */
@@ -593,5 +623,11 @@ td input:focus {
 .csv-dragging-row .csv-del-row-btn,
 .csv-dragging-col .csv-insert-col-btn,
 .csv-dragging-col .csv-del-col-btn {
-  display: none !important;
+	display: none !important;
+}
+
+/* 调整表格容器样式，确保按钮可见 */
+.csv-lite-table.csv-table {
+  overflow: visible; /* 确保超出表格的按钮不会被隐藏 */
+  position: relative; /* 确保定位的按钮能够正确显示 */
 }
