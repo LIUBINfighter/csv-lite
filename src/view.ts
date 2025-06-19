@@ -511,37 +511,16 @@ export class CSVView extends TextFileView {
 						});
 				});
 
-			// 创建操作按钮容器
+			// 创建操作按钮容器（外层flex，两端对齐）
 			const buttonContainer = this.operationEl.createEl("div", {
 				cls: "csv-operation-buttons",
 			});
-
-			// 撤销按钮
-			new ButtonComponent(buttonContainer)
-				.setButtonText(i18n.t("buttons.undo"))
-				.setIcon("undo")
-				.onClick(() => this.undo());
-
-			// 重做按钮
-			new ButtonComponent(buttonContainer)
-				.setButtonText(i18n.t("buttons.redo"))
-				.setIcon("redo")
-				.onClick(() => this.redo());
-
-			// 重置列宽按钮
-			new ButtonComponent(buttonContainer)
-				.setButtonText(i18n.t("buttons.resetColumnWidth"))
-				.onClick(() => {
-					this.columnWidths = [];
-					this.calculateColumnWidths();
-					this.refresh();
-				});
-
-			// CSV导入导出选项
-			this.operationEl.createEl("div", { cls: "csv-export-import" });
-
-			// === 重新添加搜索栏到工具栏 ===
-			const searchBarContainer = this.operationEl.createEl("div", {
+			// 按钮组（左侧）
+			const buttonsGroup = buttonContainer.createEl("div", {
+				cls: "csv-buttons-group"
+			});
+			// 搜索栏（右侧）
+			const searchBarContainer = buttonContainer.createEl("div", {
 				cls: "csv-search-bar-container"
 			});
 			this.searchBar = new SearchBar(searchBarContainer, {
@@ -552,7 +531,30 @@ export class CSVView extends TextFileView {
 				jumpToCell: (row: number, col: number) => this.jumpToCell(row, col),
 				clearSearchHighlights: () => this.clearSearchHighlights(),
 			});
-			// === 搜索栏添加结束 ===
+
+			// 撤销按钮
+			new ButtonComponent(buttonsGroup)
+				.setButtonText(i18n.t("buttons.undo"))
+				.setIcon("undo")
+				.onClick(() => this.undo());
+
+			// 重做按钮
+			new ButtonComponent(buttonsGroup)
+				.setButtonText(i18n.t("buttons.redo"))
+				.setIcon("redo")
+				.onClick(() => this.redo());
+
+			// 重置列宽按钮
+			new ButtonComponent(buttonsGroup)
+				.setButtonText(i18n.t("buttons.resetColumnWidth"))
+				.onClick(() => {
+					this.columnWidths = [];
+					this.calculateColumnWidths();
+					this.refresh();
+				});
+
+			// CSV导入导出选项
+			this.operationEl.createEl("div", { cls: "csv-export-import" });
 
 			// 创建编辑栏（在操作区之后）
 			this.editBarEl = this.contentEl.createEl("div", {
@@ -658,6 +660,9 @@ export class CSVView extends TextFileView {
 					this.highlightManager.clearSelection();
 				});
 			}
+
+			// 为工具栏添加sticky样式类
+			this.operationEl.addClass("csv-toolbar-sticky");
 		} catch (error) {
 			console.error("Error in onOpen:", error);
 			new Notice(`Failed to open CSV view: ${error.message}`);
