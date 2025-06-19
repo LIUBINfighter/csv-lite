@@ -61,6 +61,19 @@ export function renderTable(options: TableRenderOptions) {
 
   tableEl.empty();
 
+  // 拖拽状态变量移到函数外部作用域
+  if (!(window as any)._csvLiteDragState) {
+    (window as any)._csvLiteDragState = { type: null, index: null };
+  }
+  const dragState: { type: 'row' | 'col' | null, index: number | null } = (window as any)._csvLiteDragState;
+  function setDragState(type: 'row' | 'col' | null, index: number | null) {
+    dragState.type = type;
+    dragState.index = index;
+    tableEl.classList.remove('csv-dragging-row', 'csv-dragging-col');
+    if (type === 'row') tableEl.classList.add('csv-dragging-row');
+    if (type === 'col') tableEl.classList.add('csv-dragging-col');
+  }
+
   // 创建表头行（包含列号）
   const headerRow = tableEl.createEl("thead").createEl("tr");
 
@@ -93,9 +106,11 @@ export function renderTable(options: TableRenderOptions) {
       th.ondragstart = (e) => {
         e.dataTransfer?.setData("text/col-index", String(index));
         th.classList.add("dragging");
+        setDragState('col', index);
       };
       th.ondragend = () => {
         th.classList.remove("dragging");
+        setDragState(null, null);
       };
       th.ondragover = (e) => {
         e.preventDefault();
@@ -107,25 +122,32 @@ export function renderTable(options: TableRenderOptions) {
       th.ondrop = (e) => {
         e.preventDefault();
         th.classList.remove("drag-over");
+        setDragState(null, null);
         const from = Number(e.dataTransfer?.getData("text/col-index"));
         const to = index;
         if (onColumnReorder && from !== to) {
           onColumnReorder(from, to);
         }
       };
-      // 插入列操作按钮
-      const insertLeft = th.createEl("button", { cls: "csv-insert-col-btn left" });
-      insertLeft.innerText = "+";
-      insertLeft.title = i18n.t("buttons.insertColBefore") || "Insert column before";
-      insertLeft.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, false); };
-      const insertRight = th.createEl("button", { cls: "csv-insert-col-btn right" });
-      insertRight.innerText = "+";
-      insertRight.title = i18n.t("buttons.insertColAfter") || "Insert column after";
-      insertRight.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, true); };
-      const delCol = th.createEl("button", { cls: "csv-del-col-btn" });
-      delCol.innerText = "-";
-      delCol.title = i18n.t("buttons.deleteColumn") || "Delete column";
-      delCol.onclick = (e) => { e.stopPropagation(); options.deleteColAt(index); };
+      // 插入列操作按钮（拖拽时隐藏）
+      if (!(dragState.type === 'col')) {
+        const insertLeft = th.createEl("button", { cls: "csv-insert-col-btn left" });
+        insertLeft.innerText = "+";
+        insertLeft.title = i18n.t("buttons.insertColBefore") || "Insert column before";
+        insertLeft.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, false); };
+        const insertRight = th.createEl("button", { cls: "csv-insert-col-btn right" });
+        insertRight.innerText = "+";
+        insertRight.title = i18n.t("buttons.insertColAfter") || "Insert column after";
+        insertRight.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, true); };
+        const delCol = th.createEl("button", { cls: "csv-del-col-btn" });
+        delCol.innerText = "-";
+        delCol.title = i18n.t("buttons.deleteColumn") || "Delete column";
+        delCol.onclick = (e) => { e.stopPropagation(); options.deleteColAt(index); };
+      }
+      // 拖拽高亮整列
+      if (dragState.type === 'col' && dragState.index === index) {
+        th.classList.add('csv-dragging-highlight');
+      }
     });
   }
 
@@ -177,9 +199,11 @@ export function renderTable(options: TableRenderOptions) {
     rowNumberCell.ondragstart = (e) => {
       e.dataTransfer?.setData("text/row-index", String(i));
       rowNumberCell.classList.add("dragging");
+      setDragState('row', i);
     };
     rowNumberCell.ondragend = () => {
       rowNumberCell.classList.remove("dragging");
+      setDragState(null, null);
     };
     rowNumberCell.ondragover = (e) => {
       e.preventDefault();
@@ -191,25 +215,35 @@ export function renderTable(options: TableRenderOptions) {
     rowNumberCell.ondrop = (e) => {
       e.preventDefault();
       rowNumberCell.classList.remove("drag-over");
+      setDragState(null, null);
       const from = Number(e.dataTransfer?.getData("text/row-index"));
       const to = i;
       if (onRowReorder && from !== to) {
         onRowReorder(from, to);
       }
     };
-    // 插入行操作按钮
-    const insertAbove = rowNumberCell.createEl("button", { cls: "csv-insert-row-btn above" });
-    insertAbove.innerText = "+";
-    insertAbove.title = i18n.t("buttons.insertRowBefore") || "Insert row before";
-    insertAbove.onclick = (e) => { e.stopPropagation(); options.insertRowAt(i, false); };
-    const insertBelow = rowNumberCell.createEl("button", { cls: "csv-insert-row-btn below" });
-    insertBelow.innerText = "+";
-    insertBelow.title = i18n.t("buttons.insertRowAfter") || "Insert row after";
-    insertBelow.onclick = (e) => { e.stopPropagation(); options.insertRowAt(i, true); };
-    const delRow = rowNumberCell.createEl("button", { cls: "csv-del-row-btn" });
-    delRow.innerText = "-";
-    delRow.title = i18n.t("buttons.deleteRow") || "Delete row";
-    delRow.onclick = (e) => { e.stopPropagation(); options.deleteRowAt(i); };
+    // 插入行操作按钮（拖拽时隐藏）
+    if (!(dragState.type === 'row')) {
+      const insertAbove = rowNumberCell.createEl("button", { cls: "csv-insert-row-btn above" });
+      insertAbove.innerText = "+";
+      insertAbove.title = i18n.t("buttons.insertRowBefore") || "Insert row before";
+      insertAbove.onclick = (e) => { e.stopPropagation(); options.insertRowAt(i, false); };
+      const insertBelow = rowNumberCell.createEl("button", { cls: "csv-insert-row-btn below" });
+      insertBelow.innerText = "+";
+      insertBelow.title = i18n.t("buttons.insertRowAfter") || "Insert row after";
+      insertBelow.onclick = (e) => { e.stopPropagation(); options.insertRowAt(i, true); };
+      const delRow = rowNumberCell.createEl("button", { cls: "csv-del-row-btn" });
+      delRow.innerText = "-";
+      delRow.title = i18n.t("buttons.deleteRow") || "Delete row";
+      delRow.onclick = (e) => { e.stopPropagation(); options.deleteRowAt(i); };
+    }
+    // 拖拽高亮整行
+    if (dragState.type === 'row' && dragState.index === i) {
+      rowNumberCell.classList.add('csv-dragging-highlight');
+      Array.from(tableRow.children).forEach(td => {
+        (td as HTMLElement).classList.add('csv-dragging-highlight');
+      });
+    }
     row.forEach((cell, j) => {
       const td = tableRow.createEl("td", {
         attr: { style: `width: ${columnWidths[j] || 100}px` },

@@ -551,3 +551,17 @@ td input:focus {
   outline: 2px dashed var(--color-accent, #888);
   background: var(--color-accent-1, #f0f0f0);
 }
+
+/* 拖拽时整行/列高亮 */
+.csv-dragging-highlight {
+  background: var(--color-accent-1, #e6f7ff) !important;
+  box-shadow: 0 0 0 2px var(--color-accent, #1890ff) inset;
+}
+
+/* 拖拽时隐藏所有插入/删除按钮 */
+.csv-dragging-row .csv-insert-row-btn,
+.csv-dragging-row .csv-del-row-btn,
+.csv-dragging-col .csv-insert-col-btn,
+.csv-dragging-col .csv-del-col-btn {
+  display: none !important;
+}
