@@ -8,7 +8,9 @@ export const zhCN = {
     deleteColumn: '删除列',
     resetColumnWidth: '重置列宽',
     sourceMode: '源码模式',
-    tableMode: '表格模式'
+    tableMode: '表格模式',
+    insertRowBefore: '上方插入行',
+    insertRowAfter: '下方插入行',
   },
   editBar: {
     placeholder: '编辑选中单元格...'
