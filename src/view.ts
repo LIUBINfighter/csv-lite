@@ -6,6 +6,7 @@ import {
 	getIcon,
 	IconName,
 	Setting,
+	TFile,
 } from "obsidian";
 import { CSVUtils, CSVParseConfig } from "./utils/csv-utils";
 import { TableHistoryManager } from "./utils/history-manager";
@@ -19,6 +20,9 @@ import { renderTable } from "./view/table-render";
 export const VIEW_TYPE_CSV = "csv-view";
 
 export class CSVView extends TextFileView {
+	public file: TFile | null;
+	public headerEl: HTMLElement;
+
 	tableData: string[][] = [[""]];
 	tableEl: HTMLElement;
 	operationEl: HTMLElement;
