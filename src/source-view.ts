@@ -1,28 +1,28 @@
-import { TextFileView, WorkspaceLeaf, Notice } from "obsidian";
+import { TextFileView, WorkspaceLeaf, Notice, TFile } from "obsidian";
 import { EditorState, Extension, RangeSetBuilder } from "@codemirror/state";
-import { EditorView, keymap, placeholder, lineNumbers, drawSelection, Decoration, ViewPlugin, ViewUpdate } from "@codemirror/view";
+import { EditorView, keymap, placeholder, lineNumbers, drawSelection, Decoration, ViewPlugin, ViewUpdate, DecorationSet } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 
 export const VIEW_TYPE_CSV_SOURCE = "csv-source-view";
 
 // 分隔符高亮插件（逗号、分号、制表符）
 const separatorHighlightPlugin = ViewPlugin.fromClass(class {
-  decorations;
-  constructor(view) {
+  decorations: DecorationSet;
+  constructor(view: EditorView) {
     this.decorations = getSeparatorDecorations(view);
   }
-  update(update) {
+  update(update: ViewUpdate) {
     if (update.docChanged || update.viewportChanged) {
       this.decorations = getSeparatorDecorations(update.view);
     }
   }
 }, {
-  decorations: v => v.decorations
+  decorations: (v: any) => v.decorations as DecorationSet
 });
 
-function getSeparatorDecorations(view) {
-  const builder = new RangeSetBuilder();
-  const sepRegex = /[;,\t]/g;
+function getSeparatorDecorations(view: EditorView): DecorationSet {
+  const builder = new RangeSetBuilder<Decoration>();
+  const sepRegex = /[;,	]/g;
   for (let { from, to } of view.visibleRanges) {
     const text = view.state.doc.sliceString(from, to);
     let match;
@@ -36,9 +36,13 @@ function getSeparatorDecorations(view) {
 
 export class SourceView extends TextFileView {
   private editor: EditorView;
+  public file: TFile | null;
+  public headerEl: HTMLElement;
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
+    this.file = (this as any).file;
+    this.headerEl = (this as any).headerEl;
   }
 
   getViewType(): string {
@@ -74,7 +78,7 @@ export class SourceView extends TextFileView {
         const leaves = this.app.workspace.getLeavesOfType('csv-view');
         let found = false;
         for (const leaf of leaves) {
-          if (leaf.view && leaf.view.file && leaf.view.file.path === file.path) {
+          if (leaf.view && (leaf.view as any).file && (leaf.view as any).file.path === file.path) {
             this.app.workspace.setActiveLeaf(leaf, true, true);
             found = true;
             break;
@@ -94,7 +98,7 @@ export class SourceView extends TextFileView {
       actionsEl.appendChild(btn);
     }
 
-    const container = this.containerEl.children[1];
+    const container = this.containerEl.children[1] as HTMLElement;
     container.empty();
 
     // 编辑器容器

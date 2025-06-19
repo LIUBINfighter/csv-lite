@@ -67,7 +67,10 @@ export class CSVView extends TextFileView {
 			undefined,
 			this.maxHistorySize
 		);
-
+		// @ts-ignore
+		this.file = (this as any).file;
+		// @ts-ignore
+		this.headerEl = (this as any).headerEl;
 		// Setup safe save method with retry logic
 		this.setupSafeSave();
 	}
@@ -166,18 +169,22 @@ export class CSVView extends TextFileView {
 			textarea.value = CSVUtils.unparseCSV(this.tableData);
 			this.contentEl.appendChild(textarea);
 			// 恢复光标
-			if (this.sourceCursorPos) {
+			if (this.sourceCursorPos && textarea) {
 				setTimeout(() => {
-					textarea.selectionStart = this.sourceCursorPos.start;
-					textarea.selectionEnd = this.sourceCursorPos.end;
-					textarea.focus();
+					if (textarea) {
+						textarea.selectionStart = this.sourceCursorPos.start;
+						textarea.selectionEnd = this.sourceCursorPos.end;
+						textarea.focus();
+					}
 				}, 0);
 			}
 			// 监听内容变更
 			textarea.oninput = () => {
 				try {
-					this.tableData = CSVUtils.parseCSV(textarea.value, { delimiter: this.delimiter, quoteChar: this.quoteChar });
-					this.requestSave();
+					if (textarea) {
+						this.tableData = CSVUtils.parseCSV(textarea.value, { delimiter: this.delimiter, quoteChar: this.quoteChar });
+						this.requestSave();
+					}
 				} catch (e) {}
 			};
 			return;
@@ -253,11 +260,11 @@ export class CSVView extends TextFileView {
 		this.selectedRow = rowIndex;
 		
 		// 添加选中样式到整行
-		const rows = this.tableEl.querySelectorAll('tbody tr');
+		const rows = this.tableEl?.querySelectorAll('tbody tr');
 		const targetRowIndex = rowIndex - 1; // 因为数据行从索引1开始，tbody中的索引需要-1
 		
-		if (rows[targetRowIndex]) {
-			rows[targetRowIndex].addClass('csv-row-selected');
+		if (rows && rows[targetRowIndex]) {
+			(rows[targetRowIndex] as HTMLElement).addClass('csv-row-selected');
 		}
 	}
 
@@ -276,9 +283,9 @@ export class CSVView extends TextFileView {
 		
 		// 添加选中样式到整列（包括列号和所有数据单元格）
 		// colIndex + 2 是因为有行号列(+1)和从0开始的索引(+1)
-		const columnCells = this.tableEl.querySelectorAll(`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`);
+		const columnCells = this.tableEl?.querySelectorAll(`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`);
 		
-		columnCells.forEach(cell => {
+		columnCells?.forEach(cell => {
 			if (cell instanceof HTMLElement) {
 				cell.addClass('csv-col-selected');
 			}
@@ -291,7 +298,7 @@ export class CSVView extends TextFileView {
 		this.selectedCol = -1;
 		
 		// 移除所有选中样式
-		this.tableEl.querySelectorAll('.csv-row-selected, .csv-col-selected').forEach(el => {
+		this.tableEl?.querySelectorAll('.csv-row-selected, .csv-col-selected').forEach(el => {
 			if (el instanceof HTMLElement) {
 				el.removeClass('csv-row-selected');
 				el.removeClass('csv-col-selected');
@@ -441,7 +448,7 @@ export class CSVView extends TextFileView {
 			//   - 若有，则激活该 leaf（workspace.setActiveLeaf）。
 			//   - 若无，则新建 leaf 并打开目标视图。
 			// - 不主动关闭原有视图，用户可自行关闭。
-			const actionsEl = this.headerEl.querySelector('.view-actions');
+			const actionsEl = this.headerEl?.querySelector?.('.view-actions');
 			if (actionsEl && !actionsEl.querySelector('.csv-switch-source')) {
 				const btn = document.createElement('button');
 				btn.className = 'clickable-icon csv-switch-source';
@@ -453,7 +460,7 @@ export class CSVView extends TextFileView {
 					const leaves = this.app.workspace.getLeavesOfType('csv-source-view');
 					let found = false;
 					for (const leaf of leaves) {
-						if (leaf.view && leaf.view.file && leaf.view.file.path === file.path) {
+						if (leaf.view && (leaf.view as any).file && (leaf.view as any).file.path === file.path) {
 							this.app.workspace.setActiveLeaf(leaf, true, true);
 							found = true;
 							break;
@@ -461,9 +468,9 @@ export class CSVView extends TextFileView {
 					}
 					if (!found) {
 						const newLeaf = this.app.workspace.getLeaf(true);
-						await newLeaf.openFile(file, { active: true });
+						await newLeaf.openFile(file, { active: true, state: { mode: "source" } });
 						await newLeaf.setViewState({
-							type: 'csv-source-view',
+							type: "csv-source-view",
 							active: true,
 							state: { file: file.path }
 						});
@@ -769,9 +776,9 @@ export class CSVView extends TextFileView {
 		// 清除之前的高亮
 		this.clearSearchHighlights();
 		// 找到目标单元格
-		const tableRows = this.tableEl.querySelectorAll("tr");
+		const tableRows = this.tableEl?.querySelectorAll("tr");
 		const targetRowIndex = row === 0 ? 1 : row + 1;
-		if (targetRowIndex < tableRows.length) {
+		if (tableRows && targetRowIndex < tableRows.length) {
 			const targetRow = tableRows[targetRowIndex];
 			const cells = targetRow.querySelectorAll("td, th");
 			const targetCellIndex = col + 1;
@@ -799,7 +806,7 @@ export class CSVView extends TextFileView {
 
 	// 新增：清除搜索高亮
 	private clearSearchHighlights() {
-		this.tableEl.querySelectorAll(".csv-search-current").forEach(el => {
+		this.tableEl?.querySelectorAll(".csv-search-current").forEach(el => {
 			if (el instanceof HTMLElement) {
 				el.removeClass("csv-search-current");
 			}
