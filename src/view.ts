@@ -434,6 +434,45 @@ export class CSVView extends TextFileView {
 
 	async onOpen() {
 		try {
+			// 1. 在 view header 的 view-actions 区域插入切换按钮（lucide/file-code 图标）
+			// 交互说明：
+			// - 切换按钮始终位于 header 区域，风格与 Obsidian 原生一致。
+			// - 点击时遍历所有 leaf，查找同一文件的目标视图（csv-source-view）。
+			//   - 若有，则激活该 leaf（workspace.setActiveLeaf）。
+			//   - 若无，则新建 leaf 并打开目标视图。
+			// - 不主动关闭原有视图，用户可自行关闭。
+			const actionsEl = this.headerEl.querySelector('.view-actions');
+			if (actionsEl && !actionsEl.querySelector('.csv-switch-source')) {
+				const btn = document.createElement('button');
+				btn.className = 'clickable-icon csv-switch-source';
+				btn.setAttribute('aria-label', '切换到源码模式');
+				btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-code"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="10 13 8 15 10 17"/><polyline points="14 13 16 15 14 17"/></svg>`;
+				btn.onclick = async () => {
+					const file = this.file;
+					if (!file) return;
+					const leaves = this.app.workspace.getLeavesOfType('csv-source-view');
+					let found = false;
+					for (const leaf of leaves) {
+						if (leaf.view && leaf.view.file && leaf.view.file.path === file.path) {
+							this.app.workspace.setActiveLeaf(leaf, true, true);
+							found = true;
+							break;
+						}
+					}
+					if (!found) {
+						const newLeaf = this.app.workspace.getLeaf(true);
+						await newLeaf.openFile(file, { active: true });
+						await newLeaf.setViewState({
+							type: 'csv-source-view',
+							active: true,
+							state: { file: file.path }
+						});
+						this.app.workspace.setActiveLeaf(newLeaf, true, true);
+					}
+				};
+				actionsEl.appendChild(btn);
+			}
+
 			// Clear the content element first
 			this.contentEl.empty();
 
@@ -784,5 +823,6 @@ export class CSVView extends TextFileView {
 			active: true,
 			state: { file: file.path }
 		});
+		this.leaf.detach(); // 新增：切换后关闭当前 leaf
 	}
 }
