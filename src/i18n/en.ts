@@ -6,7 +6,9 @@ export const enUS = {
     deleteRow: 'Delete row',
     addColumn: 'Add column',
     deleteColumn: 'Delete column',
-    resetColumnWidth: 'Reset column width'
+    resetColumnWidth: 'Reset column width',
+    sourceMode: 'Source Mode',
+    tableMode: 'Table Mode'
   },
   editBar: {
     placeholder: 'Edit selected cell...'

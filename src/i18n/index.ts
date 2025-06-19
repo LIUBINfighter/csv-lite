@@ -85,3 +85,6 @@ export class I18n {
 }
 
 export const i18n = new I18n();
+
+export * from "./en";
+export * from "./zh-cn";

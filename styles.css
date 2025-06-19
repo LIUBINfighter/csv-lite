@@ -437,3 +437,19 @@ td input:focus {
 .csv-search-current .csv-cell-input {
 	background-color: var(--text-highlight-bg) !important;
 }
+
+/* 源码模式样式 */
+.csv-source-mode {
+  font-family: var(--font-monospace, monospace);
+  font-size: 1em;
+  width: 100%;
+  min-height: 300px;
+  resize: vertical;
+  box-sizing: border-box;
+  margin: 1em 0;
+  padding: 0.5em;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+}

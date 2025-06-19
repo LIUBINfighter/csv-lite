@@ -50,6 +50,11 @@ export class CSVView extends TextFileView {
 	private searchMatches: Array<{row: number, col: number, value: string}> = [];
 	private currentSearchIndex: number = -1;
 
+	// 新增：源码模式相关属性
+	private isSourceMode: boolean = false;
+	private sourceTextarea: HTMLTextAreaElement | null = null;
+	private sourceCursorPos: { start: number, end: number } = { start: 0, end: 0 };
+
 	constructor(leaf: any) {
 		super(leaf);
 		this.historyManager = new TableHistoryManager(
@@ -140,8 +145,35 @@ export class CSVView extends TextFileView {
 
 	refresh() {
 		// Safety check: ensure tableEl exists
-		if (!this.tableEl) {
-			console.warn("Table element not initialized in refresh()");
+		if (!this.contentEl) return;
+		this.contentEl.querySelectorAll('.csv-source-mode').forEach(el => el.remove());
+		if (this.isSourceMode) {
+			// 源码模式：显示textarea
+			let textarea = this.sourceTextarea;
+			if (!textarea) {
+				textarea = document.createElement('textarea');
+				textarea.className = 'csv-source-mode';
+				textarea.style.width = '100%';
+				textarea.style.height = '60vh';
+				this.sourceTextarea = textarea;
+			}
+			textarea.value = CSVUtils.unparseCSV(this.tableData);
+			this.contentEl.appendChild(textarea);
+			// 恢复光标
+			if (this.sourceCursorPos) {
+				setTimeout(() => {
+					textarea.selectionStart = this.sourceCursorPos.start;
+					textarea.selectionEnd = this.sourceCursorPos.end;
+					textarea.focus();
+				}, 0);
+			}
+			// 监听内容变更
+			textarea.oninput = () => {
+				try {
+					this.tableData = CSVUtils.parseCSV(textarea.value, { delimiter: this.delimiter, quoteChar: this.quoteChar });
+					this.requestSave();
+				} catch (e) {}
+			};
 			return;
 		}
 
@@ -674,6 +706,12 @@ export class CSVView extends TextFileView {
 				}
 			};
 
+			// 源码模式切换按钮
+			const sourceToggleBtn = new ButtonComponent(this.operationEl)
+				.setButtonText(this.isSourceMode ? i18n.t("buttons.tableMode") : i18n.t("buttons.sourceMode"))
+				.setIcon(this.isSourceMode ? "table" : "code")
+				.onClick(() => this.toggleSourceMode());
+
 			// 创建表格区域 - 只使用顶部滚动条
 			const tableWrapper = this.contentEl.createEl("div", {
 				cls: "table-wrapper",
@@ -752,6 +790,25 @@ export class CSVView extends TextFileView {
 			this.tableEl = this.contentEl.createEl("table");
 			this.refresh();
 		}
+	}
+
+	private toggleSourceMode() {
+		this.isSourceMode = !this.isSourceMode;
+		// 切换到源码模式时保存当前表格选中单元格
+		if (this.isSourceMode) {
+			if (this.activeCellEl) {
+				this.sourceCursorPos = { start: 0, end: 0 };
+			}
+		} else {
+			// 切换回表格模式时，保存textarea光标位置
+			if (this.sourceTextarea) {
+				this.sourceCursorPos = {
+					start: this.sourceTextarea.selectionStart,
+					end: this.sourceTextarea.selectionEnd
+				};
+			}
+		}
+		this.refresh();
 	}
 
 	// 新增：创建搜索容器，接受父容器参数
