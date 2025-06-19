@@ -1,4 +1,5 @@
 import { TableUtils } from "../utils/table-utils";
+import { i18n } from "../i18n";
 
 export interface EditBarOptions {
   editBarEl: HTMLElement;
@@ -22,8 +23,15 @@ export function renderEditBar(options: EditBarOptions) {
     // 显示单元格地址
     const cellAddress = TableUtils.getCellAddress(activeRowIndex, activeColIndex);
     editBarEl.setAttribute("data-cell-address", cellAddress);
+    // 如果是空白格，显示格号为placeholder
+    if (!activeCellEl.value) {
+      editInput.placeholder = cellAddress;
+    } else {
+      editInput.placeholder = "";
+    }
   } else {
     editInput.value = "";
+    editInput.placeholder = i18n.t("editBar.placeholder");
     editBarEl.removeAttribute("data-cell-address");
   }
 
