@@ -289,6 +289,20 @@ export function renderTable(options: TableRenderOptions) {
   }
 
   // 滚动条容器宽度同步逻辑建议由主类处理
+
+  // Add event listener to deselect active row or column when clicking outside
+  const deselectActiveHeader = () => {
+    const activeHeaders = tableEl.querySelectorAll('.csv-col-number.active, .csv-row-number.active');
+    activeHeaders.forEach(header => header.classList.remove('active'));
+  };
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement | null;
+    const isHeaderClick = target?.closest('.csv-col-number, .csv-row-number');
+    if (!isHeaderClick) {
+      deselectActiveHeader();
+    }
+  });
 }
 
 // 建议在 styles.css 添加 .dragging 和 .drag-over 的样式以增强拖拽反馈
