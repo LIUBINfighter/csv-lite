@@ -540,6 +540,20 @@ export class CSVView extends TextFileView {
 			// CSV导入导出选项
 			this.operationEl.createEl("div", { cls: "csv-export-import" });
 
+			// === 重新添加搜索栏到工具栏 ===
+			const searchBarContainer = this.operationEl.createEl("div", {
+				cls: "csv-search-bar-container"
+			});
+			this.searchBar = new SearchBar(searchBarContainer, {
+				getTableData: () => this.tableData,
+				tableEl: this.tableEl,
+				getColumnLabel: (index: number) => this.getColumnLabel(index),
+				getCellAddress: (row: number, col: number) => this.getCellAddress(row, col),
+				jumpToCell: (row: number, col: number) => this.jumpToCell(row, col),
+				clearSearchHighlights: () => this.clearSearchHighlights(),
+			});
+			// === 搜索栏添加结束 ===
+
 			// 创建编辑栏（在操作区之后）
 			this.editBarEl = this.contentEl.createEl("div", {
 				cls: "csv-edit-bar",
