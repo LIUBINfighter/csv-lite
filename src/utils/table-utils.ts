@@ -69,6 +69,38 @@ export class TableUtils {
 	}
 
 	/**
+	 * 向指定列左侧添加新列
+	 */
+	static addColumnToLeft(
+		tableData: string[][],
+		columnIndex: number
+	): string[][] {
+		if (!tableData || tableData.length === 0) return [];
+
+		return tableData.map((row) => {
+			const newRow = [...row];
+			newRow.splice(columnIndex, 0, "");
+			return newRow;
+		});
+	}
+
+	/**
+	 * 向指定列右侧添加新列
+	 */
+	static addColumnToRight(
+		tableData: string[][],
+		columnIndex: number
+	): string[][] {
+		if (!tableData || tableData.length === 0) return [];
+
+		return tableData.map((row) => {
+			const newRow = [...row];
+			newRow.splice(columnIndex + 1, 0, "");
+			return newRow;
+		});
+	}
+
+	/**
 	 * 获取列标签 (A, B, C, ..., Z, AA, AB, ...)
 	 */
 	static getColumnLabel(index: number): string {
@@ -90,5 +122,16 @@ export class TableUtils {
 		const colAddress = this.getColumnLabel(colIndex);
 		const rowAddress = rowIndex + 1;
 		return `${colAddress}${rowAddress}`;
+	}
+
+	/**
+	 * 从表格元素提取表格数据
+	 */
+	static getTableData(tableEl: HTMLElement): string[][] {
+		const rows = Array.from(tableEl.querySelectorAll("tr"));
+		return rows.map((row) => {
+			const cells = Array.from(row.querySelectorAll("td, th"));
+			return cells.map((cell) => cell.textContent || "");
+		});
 	}
 }
