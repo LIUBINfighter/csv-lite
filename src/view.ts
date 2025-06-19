@@ -272,20 +272,18 @@ export class CSVView extends TextFileView {
 		});
 
 		// 在完成表格渲染后，更新滚动条容器的宽度
-		const tableWrapper = this.tableEl.closest('.table-wrapper');
-		if (tableWrapper) {
+		// 现在topScrollContainer在operationEl下方
+		const topScroll = this.operationEl?.querySelector?.('.top-scroll');
+		if (topScroll && this.tableEl) {
 			const tableWidth = this.tableEl.offsetWidth;
-			const topScroll = tableWrapper.querySelector('.top-scroll');
-			if (topScroll) {
-				const createSpacer = () => {
-					const spacer = document.createElement('div');
-					spacer.style.width = tableWidth + 'px';
-					spacer.style.height = '1px';
-					return spacer;
-				};
-				topScroll.empty();
-				topScroll.appendChild(createSpacer());
-			}
+			const createSpacer = () => {
+				const spacer = document.createElement('div');
+				spacer.style.width = tableWidth + 'px';
+				spacer.style.height = '1px';
+				return spacer;
+			};
+			topScroll.empty();
+			topScroll.appendChild(createSpacer());
 		}
 
 		// 新增：每次刷新后为表格父容器绑定点击事件，点击非头部区域时清除高亮
@@ -597,28 +595,26 @@ export class CSVView extends TextFileView {
 				},
 			});
 
-			// 创建表格区域 - 只使用顶部滚动条
+			// 创建顶部横向滚动条（移动到工具栏下方）
+			const topScrollContainer = this.operationEl.createEl("div", {
+				cls: "scroll-container top-scroll",
+			});
+
+			// 创建表格区域 - 移除顶部滚动条
 			const tableWrapper = this.contentEl.createEl("div", {
 				cls: "table-wrapper",
 			});
-			
-			// 顶部滚动条
-			const topScrollContainer = tableWrapper.createEl("div", {
-				cls: "scroll-container top-scroll",
-			});
-			
 			// 主表格容器
 			const tableContainer = tableWrapper.createEl("div", {
 				cls: "table-container main-scroll",
 			});
-			
 			this.tableEl = tableContainer.createEl("table", {
 				cls: "csv-lite-table",
 			});
 			// 初始化高亮管理器
 			this.highlightManager = new HighlightManager(this.tableEl);
 
-			// 设置滚动同步
+			// 设置滚动同步（传递新的topScrollContainer）
 			this.setupScrollSync(topScrollContainer, tableContainer);
 
 			// 初始化历史记录
