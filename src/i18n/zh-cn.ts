@@ -32,5 +32,17 @@ export const zhCN = {
   table: {
     headerRow: '表头行',
     dataRow: '数据行'
+  },
+  contextMenu: {
+    insertRowAbove: '上方插入行',
+    insertRowBelow: '下方插入行',
+    deleteRow: '删除本行',
+    moveRowUp: '向上移动一行',
+    moveRowDown: '向下移动一行',
+    insertColLeft: '左侧插入列',
+    insertColRight: '右侧插入列',
+    deleteCol: '删除本列',
+    moveColLeft: '向左移动一列',
+    moveColRight: '向右移动一列',
   }
 };

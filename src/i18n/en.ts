@@ -32,5 +32,17 @@ export const enUS = {
   table: {
     headerRow: 'Header Row',
     dataRow: 'Data Row'
+  },
+  contextMenu: {
+    insertRowAbove: 'Insert row above',
+    insertRowBelow: 'Insert row below',
+    deleteRow: 'Delete this row',
+    moveRowUp: 'Move row up',
+    moveRowDown: 'Move row down',
+    insertColLeft: 'Insert column left',
+    insertColRight: 'Insert column right',
+    deleteCol: 'Delete this column',
+    moveColLeft: 'Move column left',
+    moveColRight: 'Move column right',
   }
 };

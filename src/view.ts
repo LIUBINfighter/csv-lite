@@ -17,6 +17,7 @@ import { renderEditBar } from "./view/edit-bar";
 import { SearchBar } from "./view/search-bar";
 import { renderTable } from "./view/table-render";
 import { HighlightManager } from "./utils/highlight-manager";
+import { setupHeaderContextMenu } from "./view/header-context-menu";
 
 export const VIEW_TYPE_CSV = "csv-view";
 
@@ -614,6 +615,21 @@ export class CSVView extends TextFileView {
 			// 初始化高亮管理器
 			this.highlightManager = new HighlightManager(this.tableEl);
 
+			// 集成表头右键菜单
+			setupHeaderContextMenu({
+				tableEl: this.tableEl,
+				onInsertRowAbove: (rowIdx) => this.refreshInsertRow(rowIdx, false),
+				onInsertRowBelow: (rowIdx) => this.refreshInsertRow(rowIdx, true),
+				onDeleteRow: (rowIdx) => this.refreshDeleteRow(rowIdx),
+				onMoveRowUp: (rowIdx) => this.moveRow(rowIdx, rowIdx - 1),
+				onMoveRowDown: (rowIdx) => this.moveRow(rowIdx, rowIdx + 1),
+				onInsertColLeft: (colIdx) => this.refreshInsertCol(colIdx, false),
+				onInsertColRight: (colIdx) => this.refreshInsertCol(colIdx, true),
+				onDeleteCol: (colIdx) => this.refreshDeleteCol(colIdx),
+				onMoveColLeft: (colIdx) => this.moveCol(colIdx, colIdx - 1),
+				onMoveColRight: (colIdx) => this.moveCol(colIdx, colIdx + 1),
+			});
+
 			// 设置滚动同步（传递新的topScrollContainer）
 			this.setupScrollSync(topScrollContainer, tableContainer);
 
@@ -820,5 +836,55 @@ export class CSVView extends TextFileView {
 			state: { file: file.path }
 		});
 		this.leaf.detach(); // 新增：切换后关闭当前 leaf
+	}
+
+	// 新增：移动行/列方法
+	moveRow(fromIndex: number, toIndex: number) {
+		if (fromIndex < 0 || toIndex < 0 || fromIndex >= this.tableData.length || toIndex >= this.tableData.length) return;
+		this.saveSnapshot();
+		const row = this.tableData.splice(fromIndex, 1)[0];
+		this.tableData.splice(toIndex, 0, row);
+		this.refresh();
+		this.requestSave();
+	}
+	moveCol(fromIndex: number, toIndex: number) {
+		if (fromIndex < 0 || toIndex < 0 || fromIndex >= this.tableData[0].length || toIndex >= this.tableData[0].length) return;
+		this.saveSnapshot();
+		this.tableData.forEach(row => {
+			const col = row.splice(fromIndex, 1)[0];
+			row.splice(toIndex, 0, col);
+		});
+		this.refresh();
+		this.requestSave();
+	}
+
+	// 右键菜单专用插入/删除行列方法，带快照和保存
+	private refreshInsertRow(rowIdx: number, after: boolean) {
+		this.saveSnapshot();
+		const idx = after ? rowIdx + 1 : rowIdx;
+		this.tableData.splice(idx, 0, Array(this.tableData[0].length).fill(""));
+		this.refresh();
+		this.requestSave();
+	}
+	private refreshDeleteRow(rowIdx: number) {
+		if (this.tableData.length <= 1) return;
+		this.saveSnapshot();
+		this.tableData.splice(rowIdx, 1);
+		this.refresh();
+		this.requestSave();
+	}
+	private refreshInsertCol(colIdx: number, after: boolean) {
+		this.saveSnapshot();
+		const idx = after ? colIdx + 1 : colIdx;
+		this.tableData.forEach(row => row.splice(idx, 0, ""));
+		this.refresh();
+		this.requestSave();
+	}
+	private refreshDeleteCol(colIdx: number) {
+		if (this.tableData[0].length <= 1) return;
+		this.saveSnapshot();
+		this.tableData.forEach(row => row.splice(colIdx, 1));
+		this.refresh();
+		this.requestSave();
 	}
 }
