@@ -12,6 +12,7 @@ import { TableHistoryManager } from "./utils/history-manager";
 import { TableUtils } from "./utils/table-utils";
 import { FileUtils } from "./utils/file-utils";
 import { i18n } from "./i18n"; // 修正导入路径
+import { renderEditBar } from "./view/edit-bar";
 
 export const VIEW_TYPE_CSV = "csv-view";
 
@@ -476,12 +477,20 @@ export class CSVView extends TextFileView {
 		}
 
 		// 更新编辑栏内容
-		if (this.editInput) {
-			this.editInput.value = cellEl.value;
-
-			// 更新编辑栏的地址显示
-			const cellAddress = TableUtils.getCellAddress(rowIndex, colIndex);
-			this.editBarEl.setAttribute("data-cell-address", cellAddress);
+		if (this.editInput && this.editBarEl) {
+			renderEditBar({
+				editBarEl: this.editBarEl,
+				editInput: this.editInput,
+				activeCellEl: cellEl,
+				activeRowIndex: rowIndex,
+				activeColIndex: colIndex,
+				tableData: this.tableData,
+				onEdit: (row, col, value) => {
+					this.saveSnapshot();
+					this.tableData[row][col] = value;
+					this.requestSave();
+				},
+			});
 		}
 	}
 
@@ -675,42 +684,25 @@ export class CSVView extends TextFileView {
 			this.editBarEl = this.contentEl.createEl("div", {
 				cls: "csv-edit-bar",
 			});
-
 			// 创建编辑输入框
 			this.editInput = this.editBarEl.createEl("input", {
 				cls: "csv-edit-input",
 				attr: { placeholder: i18n.t("editBar.placeholder") },
 			});
-
-			// 添加编辑栏输入处理
-			this.editInput.oninput = () => {
-				if (
-					this.activeCellEl &&
-					this.activeRowIndex >= 0 &&
-					this.activeColIndex >= 0
-				) {
-					// 更新活动单元格
-					this.activeCellEl.value = this.editInput.value;
-
-					// 更新数据
-					if (
-						this.tableData[this.activeRowIndex][
-							this.activeColIndex
-						] !== this.editInput.value
-					) {
-						this.saveSnapshot();
-					}
-					this.tableData[this.activeRowIndex][this.activeColIndex] =
-						this.editInput.value;
+			// 使用renderEditBar渲染编辑栏
+			renderEditBar({
+				editBarEl: this.editBarEl,
+				editInput: this.editInput,
+				activeCellEl: this.activeCellEl,
+				activeRowIndex: this.activeRowIndex,
+				activeColIndex: this.activeColIndex,
+				tableData: this.tableData,
+				onEdit: (row, col, value) => {
+					this.saveSnapshot();
+					this.tableData[row][col] = value;
 					this.requestSave();
-				}
-			};
-
-			// 源码模式切换按钮
-			const sourceToggleBtn = new ButtonComponent(this.operationEl)
-				.setButtonText(this.isSourceMode ? i18n.t("buttons.tableMode") : i18n.t("buttons.sourceMode"))
-				.setIcon(this.isSourceMode ? "table" : "code")
-				.onClick(() => this.toggleSourceMode());
+				},
+			});
 
 			// 创建表格区域 - 只使用顶部滚动条
 			const tableWrapper = this.contentEl.createEl("div", {
