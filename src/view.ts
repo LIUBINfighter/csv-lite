@@ -14,6 +14,7 @@ import { FileUtils } from "./utils/file-utils";
 import { i18n } from "./i18n"; // 修正导入路径
 import { renderEditBar } from "./view/edit-bar";
 import { SearchBar } from "./view/search-bar";
+import { renderTable } from "./view/table-render";
 
 export const VIEW_TYPE_CSV = "csv-view";
 
@@ -183,205 +184,44 @@ export class CSVView extends TextFileView {
 		}
 
 		// Safety check: ensure tableData is initialized
-		if (
-			!this.tableData ||
-			!Array.isArray(this.tableData) ||
-			this.tableData.length === 0
-		) {
-			console.warn(
-				"Table data not properly initialized, setting default"
-			);
+		if (!this.tableData || !Array.isArray(this.tableData) || this.tableData.length === 0) {
+			console.warn("Table data not properly initialized, setting default");
 			this.tableData = [[""]];
 		}
 
-		this.tableEl.empty();
-
-		// 创建表头行（包含列号）
-		const headerRow = this.tableEl.createEl("thead").createEl("tr");
-
-		// 计算初始列宽（如果未设置）
-		if (this.columnWidths.length === 0 && this.tableData[0]) {
-			this.columnWidths = TableUtils.calculateColumnWidths(
-				this.tableData
-			);
-		}
-
-		// 添加左上角单元格
-		const cornerCell = headerRow.createEl("th", {
-			cls: "csv-corner-cell",
+		// 迁移：表格渲染全部交由 table-render.ts 处理
+		renderTable({
+			tableData: this.tableData,
+			columnWidths: this.columnWidths,
+			autoResize: this.autoResize,
+			tableEl: this.tableEl,
+			editInput: this.editInput,
+			activeCellEl: this.activeCellEl,
+			activeRowIndex: this.activeRowIndex,
+			activeColIndex: this.activeColIndex,
+			setActiveCell: (row, col, cellEl) => this.setActiveCell(row, col, cellEl),
+			saveSnapshot: () => this.saveSnapshot(),
+			requestSave: () => this.requestSave(),
+			setupAutoResize: (input) => this.setupAutoResize(input),
+			adjustInputHeight: (input) => this.adjustInputHeight(input),
+			selectRow: (rowIndex) => this.selectRow(rowIndex),
+			selectColumn: (colIndex) => this.selectColumn(colIndex),
+			getColumnLabel: (index) => this.getColumnLabel(index),
+			setupColumnResize: (handle, columnIndex) => this.setupColumnResize(handle, columnIndex),
 		});
-
-		// 创建列号行
-		if (this.tableData[0]) {
-			this.tableData[0].forEach((headerCell, index) => {
-				const th = headerRow.createEl("th", {
-					cls: "csv-col-number",
-					attr: {
-						style: `width: ${this.columnWidths[index] || 100}px`,
-					},
-				});
-
-				// 显示列号（A, B, C...）
-				th.textContent = this.getColumnLabel(index);
-
-				// 添加列选择功能
-				th.onclick = () => {
-					this.selectColumn(index);
-				};
-			});
-		}
-
-		// 创建表头数据行
-		const dataHeaderRow = this.tableEl.createEl("thead").createEl("tr");
-		
-		// 添加行号列（表头行）
-		const headerRowNumber = dataHeaderRow.createEl("th", {
-			cls: "csv-row-number",
-		});
-		headerRowNumber.textContent = "0";
-
-		// 添加表头输入框
-		if (this.tableData[0]) {
-			this.tableData[0].forEach((headerCell, index) => {
-				const th = dataHeaderRow.createEl("th", {
-					cls: "csv-th",
-					attr: {
-						style: `width: ${this.columnWidths[index] || 100}px`,
-					},
-				});
-
-				// 添加列标题
-				const headerInput = th.createEl("input", {
-					cls: "csv-cell-input",
-					attr: { value: headerCell },
-				});
-
-				// 列标题内容变更时的处理
-				headerInput.oninput = (ev) => {
-					if (ev.currentTarget instanceof HTMLInputElement) {
-						if (
-							this.tableData[0][index] !== ev.currentTarget.value
-						) {
-							this.saveSnapshot();
-						}
-						this.tableData[0][index] = ev.currentTarget.value;
-						this.requestSave();
-					}
-				};
-
-				// 为表头输入框添加聚焦事件
-				headerInput.onfocus = (ev) => {
-					this.setActiveCell(
-						0,
-						index,
-						ev.currentTarget as HTMLInputElement
-					);
-				};
-
-				// 添加调整列宽的手柄
-				const resizeHandle = th.createEl("div", {
-					cls: "resize-handle",
-				});
-
-				// 实现列宽调整
-				this.setupColumnResize(resizeHandle, index);
-			});
-		}
-
-		// 创建表格主体
-		const tableBody = this.tableEl.createEl("tbody");
-
-		// 从第二行开始显示数据行（如果有表头）
-		const startRowIndex = this.tableData.length > 1 ? 1 : 0;
-
-		for (let i = startRowIndex; i < this.tableData.length; i++) {
-			const row = this.tableData[i];
-			const tableRow = tableBody.createEl("tr");
-
-			// 添加行号列
-			const rowNumberCell = tableRow.createEl("td", {
-				cls: "csv-row-number",
-			});
-			rowNumberCell.textContent = i.toString();
-
-			// 添加行选择功能
-			rowNumberCell.onclick = () => {
-				this.selectRow(i);
-			};
-
-			// 添加数据单元格
-			row.forEach((cell, j) => {
-				const td = tableRow.createEl("td", {
-					attr: { style: `width: ${this.columnWidths[j] || 100}px` },
-				});
-
-				const input = td.createEl("input", {
-					cls: "csv-cell-input",
-					attr: {
-						value: cell,
-					},
-				});
-
-				// 为输入框添加自动调整高度的功能
-				this.setupAutoResize(input);
-
-				input.oninput = (ev) => {
-					if (ev.currentTarget instanceof HTMLInputElement) {
-						// 保存历史状态（仅在第一次修改时保存）
-						if (this.tableData[i][j] !== ev.currentTarget.value) {
-							this.saveSnapshot();
-						}
-
-						this.tableData[i][j] = ev.currentTarget.value;
-
-						// 如果是当前活动单元格，同步到编辑栏
-						if (
-							this.activeCellEl === ev.currentTarget &&
-							this.editInput
-						) {
-							this.editInput.value = ev.currentTarget.value;
-						}
-
-						this.requestSave();
-
-						// 自动调整输入框高度
-						if (this.autoResize) {
-							this.adjustInputHeight(ev.currentTarget);
-						}
-					}
-				};
-
-				// 为单元格输入框添加聚焦事件
-				input.onfocus = (ev) => {
-					this.setActiveCell(
-						i,
-						j,
-						ev.currentTarget as HTMLInputElement
-					);
-				};
-			});
-		}
 
 		// 在完成表格渲染后，更新滚动条容器的宽度
-		// 找到包裹表格的容器元素
 		const tableWrapper = this.tableEl.closest('.table-wrapper');
 		if (tableWrapper) {
-			// 获取表格实际宽度
 			const tableWidth = this.tableEl.offsetWidth;
-			
-			// 更新顶部滚动条容器的宽度
 			const topScroll = tableWrapper.querySelector('.top-scroll');
-			
 			if (topScroll) {
-				// 创建一个与表格等宽的占位div
 				const createSpacer = () => {
 					const spacer = document.createElement('div');
 					spacer.style.width = tableWidth + 'px';
 					spacer.style.height = '1px';
 					return spacer;
 				};
-
-				// 清空并添加新的占位元素
 				topScroll.empty();
 				topScroll.appendChild(createSpacer());
 			}
