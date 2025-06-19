@@ -107,10 +107,12 @@ export function renderTable(options: TableRenderOptions) {
         e.dataTransfer?.setData("text/col-index", String(index));
         th.classList.add("dragging");
         setDragState('col', index);
+        if (typeof requestSave === 'function') requestSave();
       };
       th.ondragend = () => {
         th.classList.remove("dragging");
         setDragState(null, null);
+        if (typeof requestSave === 'function') requestSave();
       };
       th.ondragover = (e) => {
         e.preventDefault();
@@ -144,9 +146,13 @@ export function renderTable(options: TableRenderOptions) {
         delCol.title = i18n.t("buttons.deleteColumn") || "Delete column";
         delCol.onclick = (e) => { e.stopPropagation(); options.deleteColAt(index); };
       }
-      // 拖拽高亮整列
-      if (dragState.type === 'col' && dragState.index === index) {
-        th.classList.add('csv-dragging-highlight');
+      // 拖拽高亮整列及相邻列
+      if (dragState.type === 'col' && dragState.index !== null) {
+        const colStart = Math.max(0, dragState.index - 2);
+        const colEnd = Math.min(tableData[0].length - 1, dragState.index + 2);
+        if (index >= colStart && index <= colEnd) {
+          th.classList.add('csv-dragging-highlight');
+        }
       }
     });
   }
@@ -200,10 +206,12 @@ export function renderTable(options: TableRenderOptions) {
       e.dataTransfer?.setData("text/row-index", String(i));
       rowNumberCell.classList.add("dragging");
       setDragState('row', i);
+      if (typeof requestSave === 'function') requestSave();
     };
     rowNumberCell.ondragend = () => {
       rowNumberCell.classList.remove("dragging");
       setDragState(null, null);
+      if (typeof requestSave === 'function') requestSave();
     };
     rowNumberCell.ondragover = (e) => {
       e.preventDefault();
@@ -237,12 +245,16 @@ export function renderTable(options: TableRenderOptions) {
       delRow.title = i18n.t("buttons.deleteRow") || "Delete row";
       delRow.onclick = (e) => { e.stopPropagation(); options.deleteRowAt(i); };
     }
-    // 拖拽高亮整行
-    if (dragState.type === 'row' && dragState.index === i) {
-      rowNumberCell.classList.add('csv-dragging-highlight');
-      Array.from(tableRow.children).forEach(td => {
-        (td as HTMLElement).classList.add('csv-dragging-highlight');
-      });
+    // 拖拽高亮整行及相邻行
+    if (dragState.type === 'row' && dragState.index !== null) {
+      const rowStart = Math.max(startRowIndex, dragState.index - 2);
+      const rowEnd = Math.min(tableData.length - 1, dragState.index + 2);
+      if (i >= rowStart && i <= rowEnd) {
+        rowNumberCell.classList.add('csv-dragging-highlight');
+        Array.from(tableRow.children).forEach(td => {
+          (td as HTMLElement).classList.add('csv-dragging-highlight');
+        });
+      }
     }
     row.forEach((cell, j) => {
       const td = tableRow.createEl("td", {
