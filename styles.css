@@ -239,20 +239,6 @@ td input:focus {
 	display: block;
 }
 
-/* CSV导入导出选项样式 */
-.csv-export-import {
-	margin-top: 12px;
-	padding-top: 12px;
-	border-top: 1px dashed var(--background-modifier-border);
-}
-
-.csv-delimiter-container {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	margin-bottom: 8px;
-}
-
 /* 表头行样式 */
 .csv-header-row th {
 	background-color: var(--interactive-accent);

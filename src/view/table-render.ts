@@ -24,6 +24,8 @@ export interface TableRenderOptions {
   deleteRowAt: (rowIndex: number) => void;
   insertColAt: (colIndex: number, after?: boolean) => void;
   deleteColAt: (colIndex: number) => void;
+  // 新增：可选的renderEditBar回调
+  renderEditBar?: (row: number, col: number, cellEl: HTMLInputElement) => void;
 }
 
 export function renderTable(options: TableRenderOptions) {
@@ -49,6 +51,7 @@ export function renderTable(options: TableRenderOptions) {
     deleteRowAt,
     insertColAt,
     deleteColAt,
+    renderEditBar,
   } = options;
 
   tableEl.empty();
@@ -168,6 +171,10 @@ export function renderTable(options: TableRenderOptions) {
           tableData[i][j] = ev.currentTarget.value;
           if (activeCellEl === ev.currentTarget && editInput) {
             editInput.value = ev.currentTarget.value;
+          }
+          // 新增：表格单元格编辑时同步编辑栏
+          if (renderEditBar) {
+            renderEditBar(i, j, ev.currentTarget);
           }
           requestSave();
           if (autoResize) {

@@ -201,6 +201,23 @@ export class CSVView extends TextFileView {
 		}
 
 		// 迁移：表格渲染全部交由 table-render.ts 处理
+		// 传递renderEditBar给renderTable，实现双向同步
+		const renderEditBarBridge = (row: number, col: number, cellEl: HTMLInputElement) => {
+			renderEditBar({
+				editBarEl: this.editBarEl,
+				editInput: this.editInput,
+				activeCellEl: cellEl,
+				activeRowIndex: row,
+				activeColIndex: col,
+				tableData: this.tableData,
+				onEdit: (r, c, value) => {
+					this.saveSnapshot();
+					this.tableData[r][c] = value;
+					this.requestSave();
+				},
+			});
+		};
+
 		renderTable({
 			tableData: this.tableData,
 			columnWidths: this.columnWidths,
@@ -210,7 +227,10 @@ export class CSVView extends TextFileView {
 			activeCellEl: this.activeCellEl,
 			activeRowIndex: this.activeRowIndex,
 			activeColIndex: this.activeColIndex,
-			setActiveCell: (row, col, cellEl) => this.setActiveCell(row, col, cellEl),
+			setActiveCell: (row, col, cellEl) => {
+				this.setActiveCell(row, col, cellEl);
+				renderEditBarBridge(row, col, cellEl);
+			},
 			saveSnapshot: () => this.saveSnapshot(),
 			requestSave: () => this.requestSave(),
 			setupAutoResize: (input) => this.setupAutoResize(input),
@@ -247,6 +267,8 @@ export class CSVView extends TextFileView {
 				this.refresh();
 				this.requestSave();
 			},
+			// 新增：表格单元格编辑时同步编辑栏
+			renderEditBar: renderEditBarBridge,
 		});
 
 		// 在完成表格渲染后，更新滚动条容器的宽度
@@ -553,19 +575,14 @@ export class CSVView extends TextFileView {
 					this.refresh();
 				});
 
-			// CSV导入导出选项
-			this.operationEl.createEl("div", { cls: "csv-export-import" });
-
-			// 创建编辑栏（在操作区之后）
-			this.editBarEl = this.contentEl.createEl("div", {
+			// 编辑栏（sticky工具栏内，按钮和搜索栏之后）
+			this.editBarEl = this.operationEl.createEl("div", {
 				cls: "csv-edit-bar",
 			});
-			// 创建编辑输入框
 			this.editInput = this.editBarEl.createEl("input", {
 				cls: "csv-edit-input",
 				attr: { placeholder: i18n.t("editBar.placeholder") },
 			});
-			// 使用renderEditBar渲染编辑栏
 			renderEditBar({
 				editBarEl: this.editBarEl,
 				editInput: this.editInput,
