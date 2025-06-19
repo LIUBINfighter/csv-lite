@@ -96,21 +96,9 @@ export class SourceView extends TextFileView {
     const editorContainer = container.createDiv({ cls: "csv-source-editor-container" });
 
     // 工具栏
-    const toolbar = editorContainer.createDiv({ cls: "csv-source-toolbar" });
-    toolbar.createEl("span", { text: "CSV 源码编辑器", cls: "csv-source-title" });
-    const buttonGroup = toolbar.createDiv({ cls: "csv-source-button-group" });
-    this.addToolbarButton(buttonGroup, "表格模式", "table", "切换到表格模式", async () => {
-      const file = this.file;
-      if (!file) return;
-      const leaf = this.app.workspace.getLeaf(true);
-      await leaf.openFile(file, { active: true });
-      await leaf.setViewState({
-        type: "csv-view",
-        active: true,
-        state: { file: file.path }
-      });
-      this.leaf.detach();
-    });
+    // 移除原有表格模式切换按钮（toolbar中的）
+    // const buttonGroup = toolbar.createDiv({ cls: "csv-source-button-group" });
+    // this.addToolbarButton(buttonGroup, "表格模式", "table", "切换到表格模式", ...);
 
     // CodeMirror 编辑器容器
     const cmContainer = editorContainer.createDiv({ cls: "csv-source-cm-container" });

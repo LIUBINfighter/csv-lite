@@ -528,12 +528,6 @@ export class CSVView extends TextFileView {
 				.setIcon("redo")
 				.onClick(() => this.redo());
 
-			// 新增：源码模式按钮
-			new ButtonComponent(buttonContainer)
-				.setButtonText("源码模式")
-				.setIcon("file-code")
-				.onClick(() => this.openSourceMode());
-
 			// 添加行按钮
 			new ButtonComponent(buttonContainer)
 				.setButtonText(i18n.t("buttons.addRow"))
