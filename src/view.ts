@@ -273,6 +273,31 @@ export class CSVView extends TextFileView {
 			},
 			// 新增：表格单元格编辑时同步编辑栏
 			renderEditBar: renderEditBarBridge,
+			// 新增：拖拽排序回调
+			onColumnReorder: (from, to) => {
+				if (from === to) return;
+				this.saveSnapshot();
+				// 交换所有行的列
+				for (let row of this.tableData) {
+					const [col] = row.splice(from, 1);
+					row.splice(to, 0, col);
+				}
+				// 同步列宽
+				if (this.columnWidths && this.columnWidths.length > 0) {
+					const [w] = this.columnWidths.splice(from, 1);
+					this.columnWidths.splice(to, 0, w);
+				}
+				this.refresh();
+				this.requestSave();
+			},
+			onRowReorder: (from, to) => {
+				if (from === to) return;
+				this.saveSnapshot();
+				const [row] = this.tableData.splice(from, 1);
+				this.tableData.splice(to, 0, row);
+				this.refresh();
+				this.requestSave();
+			},
 		});
 
 		// 在完成表格渲染后，更新滚动条容器的宽度

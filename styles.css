@@ -539,3 +539,15 @@ td input:focus {
 .csv-col-selected.csv-col-number .csv-del-col-btn {
   display: inline-block;
 }
+
+/* 拖拽排序视觉反馈 */
+.csv-col-number.dragging,
+.csv-row-number.dragging {
+  opacity: 0.5;
+  background: var(--color-accent-2, #e0e0e0);
+}
+.csv-col-number.drag-over,
+.csv-row-number.drag-over {
+  outline: 2px dashed var(--color-accent, #888);
+  background: var(--color-accent-1, #f0f0f0);
+}

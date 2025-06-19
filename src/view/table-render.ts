@@ -26,6 +26,9 @@ export interface TableRenderOptions {
   deleteColAt: (colIndex: number) => void;
   // 新增：可选的renderEditBar回调
   renderEditBar?: (row: number, col: number, cellEl: HTMLInputElement) => void;
+  // 拖拽排序回调
+  onColumnReorder?: (from: number, to: number) => void;
+  onRowReorder?: (from: number, to: number) => void;
 }
 
 export function renderTable(options: TableRenderOptions) {
@@ -52,6 +55,8 @@ export function renderTable(options: TableRenderOptions) {
     insertColAt,
     deleteColAt,
     renderEditBar,
+    onColumnReorder,
+    onRowReorder,
   } = options;
 
   tableEl.empty();
@@ -76,12 +81,37 @@ export function renderTable(options: TableRenderOptions) {
         cls: "csv-col-number",
         attr: {
           style: `width: ${columnWidths[index] || 100}px`,
+          draggable: "true",
         },
       });
       th.textContent = getColumnLabel(index);
       th.onclick = (e) => {
         e.stopPropagation();
         selectColumn(index);
+      };
+      // 拖拽排序事件
+      th.ondragstart = (e) => {
+        e.dataTransfer?.setData("text/col-index", String(index));
+        th.classList.add("dragging");
+      };
+      th.ondragend = () => {
+        th.classList.remove("dragging");
+      };
+      th.ondragover = (e) => {
+        e.preventDefault();
+        th.classList.add("drag-over");
+      };
+      th.ondragleave = () => {
+        th.classList.remove("drag-over");
+      };
+      th.ondrop = (e) => {
+        e.preventDefault();
+        th.classList.remove("drag-over");
+        const from = Number(e.dataTransfer?.getData("text/col-index"));
+        const to = index;
+        if (onColumnReorder && from !== to) {
+          onColumnReorder(from, to);
+        }
       };
       // 插入列操作按钮
       const insertLeft = th.createEl("button", { cls: "csv-insert-col-btn left" });
@@ -137,11 +167,35 @@ export function renderTable(options: TableRenderOptions) {
   for (let i = startRowIndex; i < tableData.length; i++) {
     const row = tableData[i];
     const tableRow = tableBody.createEl("tr");
-    const rowNumberCell = tableRow.createEl("td", { cls: "csv-row-number" });
+    const rowNumberCell = tableRow.createEl("td", { cls: "csv-row-number", attr: { draggable: "true" } });
     rowNumberCell.textContent = i.toString();
     rowNumberCell.onclick = (e) => {
       e.stopPropagation();
       selectRow(i);
+    };
+    // 拖拽排序事件
+    rowNumberCell.ondragstart = (e) => {
+      e.dataTransfer?.setData("text/row-index", String(i));
+      rowNumberCell.classList.add("dragging");
+    };
+    rowNumberCell.ondragend = () => {
+      rowNumberCell.classList.remove("dragging");
+    };
+    rowNumberCell.ondragover = (e) => {
+      e.preventDefault();
+      rowNumberCell.classList.add("drag-over");
+    };
+    rowNumberCell.ondragleave = () => {
+      rowNumberCell.classList.remove("drag-over");
+    };
+    rowNumberCell.ondrop = (e) => {
+      e.preventDefault();
+      rowNumberCell.classList.remove("drag-over");
+      const from = Number(e.dataTransfer?.getData("text/row-index"));
+      const to = i;
+      if (onRowReorder && from !== to) {
+        onRowReorder(from, to);
+      }
     };
     // 插入行操作按钮
     const insertAbove = rowNumberCell.createEl("button", { cls: "csv-insert-row-btn above" });
@@ -190,3 +244,5 @@ export function renderTable(options: TableRenderOptions) {
 
   // 滚动条容器宽度同步逻辑建议由主类处理
 }
+
+// 建议在 styles.css 添加 .dragging 和 .drag-over 的样式以增强拖拽反馈
