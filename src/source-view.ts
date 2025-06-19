@@ -49,6 +49,11 @@ export class SourceView extends TextFileView {
     return this.file ? `CSV 源码模式: ${this.file.basename}` : "CSV 源码模式";
   }
 
+  getIcon(): string {
+    // 使用 lucide 的 file-code 图标
+    return "file-code";
+  }
+
   async onOpen() {
     // 1. 在 view header 的 view-actions 区域插入切换按钮（lucide/table 图标）
     // 交互说明：
