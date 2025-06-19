@@ -287,14 +287,29 @@ td input:focus {
 	cursor: default;
 }
 
+th.csv-row-number {
+    width: 100px !important;
+	min-width: 100px !important;
+	max-width: 100px !important;
+}
+
+td.csv-row-number{
+	width: 100px !important;
+	min-width: 100px !important;
+	max-width: 100px !important;
+	
+}
+
 .csv-row-number {
-	width: 40px;
-	min-width: 40px;
-	max-width: 40px;
+	width: 100px !important;
+	min-width: 100px !important;
+	max-width: 100px !important;
 	border-right: 2px solid var(--background-modifier-border);
 	position: sticky;
 	left: 0;
 	z-index: 10;
+	overflow: visible; /* 确保按钮不会被遮挡 */
+	position: relative; /* 确保定位的按钮能够正确显示 */
 }
 
 .csv-col-number {
@@ -316,9 +331,9 @@ td input:focus {
 	left: 0;
 	top: 0;
 	z-index: 11;
-	width: 40px;
-	min-width: 40px;
-	max-width: 40px;
+	width: 80px;
+	min-width: 60px;
+	max-width: 100px;
 	height: 25px;
 	min-height: 25px;
 	max-height: 25px;
@@ -585,6 +600,27 @@ td input:focus {
 .csv-col-selected.csv-col-number .csv-insert-col-btn,
 .csv-col-selected.csv-col-number .csv-del-col-btn {
 	display: inline-block;
+}
+
+/* 优化按钮显示逻辑，确保互斥 */
+.csv-row-number:hover .csv-insert-row-btn,
+.csv-row-number:hover .csv-del-row-btn {
+  display: inline-block;
+}
+
+.csv-row-number:not(:hover) .csv-insert-row-btn,
+.csv-row-number:not(:hover) .csv-del-row-btn {
+  display: none;
+}
+
+.csv-col-number:hover .csv-insert-col-btn,
+.csv-col-number:hover .csv-del-col-btn {
+  display: inline-block;
+}
+
+.csv-col-number:not(:hover) .csv-insert-col-btn,
+.csv-col-number:not(:hover) .csv-del-col-btn {
+  display: none;
 }
 
 /* 确保操作按钮位于最前面 */
