@@ -66,6 +66,9 @@ export class CSVView extends TextFileView {
 	// 新增：搜索栏属性
 	private searchBar: any; // SearchBar 实例
 
+	// 新增：header context menu 解绑函数
+	private headerContextMenuCleanup: (() => void) | null = null;
+
 	constructor(leaf: any) {
 		super(leaf);
 		this.historyManager = new TableHistoryManager(
@@ -307,6 +310,26 @@ export class CSVView extends TextFileView {
 			(this as any)._csvTableClickHandler = handler;
 			tableContainer.addEventListener('click', handler);
 		}
+
+		// 关键：每次刷新前解绑旧的header context menu事件
+		if (this.headerContextMenuCleanup) {
+			this.headerContextMenuCleanup();
+			this.headerContextMenuCleanup = null;
+		}
+		// 重新绑定并保存解绑函数
+		this.headerContextMenuCleanup = setupHeaderContextMenu({
+			tableEl: this.tableEl,
+			onInsertRowAbove: (rowIdx) => this.refreshInsertRow(rowIdx, false),
+			onInsertRowBelow: (rowIdx) => this.refreshInsertRow(rowIdx, true),
+			onDeleteRow: (rowIdx) => this.refreshDeleteRow(rowIdx),
+			onMoveRowUp: (rowIdx) => this.moveRow(rowIdx, rowIdx - 1),
+			onMoveRowDown: (rowIdx) => this.moveRow(rowIdx, rowIdx + 1),
+			onInsertColLeft: (colIdx) => this.refreshInsertCol(colIdx, false),
+			onInsertColRight: (colIdx) => this.refreshInsertCol(colIdx, true),
+			onDeleteCol: (colIdx) => this.refreshDeleteCol(colIdx),
+			onMoveColLeft: (colIdx) => this.moveCol(colIdx, colIdx - 1),
+			onMoveColRight: (colIdx) => this.moveCol(colIdx, colIdx + 1),
+		});
 	}
 
 	// 新增：获取列标签（A, B, C, ... Z, AA, AB, ...）
@@ -745,6 +768,11 @@ export class CSVView extends TextFileView {
 		const styleEl = document.head.querySelector("#csv-edit-bar-styles");
 		if (styleEl) styleEl.remove();
 
+		// 解绑header context menu事件
+		if (this.headerContextMenuCleanup) {
+			this.headerContextMenuCleanup();
+			this.headerContextMenuCleanup = null;
+		}
 		this.contentEl.empty();
 	}
 

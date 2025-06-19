@@ -11,7 +11,7 @@ export class HighlightManager {
 	}
 
 	public selectRow(rowIndex: number) {
-		console.log('[HighlightManager] selectRow', rowIndex);
+		// console.log('[HighlightManager] selectRow', rowIndex);
 		if (this.selectedRow === rowIndex) {
 			this.clearSelection();
 			return;
@@ -22,7 +22,7 @@ export class HighlightManager {
 	}
 
 	public selectColumn(colIndex: number) {
-		console.log('[HighlightManager] selectColumn', colIndex);
+		// console.log('[HighlightManager] selectColumn', colIndex);
 		if (this.selectedCol === colIndex) {
 			this.clearSelection();
 			return;
@@ -33,7 +33,7 @@ export class HighlightManager {
 	}
 
 	public clearSelection() {
-		console.log('[HighlightManager] clearSelection');
+		// console.log('[HighlightManager] clearSelection');
 		this.selectedRow = -1;
 		this.selectedCol = -1;
 		this.clearHighlight();
@@ -51,20 +51,20 @@ export class HighlightManager {
 	}
 
 	private highlightRow(rowIndex: number) {
-		console.log('[HighlightManager] highlightRow', rowIndex);
+		// console.log('[HighlightManager] highlightRow', rowIndex);
 		const rows = this.tableEl?.querySelectorAll('tbody tr');
 		const targetRowIndex = rowIndex - 1;
 		if (rows && rows[targetRowIndex]) {
-			console.log('[HighlightManager] highlightRow target', rows[targetRowIndex]);
+			// console.log('[HighlightManager] highlightRow target', rows[targetRowIndex]);
 			(rows[targetRowIndex] as HTMLElement).classList.add('csv-row-selected');
 		}
 	}
 
 	private highlightColumn(colIndex: number) {
-		console.log('[HighlightManager] highlightColumn', colIndex);
+		// console.log('[HighlightManager] highlightColumn', colIndex);
 		const columnCells = this.tableEl?.querySelectorAll(`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`);
 		if (columnCells) {
-			console.log('[HighlightManager] highlightColumn cells', columnCells);
+			// console.log('[HighlightManager] highlightColumn cells', columnCells);
 		}
 		columnCells?.forEach(cell => {
 			if (cell instanceof HTMLElement) {
@@ -74,7 +74,7 @@ export class HighlightManager {
 	}
 
 	private clearHighlight() {
-		console.log('[HighlightManager] clearHighlight');
+		// console.log('[HighlightManager] clearHighlight');
 		this.tableEl?.querySelectorAll('.csv-row-selected, .csv-col-selected').forEach(el => {
 			if (el instanceof HTMLElement) {
 				el.classList.remove('csv-row-selected');

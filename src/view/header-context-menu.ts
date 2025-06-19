@@ -17,7 +17,7 @@ interface HeaderContextMenuOptions {
   onMoveColRight: (colIndex: number) => void;
 }
 
-export function setupHeaderContextMenu(options: HeaderContextMenuOptions) {
+export function setupHeaderContextMenu(options: HeaderContextMenuOptions): () => void {
   const { tableEl } = options;
   let menuEl: HTMLDivElement | null = null;
 
@@ -60,7 +60,13 @@ export function setupHeaderContextMenu(options: HeaderContextMenuOptions) {
       div.onmouseleave = () => div.style.background = '';
       div.onclick = (e) => {
         e.stopPropagation();
-        item.onClick();
+        try {
+          item.onClick();
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error('[CSV-Lite] 菜单项点击异常:', item.label, err);
+          alert('[CSV-Lite] 菜单项点击异常: ' + item.label + '\n' + (err?.message || err));
+        }
         menuEl?.remove();
       };
       menuEl!.appendChild(div);
@@ -77,11 +83,15 @@ export function setupHeaderContextMenu(options: HeaderContextMenuOptions) {
   }
 
   // 监听表头右键
-  tableEl.addEventListener('contextmenu', (event: MouseEvent) => {
+  const handler = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
     if (target.classList.contains('csv-row-number')) {
       event.preventDefault();
-      const rowIndex = Array.from(target.parentElement!.parentElement!.children).indexOf(target.parentElement!);
+      // 更健壮的行索引计算
+      const tr = target.closest('tr');
+      if (!tr) return;
+      const trs = Array.from(tr.parentElement!.children);
+      const rowIndex = trs.indexOf(tr);
       createMenu([
         { label: 'contextMenu.insertRowAbove', onClick: () => options.onInsertRowAbove(rowIndex) },
         { label: 'contextMenu.insertRowBelow', onClick: () => options.onInsertRowBelow(rowIndex) },
@@ -92,7 +102,9 @@ export function setupHeaderContextMenu(options: HeaderContextMenuOptions) {
     }
     if (target.classList.contains('csv-col-number')) {
       event.preventDefault();
-      const colIndex = Array.from(target.parentElement!.children).indexOf(target);
+      // 更健壮的列索引计算
+      const ths = Array.from(tableEl.querySelectorAll('.csv-col-number'));
+      const colIndex = ths.indexOf(target);
       createMenu([
         { label: 'contextMenu.insertColLeft', onClick: () => options.onInsertColLeft(colIndex) },
         { label: 'contextMenu.insertColRight', onClick: () => options.onInsertColRight(colIndex) },
@@ -101,5 +113,11 @@ export function setupHeaderContextMenu(options: HeaderContextMenuOptions) {
         { label: 'contextMenu.moveColRight', onClick: () => options.onMoveColRight(colIndex) },
       ], event.pageX, event.pageY);
     }
-  });
+  };
+  tableEl.addEventListener('contextmenu', handler);
+
+  // 返回解绑函数
+  return () => {
+    tableEl.removeEventListener('contextmenu', handler);
+  };
 }
