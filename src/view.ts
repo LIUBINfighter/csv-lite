@@ -489,6 +489,12 @@ export class CSVView extends TextFileView {
 				.setIcon("redo")
 				.onClick(() => this.redo());
 
+			// 新增：源码模式按钮
+			new ButtonComponent(buttonContainer)
+				.setButtonText("源码模式")
+				.setIcon("file-code")
+				.onClick(() => this.openSourceMode());
+
 			// 添加行按钮
 			new ButtonComponent(buttonContainer)
 				.setButtonText(i18n.t("buttons.addRow"))
@@ -764,6 +770,19 @@ export class CSVView extends TextFileView {
 			if (el instanceof HTMLElement) {
 				el.removeClass("csv-search-current");
 			}
+		});
+	}
+
+	// 新增：源码模式切换
+	async openSourceMode() {
+		const file = this.file;
+		if (!file) return;
+		const leaf = this.app.workspace.getLeaf(true);
+		await leaf.openFile(file, { active: true, state: { mode: "source" } });
+		await leaf.setViewState({
+			type: "csv-source-view",
+			active: true,
+			state: { file: file.path }
 		});
 	}
 }

@@ -1,5 +1,6 @@
 import { Plugin, WorkspaceLeaf, moment } from "obsidian";
 import { CSVView, VIEW_TYPE_CSV } from "./view";
+import { SourceView, VIEW_TYPE_CSV_SOURCE } from "./source-view";
 import { i18n } from "./i18n";
 
 interface CSVPluginSettings {
@@ -30,6 +31,12 @@ export default class CSVPlugin extends Plugin {
 		this.registerView(
 			VIEW_TYPE_CSV,
 			(leaf: WorkspaceLeaf) => new CSVView(leaf)
+		);
+
+		// 注册源码视图类型
+		this.registerView(
+			VIEW_TYPE_CSV_SOURCE,
+			(leaf: WorkspaceLeaf) => new SourceView(leaf)
 		);
 
 		// 将.csv文件扩展名与视图类型绑定
