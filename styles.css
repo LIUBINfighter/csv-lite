@@ -14,6 +14,7 @@ If your plugin does not need CSS, delete this file.
 	margin-top: 10px;
 	table-layout: fixed;
 	position: relative;
+	overflow: visible; /* 确保表格内的按钮可见 */
 }
 
 .csv-lite-table td,
@@ -332,7 +333,7 @@ td.csv-row-number{
 	top: 0;
 	z-index: 11;
 	width: 80px;
-	min-width: 60px;
+	min-width: 70px;
 	max-width: 100px;
 	height: 25px;
 	min-height: 25px;
@@ -516,7 +517,7 @@ td.csv-row-number{
 .csv-del-col-btn {
 	display: none;
 	position: absolute;
-	z-index: 20;
+	z-index: 50; /* 提高按钮的层级，确保位于表格之上 */
 	width: 18px;
 	height: 18px;
 	padding: 0;
@@ -530,6 +531,7 @@ td.csv-row-number{
 	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 	transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
+
 .csv-insert-row-btn:hover,
 .csv-insert-col-btn:hover,
 .csv-del-row-btn:hover,
@@ -541,20 +543,20 @@ td.csv-row-number{
 
 /* 行按钮定位调整 */
 .csv-insert-row-btn.above {
-	top: -20px;
-	left: 50%;
-	transform: translate(-50%, 0);
+	left: 0px;
+	top: 50%;
+	transform: translate(0, -50%);
 	z-index: 30;
 }
 .csv-insert-row-btn.below {
-	bottom: -20px;
-	left: 50%;
-	transform: translate(-50%, 0);
+	right: 0px;
+	top: 50%;
+	transform: translate(0, -50%);
 	z-index: 30;
 }
 .csv-del-row-btn {
+	left: 20px;
 	top: 50%;
-	left: -20px;
 	transform: translate(0, -50%);
 	z-index: 30;
 }
@@ -573,9 +575,9 @@ td.csv-row-number{
 	z-index: 30;
 }
 .csv-del-col-btn {
-	top: -10px;
-	left: 50%;
-	transform: translate(-50%, 0);
+	left: 20px;
+	top: 50%;
+	transform: translate(0, -50%);
 	z-index: 30;
 }
 
@@ -588,18 +590,19 @@ td.csv-row-number{
 	z-index: 25; /* 提高层级，确保不会被遮挡 */
 }
 
-/* 仅在悬浮或选中时显示按钮 */
+/* 鼠标悬浮和选中时显示操作按钮 */
 .csv-row-number:hover .csv-insert-row-btn,
 .csv-row-number:hover .csv-del-row-btn,
-.csv-row-selected .csv-row-number .csv-insert-row-btn,
-.csv-row-selected .csv-row-number .csv-del-row-btn {
-	display: inline-block;
+.csv-row-selected .csv-insert-row-btn,
+.csv-row-selected .csv-del-row-btn {
+  display: inline-block;
 }
+
 .csv-col-number:hover .csv-insert-col-btn,
 .csv-col-number:hover .csv-del-col-btn,
-.csv-col-selected.csv-col-number .csv-insert-col-btn,
-.csv-col-selected.csv-col-number .csv-del-col-btn {
-	display: inline-block;
+.csv-col-selected .csv-insert-col-btn,
+.csv-col-selected .csv-del-col-btn {
+  display: inline-block;
 }
 
 /* 优化按钮显示逻辑，确保互斥 */
@@ -629,13 +632,6 @@ td.csv-row-number{
 	z-index: 10; /* 提高操作按钮的层级，确保位于表格之上 */
 }
 
-/* 如果需要进一步调整按钮的布局 */
-.button-container .action-button {
-	position: absolute; /* 根据需要调整布局 */
-	top: 0; /* 根据实际情况调整位置 */
-	left: 0; /* 根据实际情况调整位置 */
-}
-
 /* 拖拽排序视觉反馈 */
 .csv-col-number.dragging,
 .csv-row-number.dragging {
@@ -646,12 +642,6 @@ td.csv-row-number{
 .csv-row-number.drag-over {
 	outline: 2px dashed var(--color-accent, #888);
 	background: var(--color-accent-1, #f0f0f0);
-}
-
-/* 拖拽时整行/列高亮 */
-.csv-dragging-highlight {
-	background: var(--color-accent-1, #e6f7ff) !important;
-	box-shadow: 0 0 0 2px var(--color-accent, #1890ff) inset;
 }
 
 /* 拖拽时隐藏所有插入/删除按钮 */
