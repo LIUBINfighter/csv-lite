@@ -14,12 +14,14 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@codemirror/commands": "^6.8.1",
+    "@codemirror/language": "^6.11.1",
     "papaparse": "^5.4.1"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.5",
     "@types/node": "^16.11.6",
     "@types/papaparse": "^5.3.7",
-    "@types/jest": "^29.5.5",
     "builtin-modules": "^3.3.0",
     "esbuild": "0.17.3",
     "jest": "^29.7.0",
