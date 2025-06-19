@@ -175,6 +175,21 @@ export class SourceView extends TextFileView {
         background: var(--background-modifier-active-hover);
         border-radius: 2px;
       }
+      .csv-source-cm-container .cm-cursor {
+        border-left: 2px solid var(--color-accent);
+        /* 兼容明暗主题，使用主题主色 */
+        background: none;
+        opacity: 1;
+        z-index: 10;
+      }
+      .csv-source-cm-container .cm-gutters {
+        background: var(--background-secondary);
+        color: var(--text-faint);
+        border-right: 1px solid var(--background-modifier-border);
+      }
+      .csv-source-cm-container .cm-lineNumbers .cm-gutterElement {
+        color: var(--text-faint);
+      }
     `;
     document.head.appendChild(style);
     this.register(() => {
