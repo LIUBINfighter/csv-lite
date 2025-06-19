@@ -20,6 +20,10 @@ export interface TableRenderOptions {
   selectColumn: (colIndex: number) => void;
   getColumnLabel: (index: number) => string;
   setupColumnResize: (handle: HTMLElement, columnIndex: number) => void;
+  insertRowAt: (rowIndex: number, after?: boolean) => void;
+  deleteRowAt: (rowIndex: number) => void;
+  insertColAt: (colIndex: number, after?: boolean) => void;
+  deleteColAt: (colIndex: number) => void;
 }
 
 export function renderTable(options: TableRenderOptions) {
@@ -41,6 +45,10 @@ export function renderTable(options: TableRenderOptions) {
     selectColumn,
     getColumnLabel,
     setupColumnResize,
+    insertRowAt,
+    deleteRowAt,
+    insertColAt,
+    deleteColAt,
   } = options;
 
   tableEl.empty();
@@ -55,7 +63,8 @@ export function renderTable(options: TableRenderOptions) {
   }
 
   // 添加左上角单元格
-  headerRow.createEl("th", { cls: "csv-corner-cell" });
+  const cornerTh = headerRow.createEl("th", { cls: "csv-corner-cell" });
+  // 可选：在左上角添加插入列/行按钮
 
   // 创建列号行
   if (tableData[0]) {
@@ -68,9 +77,22 @@ export function renderTable(options: TableRenderOptions) {
       });
       th.textContent = getColumnLabel(index);
       th.onclick = (e) => {
-        e.stopPropagation(); // 防止事件冒泡导致高亮被清除
+        e.stopPropagation();
         selectColumn(index);
       };
+      // 插入列操作按钮
+      const insertLeft = th.createEl("button", { cls: "csv-insert-col-btn left" });
+      insertLeft.innerText = "+";
+      insertLeft.title = i18n.t("buttons.insertColBefore") || "Insert column before";
+      insertLeft.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, false); };
+      const insertRight = th.createEl("button", { cls: "csv-insert-col-btn right" });
+      insertRight.innerText = "+";
+      insertRight.title = i18n.t("buttons.insertColAfter") || "Insert column after";
+      insertRight.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, true); };
+      const delCol = th.createEl("button", { cls: "csv-del-col-btn" });
+      delCol.innerText = "-";
+      delCol.title = i18n.t("buttons.deleteColumn") || "Delete column";
+      delCol.onclick = (e) => { e.stopPropagation(); options.deleteColAt(index); };
     });
   }
 
@@ -115,9 +137,22 @@ export function renderTable(options: TableRenderOptions) {
     const rowNumberCell = tableRow.createEl("td", { cls: "csv-row-number" });
     rowNumberCell.textContent = i.toString();
     rowNumberCell.onclick = (e) => {
-      e.stopPropagation(); // 防止事件冒泡导致高亮被清除
+      e.stopPropagation();
       selectRow(i);
     };
+    // 插入行操作按钮
+    const insertAbove = rowNumberCell.createEl("button", { cls: "csv-insert-row-btn above" });
+    insertAbove.innerText = "+";
+    insertAbove.title = i18n.t("buttons.insertRowBefore") || "Insert row before";
+    insertAbove.onclick = (e) => { e.stopPropagation(); options.insertRowAt(i, false); };
+    const insertBelow = rowNumberCell.createEl("button", { cls: "csv-insert-row-btn below" });
+    insertBelow.innerText = "+";
+    insertBelow.title = i18n.t("buttons.insertRowAfter") || "Insert row after";
+    insertBelow.onclick = (e) => { e.stopPropagation(); options.insertRowAt(i, true); };
+    const delRow = rowNumberCell.createEl("button", { cls: "csv-del-row-btn" });
+    delRow.innerText = "-";
+    delRow.title = i18n.t("buttons.deleteRow") || "Delete row";
+    delRow.onclick = (e) => { e.stopPropagation(); options.deleteRowAt(i); };
     row.forEach((cell, j) => {
       const td = tableRow.createEl("td", {
         attr: { style: `width: ${columnWidths[j] || 100}px` },

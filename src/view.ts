@@ -219,6 +219,34 @@ export class CSVView extends TextFileView {
 			selectColumn: (colIndex) => this.highlightManager.selectColumn(colIndex),
 			getColumnLabel: (index) => this.getColumnLabel(index),
 			setupColumnResize: (handle, columnIndex) => this.setupColumnResize(handle, columnIndex),
+			insertRowAt: (rowIndex, after = false) => {
+				this.saveSnapshot();
+				const idx = after ? rowIndex + 1 : rowIndex;
+				this.tableData.splice(idx, 0, Array(this.tableData[0].length).fill(""));
+				this.refresh();
+				this.requestSave();
+			},
+			deleteRowAt: (rowIndex) => {
+				if (this.tableData.length <= 1) return;
+				this.saveSnapshot();
+				this.tableData.splice(rowIndex, 1);
+				this.refresh();
+				this.requestSave();
+			},
+			insertColAt: (colIndex, after = false) => {
+				this.saveSnapshot();
+				const idx = after ? colIndex + 1 : colIndex;
+				this.tableData.forEach(row => row.splice(idx, 0, ""));
+				this.refresh();
+				this.requestSave();
+			},
+			deleteColAt: (colIndex) => {
+				if (this.tableData[0].length <= 1) return;
+				this.saveSnapshot();
+				this.tableData.forEach(row => row.splice(colIndex, 1));
+				this.refresh();
+				this.requestSave();
+			},
 		});
 
 		// 在完成表格渲染后，更新滚动条容器的宽度
@@ -500,26 +528,6 @@ export class CSVView extends TextFileView {
 				.setIcon("redo")
 				.onClick(() => this.redo());
 
-			// 添加行按钮
-			new ButtonComponent(buttonContainer)
-				.setButtonText(i18n.t("buttons.addRow"))
-				.onClick(() => this.addRow());
-
-			// 删除行按钮
-			new ButtonComponent(buttonContainer)
-				.setButtonText(i18n.t("buttons.deleteRow"))
-				.onClick(() => this.deleteRow());
-
-			// 添加列按钮
-			new ButtonComponent(buttonContainer)
-				.setButtonText(i18n.t("buttons.addColumn"))
-				.onClick(() => this.addColumn());
-
-			// 删除列按钮
-			new ButtonComponent(buttonContainer)
-				.setButtonText(i18n.t("buttons.deleteColumn"))
-				.onClick(() => this.deleteColumn());
-
 			// 重置列宽按钮
 			new ButtonComponent(buttonContainer)
 				.setButtonText(i18n.t("buttons.resetColumnWidth"))
@@ -528,16 +536,6 @@ export class CSVView extends TextFileView {
 					this.calculateColumnWidths();
 					this.refresh();
 				});
-
-			// 新增：在操作按钮容器中创建搜索栏
-			this.searchBar = new SearchBar(buttonContainer, {
-				getTableData: () => this.tableData,
-				tableEl: this.tableEl,
-				getColumnLabel: (index) => this.getColumnLabel(index),
-				getCellAddress: (row, col) => this.getCellAddress(row, col),
-				jumpToCell: (row, col) => this.jumpToCell(row, col),
-				clearSearchHighlights: () => this.clearSearchHighlights(),
-			});
 
 			// CSV导入导出选项
 			this.operationEl.createEl("div", { cls: "csv-export-import" });
