@@ -16,6 +16,7 @@ import { i18n } from "./i18n"; // 修正导入路径
 import { renderEditBar } from "./view/edit-bar";
 import { SearchBar } from "./view/search-bar";
 import { renderTable } from "./view/table-render";
+import { HighlightManager } from "./utils/highlight-manager";
 
 export const VIEW_TYPE_CSV = "csv-view";
 
@@ -46,9 +47,8 @@ export class CSVView extends TextFileView {
 	private activeRowIndex: number = -1;
 	private activeColIndex: number = -1;
 
-	// 新增：选中状态
-	private selectedRow: number = -1;
-	private selectedCol: number = -1;
+	// 新增：高亮管理器
+	private highlightManager: HighlightManager;
 
 	// 新增：搜索相关属性
 	private searchInput: HTMLInputElement;
@@ -215,8 +215,8 @@ export class CSVView extends TextFileView {
 			requestSave: () => this.requestSave(),
 			setupAutoResize: (input) => this.setupAutoResize(input),
 			adjustInputHeight: (input) => this.adjustInputHeight(input),
-			selectRow: (rowIndex) => this.selectRow(rowIndex),
-			selectColumn: (colIndex) => this.selectColumn(colIndex),
+			selectRow: (rowIndex) => this.highlightManager.selectRow(rowIndex),
+			selectColumn: (colIndex) => this.highlightManager.selectColumn(colIndex),
 			getColumnLabel: (index) => this.getColumnLabel(index),
 			setupColumnResize: (handle, columnIndex) => this.setupColumnResize(handle, columnIndex),
 		});
@@ -237,6 +237,27 @@ export class CSVView extends TextFileView {
 				topScroll.appendChild(createSpacer());
 			}
 		}
+
+		// 新增：每次刷新后为表格父容器绑定点击事件，点击非头部区域时清除高亮
+		const tableContainer = this.tableEl.parentElement;
+		if (tableContainer) {
+			if ((this as any)._csvTableClickHandler) {
+				tableContainer.removeEventListener('click', (this as any)._csvTableClickHandler);
+			}
+			const handler = (e: MouseEvent) => {
+				const target = e.target as HTMLElement;
+				// 如果点击的是列头（th.csv-col-number）或行号（td.csv-row-number），不清除高亮
+				if (
+					(target.tagName === 'TH' && target.classList.contains('csv-col-number')) ||
+					(target.tagName === 'TD' && target.classList.contains('csv-row-number'))
+				) {
+					return;
+				}
+				this.highlightManager.clearSelection();
+			};
+			(this as any)._csvTableClickHandler = handler;
+			tableContainer.addEventListener('click', handler);
+		}
 	}
 
 	// 新增：获取列标签（A, B, C, ... Z, AA, AB, ...）
@@ -248,66 +269,6 @@ export class CSVView extends TextFileView {
 			num = Math.floor(num / 26) - 1;
 		} while (num >= 0);
 		return result;
-	}
-
-	// 新增：选择行
-	private selectRow(rowIndex: number) {
-		// 如果点击的是已选中的行，则取消选择
-		if (this.selectedRow === rowIndex) {
-			this.clearSelection();
-			return;
-		}
-		
-		// 清除之前的选择
-		this.clearSelection();
-		
-		this.selectedRow = rowIndex;
-		
-		// 添加选中样式到整行
-		const rows = this.tableEl?.querySelectorAll('tbody tr');
-		const targetRowIndex = rowIndex - 1; // 因为数据行从索引1开始，tbody中的索引需要-1
-		
-		if (rows && rows[targetRowIndex]) {
-			(rows[targetRowIndex] as HTMLElement).addClass('csv-row-selected');
-		}
-	}
-
-	// 新增：选择列
-	private selectColumn(colIndex: number) {
-		// 如果点击的是已选中的列，则取消选择
-		if (this.selectedCol === colIndex) {
-			this.clearSelection();
-			return;
-		}
-		
-		// 清除之前的选择
-		this.clearSelection();
-		
-		this.selectedCol = colIndex;
-		
-		// 添加选中样式到整列（包括列号和所有数据单元格）
-		// colIndex + 2 是因为有行号列(+1)和从0开始的索引(+1)
-		const columnCells = this.tableEl?.querySelectorAll(`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`);
-		
-		columnCells?.forEach(cell => {
-			if (cell instanceof HTMLElement) {
-				cell.addClass('csv-col-selected');
-			}
-		});
-	}
-
-	// 新增：清除选择
-	private clearSelection() {
-		this.selectedRow = -1;
-		this.selectedCol = -1;
-		
-		// 移除所有选中样式
-		this.tableEl?.querySelectorAll('.csv-row-selected, .csv-col-selected').forEach(el => {
-			if (el instanceof HTMLElement) {
-				el.removeClass('csv-row-selected');
-				el.removeClass('csv-col-selected');
-			}
-		});
 	}
 
 	// 设置活动单元格
@@ -623,6 +584,8 @@ export class CSVView extends TextFileView {
 			this.tableEl = tableContainer.createEl("table", {
 				cls: "csv-lite-table",
 			});
+			// 初始化高亮管理器
+			this.highlightManager = new HighlightManager(this.tableEl);
 
 			// 设置滚动同步
 			this.setupScrollSync(topScrollContainer, tableContainer);
@@ -666,6 +629,23 @@ export class CSVView extends TextFileView {
 
 			// 初始化时刷新视图
 			this.refresh();
+
+			// 新增：点击表格空白或单元格时取消行/列选中
+			if (this.tableEl) {
+				this.tableEl.addEventListener('click', (e: MouseEvent) => {
+					const target = e.target as HTMLElement;
+					// 判断是否点击在th（行/列头）上，或有csv-row-header/csv-col-header类
+					if (
+						target.tagName === 'TH' &&
+						(target.classList.contains('csv-row-header') || target.classList.contains('csv-col-header'))
+					) {
+						// 点击头部，不处理
+						return;
+					}
+					// 其他情况清除选中
+					this.highlightManager.clearSelection();
+				});
+			}
 		} catch (error) {
 			console.error("Error in onOpen:", error);
 			new Notice(`Failed to open CSV view: ${error.message}`);

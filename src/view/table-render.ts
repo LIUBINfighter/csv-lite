@@ -67,7 +67,10 @@ export function renderTable(options: TableRenderOptions) {
         },
       });
       th.textContent = getColumnLabel(index);
-      th.onclick = () => selectColumn(index);
+      th.onclick = (e) => {
+        e.stopPropagation(); // 防止事件冒泡导致高亮被清除
+        selectColumn(index);
+      };
     });
   }
 
@@ -111,7 +114,10 @@ export function renderTable(options: TableRenderOptions) {
     const tableRow = tableBody.createEl("tr");
     const rowNumberCell = tableRow.createEl("td", { cls: "csv-row-number" });
     rowNumberCell.textContent = i.toString();
-    rowNumberCell.onclick = () => selectRow(i);
+    rowNumberCell.onclick = (e) => {
+      e.stopPropagation(); // 防止事件冒泡导致高亮被清除
+      selectRow(i);
+    };
     row.forEach((cell, j) => {
       const td = tableRow.createEl("td", {
         attr: { style: `width: ${columnWidths[j] || 100}px` },
