@@ -1,4 +1,6 @@
 import { i18n } from '../i18n';
+import { TableUtils } from '../utils/table-utils';
+import { renderTable } from '../view/table-render';
 
 // src/view/header-context-menu.ts
 // 表头（行/列）右键菜单逻辑
@@ -23,64 +25,107 @@ export function setupHeaderContextMenu(options: HeaderContextMenuOptions): () =>
 
   // 创建菜单
   function createMenu(items: { label: string; onClick: () => void }[], x: number, y: number) {
-    if (menuEl) {
-      menuEl.remove();
-    }
-    menuEl = document.createElement('div');
-    menuEl.className = 'csv-header-context-menu menu'; // 兼容 obsidian 菜单样式
-    Object.assign(menuEl.style, {
-      position: 'absolute',
-      left: `${x}px`,
-      top: `${y}px`,
-      zIndex: '9999',
-      minWidth: '160px',
-      background: 'var(--menu-background, var(--background-primary))',
-      border: '1px solid var(--background-modifier-border)',
-      borderRadius: 'var(--radius-m)',
-      boxShadow: 'var(--shadow-s)',
-      padding: '4px 0',
-      color: 'var(--text-normal)',
-      fontSize: 'var(--font-ui-small)',
-      fontFamily: 'var(--font-interface)',
-    });
-    items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'csv-header-context-menu-item menu-item';
-      div.textContent = i18n.t(item.label); // 使用i18n
-      Object.assign(div.style, {
-        padding: '6px 18px',
-        cursor: 'pointer',
-        border: 'none',
-        background: 'none',
-        color: 'inherit',
-        borderRadius: 'var(--radius-s)',
-        transition: 'background 0.15s',
-      });
-      div.onmouseenter = () => div.style.background = 'var(--background-modifier-hover)';
-      div.onmouseleave = () => div.style.background = '';
-      div.onclick = (e) => {
-        e.stopPropagation();
-        try {
-          item.onClick();
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.error('[CSV-Lite] 菜单项点击异常:', item.label, err);
-          alert('[CSV-Lite] 菜单项点击异常: ' + item.label + '\n' + (err?.message || err));
-        }
-        menuEl?.remove();
-      };
-      menuEl!.appendChild(div);
-    });
-    document.body.appendChild(menuEl);
-    // 点击其他地方关闭
-    setTimeout(() => {
-      document.addEventListener('mousedown', closeMenu, { once: true });
-    }, 0);
+    // 注销menu相关代码
+    // if (menuEl) {
+    //   menuEl.remove();
+    // }
+    // menuEl = document.createElement('div');
+    // menuEl.className = 'csv-header-context-menu menu'; // 兼容 obsidian 菜单样式
+    // Object.assign(menuEl.style, {
+    //   position: 'absolute',
+    //   left: `${x}px`,
+    //   top: `${y}px`,
+    //   zIndex: '9999',
+    //   minWidth: '160px`,
+    //   background: 'var(--menu-background, var(--background-primary))',
+    //   border: '1px solid var(--background-modifier-border)',
+    //   borderRadius: 'var(--radius-m)',
+    //   boxShadow: 'var(--shadow-s)',
+    //   padding: '4px 0',
+    //   color: 'var(--text-normal)',
+    //   fontSize: 'var(--font-ui-small)',
+    //   fontFamily: 'var(--font-interface)',
+    // });
+    // items.forEach(item => {
+    //   const div = document.createElement('div');
+    //   div.className = 'csv-header-context-menu-item menu-item';
+    //   div.textContent = i18n.t(item.label); // 使用i18n
+    //   Object.assign(div.style, {
+    //     padding: '6px 18px',
+    //     cursor: 'pointer',
+    //     border: 'none',
+    //     background: 'none',
+    //     color: 'inherit',
+    //     borderRadius: 'var(--radius-s)',
+    //     transition: 'background 0.15s',
+    //   });
+    // });
   }
   function closeMenu() {
     menuEl?.remove();
     menuEl = null;
   }
+
+  /**
+	 * 确保菜单方法绑定正确
+	 */
+	function bindMenuMethods(options: HeaderContextMenuOptions) {
+		const methods: Array<keyof HeaderContextMenuOptions> = [
+			'onInsertRowAbove', 'onInsertRowBelow', 'onDeleteRow', 'onMoveRowUp', 'onMoveRowDown',
+			'onInsertColLeft', 'onInsertColRight', 'onDeleteCol', 'onMoveColLeft', 'onMoveColRight'
+		];
+		methods.forEach(method => {
+			if (typeof options[method] !== 'function') {
+				throw new Error(`方法 ${method} 未正确绑定`);
+			}
+		});
+	}
+
+	/**
+	 * 调试事件绑定问题
+	 */
+	function debugEventBinding(tableEl: HTMLElement) {
+		tableEl.addEventListener('contextmenu', (event) => {
+			const target = event.target as HTMLElement;
+			console.log('[DEBUG] 触发 contextmenu 事件:', target);
+			if (target.classList.contains('csv-row-number')) {
+				console.log('[DEBUG] 行号元素被点击:', target);
+			}
+			if (target.classList.contains('csv-col-number')) {
+				console.log('[DEBUG] 列号元素被点击:', target);
+			}
+		});
+	}
+
+	/**
+	 * 调试菜单项点击问题
+	 */
+	function debugMenuItemClick(menuEl: HTMLDivElement) {
+		menuEl.querySelectorAll('.csv-header-context-menu-item').forEach(item => {
+			item.addEventListener('click', (event) => {
+				const target = event.target as HTMLElement;
+				console.log('[DEBUG] 菜单项被点击:', target.textContent);
+			});
+		});
+	}
+
+	/**
+	 * 确保菜单项事件绑定正确
+	 */
+	function ensureMenuItemEventBinding(menuEl: HTMLDivElement | null) {
+		if (!menuEl) return;
+		menuEl.querySelectorAll('.csv-header-context-menu-item').forEach(item => {
+			const menuItem = item as HTMLDivElement;
+			menuItem.onclick = (event: MouseEvent) => {
+				event.stopPropagation();
+				const target = event.target as HTMLElement;
+				console.log('[DEBUG] 菜单项点击事件触发:', target.textContent);
+			};
+		});
+	}
+
+	// 在菜单创建后确保事件绑定
+	ensureMenuItemEventBinding(menuEl);
 
   // 监听表头右键
   const handler = (event: MouseEvent) => {

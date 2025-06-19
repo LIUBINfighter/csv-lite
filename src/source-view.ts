@@ -50,7 +50,7 @@ export class SourceView extends TextFileView {
   }
 
   getDisplayText(): string {
-    return this.file ? `CSV 源码模式: ${this.file.basename}` : "CSV 源码模式";
+    return this.file ? `CSV source: ${this.file.basename}` : "CSV source";
   }
 
   getIcon(): string {
