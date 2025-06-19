@@ -154,6 +154,10 @@ export function renderTable(options: TableRenderOptions) {
           th.classList.add('csv-dragging-highlight');
         }
       }
+
+      // 在列号单元格中添加拖拽事件处理逻辑
+      const resizeHandle = th.createEl("div", { cls: "resize-handle" });
+      setupColumnResize(resizeHandle, index);
     });
   }
 
@@ -184,6 +188,7 @@ export function renderTable(options: TableRenderOptions) {
       headerInput.onfocus = (ev) => {
         setActiveCell(0, index, ev.currentTarget as HTMLInputElement);
       };
+      // 在列号单元格中添加拖拽事件处理逻辑
       const resizeHandle = th.createEl("div", { cls: "resize-handle" });
       setupColumnResize(resizeHandle, index);
     });

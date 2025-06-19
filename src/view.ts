@@ -355,6 +355,21 @@ export class CSVView extends TextFileView {
 			onMoveColLeft: (colIdx) => this.moveCol(colIdx, colIdx - 1),
 			onMoveColRight: (colIdx) => this.moveCol(colIdx, colIdx + 1),
 		});
+
+		// 在 refresh 方法中调用 setupColumnResize，为列号和行号单元格绑定拖拽事件
+		this.tableData[0].forEach((_, index) => {
+			const resizeHandle = this.tableEl.querySelector(`.resize-handle[data-index='${index}']`) as HTMLElement;
+			if (resizeHandle) {
+				this.setupColumnResize(resizeHandle, index);
+			}
+		});
+
+		this.tableData.forEach((_, rowIndex) => {
+			const resizeHandleRow = this.tableEl.querySelector(`.resize-handle-row[data-row-index='${rowIndex}']`) as HTMLElement;
+			if (resizeHandleRow) {
+				this.setupColumnResize(resizeHandleRow, rowIndex);
+			}
+		});
 	}
 
 	// 新增：获取列标签（A, B, C, ... Z, AA, AB, ...）
