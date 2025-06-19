@@ -147,6 +147,8 @@ td input:focus {
 /* 表格容器 */
 .table-container {
     width: 100%;
+    position: relative; /* 确保可以使用 z-index */
+    z-index: 5; /* 设置表格的层级 */
 }
 
 /* 表格包装器，包含滚动条和主表格 */
@@ -512,19 +514,26 @@ td input:focus {
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
-/* 行按钮定位 */
-.csv-row-number { position: relative; }
-.csv-insert-row-btn.above { top: -10px; left: 50%; transform: translateX(-50%); }
-.csv-insert-row-btn.below { bottom: -10px; left: 50%; transform: translateX(-50%); }
-.csv-del-row-btn { top: 50%; right: -20px; transform: translateY(-50%); background: #ffeaea; color: #d00; }
-.csv-del-row-btn:hover { background: #ffb3b3; color: #fff; }
+/* 行按钮定位调整 */
+.csv-insert-row-btn.above { top: -12px; left: 0%; transform: translateX(-50%); }
+.csv-insert-row-btn.below { bottom: -12px; left: 0%; transform: translateX(-50%); }
+.csv-del-row-btn { top: 50%; left: 0%; transform: translateY(-50%); }
 
 /* 列按钮定位 */
 .csv-col-number { position: relative; }
-.csv-insert-col-btn.left { left: -10px; top: 50%; transform: translateY(-50%); }
-.csv-insert-col-btn.right { right: -10px; top: 50%; transform: translateY(-50%); }
+.csv-insert-col-btn.left { left: -10px; top: 0px; transform: translateY(-50%); }
+.csv-insert-col-btn.right { right: -10px; top: 0px; transform: translateY(-50%); }
 .csv-del-col-btn { top: -20px; left: 50%; transform: translateX(-50%); background: #ffeaea; color: #d00; }
 .csv-del-col-btn:hover { background: #ffb3b3; color: #fff; }
+
+/* 提升插入列按钮的 z-index */
+.csv-insert-col-btn.left,
+.csv-insert-col-btn.right,
+.csv-col-number:hover .csv-insert-col-btn,
+.csv-col-selected.csv-col-number .csv-insert-col-btn,
+.csv-dragging-col .csv-insert-col-btn {
+  z-index: 25; /* 提高层级，确保不会被遮挡 */
+}
 
 /* 仅在悬浮或选中时显示按钮 */
 .csv-row-number:hover .csv-insert-row-btn,
@@ -538,6 +547,19 @@ td input:focus {
 .csv-col-selected.csv-col-number .csv-insert-col-btn,
 .csv-col-selected.csv-col-number .csv-del-col-btn {
   display: inline-block;
+}
+
+/* 确保操作按钮位于最前面 */
+.button-container {
+  position: relative; /* 确保可以使用 z-index */
+  z-index: 10; /* 提高操作按钮的层级，确保位于表格之上 */
+}
+
+/* 如果需要进一步调整按钮的布局 */
+.button-container .action-button {
+  position: absolute; /* 根据需要调整布局 */
+  top: 0; /* 根据实际情况调整位置 */
+  left: 0; /* 根据实际情况调整位置 */
 }
 
 /* 拖拽排序视觉反馈 */
