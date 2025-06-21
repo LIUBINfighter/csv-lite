@@ -25,41 +25,46 @@ export function setupHeaderContextMenu(options: HeaderContextMenuOptions): () =>
 
   // 创建菜单
   function createMenu(items: { label: string; onClick: () => void }[], x: number, y: number) {
-    // 注销menu相关代码
-    // if (menuEl) {
-    //   menuEl.remove();
-    // }
-    // menuEl = document.createElement('div');
-    // menuEl.className = 'csv-header-context-menu menu'; // 兼容 obsidian 菜单样式
-    // Object.assign(menuEl.style, {
-    //   position: 'absolute',
-    //   left: `${x}px`,
-    //   top: `${y}px`,
-    //   zIndex: '9999',
-    //   minWidth: '160px`,
-    //   background: 'var(--menu-background, var(--background-primary))',
-    //   border: '1px solid var(--background-modifier-border)',
-    //   borderRadius: 'var(--radius-m)',
-    //   boxShadow: 'var(--shadow-s)',
-    //   padding: '4px 0',
-    //   color: 'var(--text-normal)',
-    //   fontSize: 'var(--font-ui-small)',
-    //   fontFamily: 'var(--font-interface)',
-    // });
-    // items.forEach(item => {
-    //   const div = document.createElement('div');
-    //   div.className = 'csv-header-context-menu-item menu-item';
-    //   div.textContent = i18n.t(item.label); // 使用i18n
-    //   Object.assign(div.style, {
-    //     padding: '6px 18px',
-    //     cursor: 'pointer',
-    //     border: 'none',
-    //     background: 'none',
-    //     color: 'inherit',
-    //     borderRadius: 'var(--radius-s)',
-    //     transition: 'background 0.15s',
-    //   });
-    // });
+    // 关闭已有菜单
+    closeMenu();
+    // 创建菜单元素
+    menuEl = document.createElement('div');
+    menuEl.className = 'csv-header-context-menu menu'; // 兼容 obsidian 菜单样式
+    Object.assign(menuEl.style, {
+      position: 'absolute',
+      left: `${x}px`,
+      top: `${y}px`,
+      zIndex: '9999',
+      minWidth: '160px',
+    });
+    // 添加菜单项
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'menu-item csv-header-context-menu-item';
+      div.textContent = i18n.t(item.label) || item.label;
+      Object.assign(div.style, {
+        padding: '6px 18px',
+        cursor: 'pointer',
+      });
+      div.onclick = (ev) => {
+        ev.stopPropagation();
+        closeMenu();
+        item.onClick();
+      };
+      div.onmouseenter = () => div.addClass('is-hovered');
+      div.onmouseleave = () => div.removeClass('is-hovered');
+      menuEl!.appendChild(div);
+    });
+    // 添加到文档中
+    document.body.appendChild(menuEl!);
+    // 点击其他地方关闭菜单
+    const onClickOutside = (ev: MouseEvent) => {
+      if (menuEl && !menuEl.contains(ev.target as Node)) {
+        closeMenu();
+        document.removeEventListener('click', onClickOutside);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', onClickOutside), 0);
   }
   function closeMenu() {
     menuEl?.remove();
