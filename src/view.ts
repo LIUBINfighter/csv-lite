@@ -342,19 +342,28 @@ export class CSVView extends TextFileView {
 			this.headerContextMenuCleanup = null;
 		}
 		// 重新绑定并保存解绑函数
-		this.headerContextMenuCleanup = setupHeaderContextMenu({
-			tableEl: this.tableEl,
-			onInsertRowAbove: (rowIdx) => this.refreshInsertRow(rowIdx, false),
-			onInsertRowBelow: (rowIdx) => this.refreshInsertRow(rowIdx, true),
-			onDeleteRow: (rowIdx) => this.refreshDeleteRow(rowIdx),
-			onMoveRowUp: (rowIdx) => this.moveRow(rowIdx, rowIdx - 1),
-			onMoveRowDown: (rowIdx) => this.moveRow(rowIdx, rowIdx + 1),
-			onInsertColLeft: (colIdx) => this.refreshInsertCol(colIdx, false),
-			onInsertColRight: (colIdx) => this.refreshInsertCol(colIdx, true),
-			onDeleteCol: (colIdx) => this.refreshDeleteCol(colIdx),
-			onMoveColLeft: (colIdx) => this.moveCol(colIdx, colIdx - 1),
-			onMoveColRight: (colIdx) => this.moveCol(colIdx, colIdx + 1),
-		});
+		this.headerContextMenuCleanup = setupHeaderContextMenu(
+			this.tableEl,
+			{
+				selectRow: (rowIndex) => this.highlightManager.selectRow(rowIndex),
+				selectColumn: (colIndex) => this.highlightManager.selectColumn(colIndex),
+				clearSelection: () => this.highlightManager.clearSelection(),
+				onMenuClose: () => {
+					// 菜单关闭时的额外清理逻辑
+					console.log('[DEBUG] Header context menu closed');
+				},
+				onInsertRowAbove: (rowIdx) => this.refreshInsertRow(rowIdx, false),
+				onInsertRowBelow: (rowIdx) => this.refreshInsertRow(rowIdx, true),
+				onDeleteRow: (rowIdx) => this.refreshDeleteRow(rowIdx),
+				onMoveRowUp: (rowIdx) => this.moveRow(rowIdx, rowIdx - 1),
+				onMoveRowDown: (rowIdx) => this.moveRow(rowIdx, rowIdx + 1),
+				onInsertColLeft: (colIdx) => this.refreshInsertCol(colIdx, false),
+				onInsertColRight: (colIdx) => this.refreshInsertCol(colIdx, true),
+				onDeleteCol: (colIdx) => this.refreshDeleteCol(colIdx),
+				onMoveColLeft: (colIdx) => this.moveCol(colIdx, colIdx - 1),
+				onMoveColRight: (colIdx) => this.moveCol(colIdx, colIdx + 1),
+			}
+		);
 
 		// 在 refresh 方法中调用 setupColumnResize，为列号和行号单元格绑定拖拽事件
 		this.tableData[0].forEach((_, index) => {
@@ -391,7 +400,7 @@ export class CSVView extends TextFileView {
 	) {
 		// 移除之前单元格的高亮
 		if (this.activeCellEl && this.activeCellEl.parentElement) {
-			this.activeCellEl.parentElement.removeClass("csv-active-cell");
+			this.activeCellEl.parentElement.classList.remove("csv-active-cell");
 		}
 
 		// 设置新的活动单元格
@@ -401,7 +410,7 @@ export class CSVView extends TextFileView {
 
 		// 高亮当前单元格
 		if (cellEl.parentElement) {
-			cellEl.parentElement.addClass("csv-active-cell");
+			cellEl.parentElement.classList.add("csv-active-cell");
 		}
 
 		// 更新编辑栏内容
@@ -678,21 +687,6 @@ export class CSVView extends TextFileView {
 			// 初始化高亮管理器
 			this.highlightManager = new HighlightManager(this.tableEl);
 
-			// 集成表头右键菜单
-			setupHeaderContextMenu({
-				tableEl: this.tableEl,
-				onInsertRowAbove: (rowIdx) => this.refreshInsertRow(rowIdx, false),
-				onInsertRowBelow: (rowIdx) => this.refreshInsertRow(rowIdx, true),
-				onDeleteRow: (rowIdx) => this.refreshDeleteRow(rowIdx),
-				onMoveRowUp: (rowIdx) => this.moveRow(rowIdx, rowIdx - 1),
-				onMoveRowDown: (rowIdx) => this.moveRow(rowIdx, rowIdx + 1),
-				onInsertColLeft: (colIdx) => this.refreshInsertCol(colIdx, false),
-				onInsertColRight: (colIdx) => this.refreshInsertCol(colIdx, true),
-				onDeleteCol: (colIdx) => this.refreshDeleteCol(colIdx),
-				onMoveColLeft: (colIdx) => this.moveCol(colIdx, colIdx - 1),
-				onMoveColRight: (colIdx) => this.moveCol(colIdx, colIdx + 1),
-			});
-
 			// 设置滚动同步（传递新的topScrollContainer）
 			this.setupScrollSync(topScrollContainer, tableContainer);
 
@@ -754,7 +748,7 @@ export class CSVView extends TextFileView {
 			}
 
 			// 为工具栏添加sticky样式类
-			this.operationEl.addClass("csv-toolbar-sticky");
+			this.operationEl.classList.add("csv-toolbar-sticky");
 		} catch (error) {
 			console.error("Error in onOpen:", error);
 			new Notice(`Failed to open CSV view: ${error.message}`);
@@ -870,10 +864,10 @@ export class CSVView extends TextFileView {
 						input.focus();
 						input.select();
 						if (input.parentElement) {
-							input.parentElement.addClass("csv-search-current");
+							input.parentElement.classList.add("csv-search-current");
 							setTimeout(() => {
 								if (input.parentElement) {
-									input.parentElement.removeClass("csv-search-current");
+									input.parentElement.classList.remove("csv-search-current");
 								}
 							}, 3000);
 						}
@@ -887,7 +881,7 @@ export class CSVView extends TextFileView {
 	private clearSearchHighlights() {
 		this.tableEl?.querySelectorAll(".csv-search-current").forEach(el => {
 			if (el instanceof HTMLElement) {
-				el.removeClass("csv-search-current");
+				el.classList.remove("csv-search-current");
 			}
 		});
 	}

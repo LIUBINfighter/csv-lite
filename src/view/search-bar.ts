@@ -45,7 +45,7 @@ export class SearchBar {
     });
     this.searchInput.addEventListener("focus", () => {
       if (this.searchMatches.length > 0) {
-        this.searchResults.addClass("show");
+        this.searchResults.classList.add("show");
       }
     });
     this.searchInput.addEventListener("keydown", (e) => {
@@ -98,7 +98,7 @@ export class SearchBar {
         text: i18n.t("search.noResults"),
       });
       noResults.style.color = "var(--text-muted)";
-      this.searchResults.addClass("show");
+      this.searchResults.classList.add("show");
       return;
     }
     const displayMatches = this.searchMatches.slice(0, 10);
@@ -138,7 +138,7 @@ export class SearchBar {
       moreResults.style.color = "var(--text-muted)";
       moreResults.style.fontStyle = "italic";
     }
-    this.searchResults.addClass("show");
+    this.searchResults.classList.add("show");
   }
 
   private highlightSearchTerm(text: string, searchTerm: string): string {
@@ -150,14 +150,14 @@ export class SearchBar {
   private navigateSearchResults(direction: number) {
     const items = this.searchResults.querySelectorAll(".csv-search-result-item[data-index]");
     if (items.length === 0) return;
-    items.forEach(item => item.removeClass("csv-search-result-hover"));
+    items.forEach(item => item.classList.remove("csv-search-result-hover"));
     this.currentSearchIndex = Math.max(0, Math.min(
       items.length - 1,
       this.currentSearchIndex + direction
     ));
     const currentItem = items[this.currentSearchIndex] as HTMLElement;
     if (currentItem) {
-      currentItem.addClass("csv-search-result-hover");
+      currentItem.classList.add("csv-search-result-hover");
       currentItem.scrollIntoView({ block: "nearest" });
     }
   }
@@ -171,7 +171,7 @@ export class SearchBar {
   }
 
   private hideSearchResults() {
-    this.searchResults.removeClass("show");
+    this.searchResults.classList.remove("show");
     this.currentSearchIndex = -1;
   }
 }
