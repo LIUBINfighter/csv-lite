@@ -107,23 +107,27 @@ If your plugin does not need CSS, delete this file.
 	position: absolute;
 	top: 2px;
 	right: 2px;
-	width: 16px;
-	height: 16px;
+	width: 18px;
+	height: 18px;
 	padding: 0;
-	border: none;
-	background: transparent;
+	border: 1px solid transparent;
+	background: var(--background-primary);
 	cursor: pointer;
 	opacity: 0;
-	transition: opacity 0.2s ease;
+	transition: all 0.2s ease;
 	z-index: 10;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	border-radius: 3px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .csv-pin-btn svg {
 	width: 12px;
 	height: 12px;
+	color: var(--text-muted);
+	transition: color 0.2s ease;
 }
 
 .csv-row-number:hover .csv-pin-btn,
@@ -133,11 +137,26 @@ If your plugin does not need CSS, delete this file.
 
 .csv-pin-btn.pinned {
 	opacity: 1;
+	background: var(--interactive-accent);
+	border-color: var(--interactive-accent);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.csv-pin-btn.pinned svg {
+	color: var(--text-on-accent);
 }
 
 .csv-pin-btn:hover {
+	opacity: 1;
 	background: var(--background-modifier-hover);
-	border-radius: 2px;
+	border-color: var(--background-modifier-border-hover);
+	transform: translateY(-1px);
+	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+.csv-pin-btn.pinned:hover {
+	background: var(--interactive-accent-hover);
+	border-color: var(--interactive-accent-hover);
 }
 
 /* Sticky行列样式 */
@@ -147,7 +166,8 @@ If your plugin does not need CSS, delete this file.
 	position: sticky !important;
 	z-index: 20 !important;
 	background: var(--background-secondary) !important;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+	border-bottom: 2px solid var(--background-modifier-border-hover) !important;
 }
 
 /* 默认固定行号列样式（0、1、2、3...） */
@@ -155,35 +175,80 @@ If your plugin does not need CSS, delete this file.
 	position: sticky !important;
 	z-index: 20 !important;
 	background: var(--background-secondary) !important;
-	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1) !important;
+	box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15) !important;
+	border-right: 2px solid var(--background-modifier-border-hover) !important;
 }
 
 /* 左上角单元格（行号表头）同时是表头和行号 */
 .csv-sticky-header.csv-sticky-row-number {
 	z-index: 25 !important;
 	background: var(--background-modifier-hover) !important;
+	border-right: 2px solid var(--background-modifier-border-hover) !important;
+	border-bottom: 2px solid var(--background-modifier-border-hover) !important;
+	box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* 用户手动固定行样式 */
 .csv-sticky-row {
 	position: sticky !important;
 	z-index: 15 !important;
-	background: var(--background-primary) !important;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+	background: var(--background-primary-alt) !important;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
+	border-bottom: 1px solid var(--interactive-accent-hover) !important;
 }
 
 /* 用户手动固定列样式 */
 .csv-sticky-col {
 	position: sticky !important;
 	z-index: 15 !important;
-	background: var(--background-primary) !important;
-	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1) !important;
+	background: var(--background-primary-alt) !important;
+	box-shadow: 2px 0 6px rgba(0, 0, 0, 0.12) !important;
+	border-right: 1px solid var(--interactive-accent-hover) !important;
+}
+
+/* 用户手动固定的表头列（既是表头又是固定列） */
+.csv-sticky-header.csv-sticky-col {
+	z-index: 22 !important;
+	background: var(--background-secondary) !important;
+	box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.18) !important;
+	border-right: 2px solid var(--interactive-accent) !important;
+	border-bottom: 2px solid var(--background-modifier-border-hover) !important;
 }
 
 /* 同时是sticky行和列的单元格 */
 .csv-sticky-row.csv-sticky-col {
 	z-index: 18 !important;
-	box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15) !important;
+	background: var(--background-secondary-alt) !important;
+	box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.18) !important;
+	border-right: 1px solid var(--interactive-accent-hover) !important;
+	border-bottom: 1px solid var(--interactive-accent-hover) !important;
+}
+
+/* 三重固定：表头+行号+用户固定列（左上角区域的扩展） */
+.csv-sticky-header.csv-sticky-row-number.csv-sticky-col {
+	z-index: 26 !important;
+	background: var(--background-modifier-hover) !important;
+	border-right: 2px solid var(--interactive-accent) !important;
+	border-bottom: 2px solid var(--background-modifier-border-hover) !important;
+	box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* 固定列悬停效果增强 */
+.csv-sticky-col:hover,
+.csv-sticky-row:hover {
+	background: var(--background-modifier-hover) !important;
+	transition: background-color 0.2s ease;
+}
+
+/* 固定行/列的最后一个单元格添加更明显的边界 */
+.csv-sticky-col:last-of-type {
+	border-right: 3px solid var(--interactive-accent) !important;
+	box-shadow: 3px 0 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.csv-sticky-row:last-child .csv-sticky-row {
+	border-bottom: 3px solid var(--interactive-accent) !important;
+	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* 确保表格容器支持sticky定位 */
@@ -752,4 +817,80 @@ td.csv-row-number{
 .csv-lite-table.csv-table {
   overflow: visible; /* 确保超出表格的按钮不会被隐藏 */
   position: relative; /* 确保定位的按钮能够正确显示 */
+}
+
+/* 固定行/列的额外视觉提示 */
+.csv-sticky-col::before,
+.csv-sticky-row::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: linear-gradient(45deg, transparent 30%, var(--interactive-accent-hover) 31%, var(--interactive-accent-hover) 32%, transparent 33%);
+	opacity: 0.08;
+	pointer-events: none;
+	z-index: 1;
+}
+
+/* 固定列的右边界标记 */
+.csv-sticky-col:not(.csv-sticky-header):not(.csv-sticky-row-number)::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	right: -1px;
+	bottom: 0;
+	width: 3px;
+	background: linear-gradient(to bottom, var(--interactive-accent), var(--interactive-accent-hover));
+	opacity: 0.6;
+	pointer-events: none;
+	z-index: 30;
+}
+
+/* 固定行的下边界标记 */
+.csv-sticky-row:not(.csv-sticky-header):not(.csv-sticky-row-number)::after {
+	content: '';
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: -1px;
+	height: 3px;
+	background: linear-gradient(to right, var(--interactive-accent), var(--interactive-accent-hover));
+	opacity: 0.6;
+	pointer-events: none;
+	z-index: 30;
+}
+
+/* 确保输入框在渐变背景之上 */
+.csv-sticky-col .csv-cell-input,
+.csv-sticky-row .csv-cell-input {
+	position: relative;
+	z-index: 2;
+}
+
+/* 行号和列号在固定状态下的增强 */
+.csv-sticky-row-number,
+.csv-sticky-header {
+	font-weight: 600;
+	color: var(--text-accent);
+}
+
+/* 固定元素的渐入动画 */
+.csv-sticky-col,
+.csv-sticky-row,
+.csv-sticky-header,
+.csv-sticky-row-number {
+	animation: stickyFadeIn 0.3s ease-out;
+}
+
+@keyframes stickyFadeIn {
+	from {
+		opacity: 0.8;
+		transform: scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
 }
