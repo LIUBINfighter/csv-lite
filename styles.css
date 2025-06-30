@@ -99,6 +99,71 @@ If your plugin does not need CSS, delete this file.
 	display: flex;
 	align-items: center;
 	gap: 8px;
+	flex-wrap: wrap;
+}
+
+/* Pin按钮样式 */
+.csv-pin-btn {
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	border: none;
+	background: transparent;
+	font-size: 10px;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+	z-index: 10;
+}
+
+.csv-row-number:hover .csv-pin-btn,
+.csv-col-number:hover .csv-pin-btn {
+	opacity: 1;
+}
+
+.csv-pin-btn.pinned {
+	opacity: 1;
+}
+
+.csv-pin-btn:hover {
+	background: var(--background-modifier-hover);
+	border-radius: 2px;
+}
+
+/* Sticky行列样式 */
+.csv-sticky-row {
+	position: sticky !important;
+	top: 0 !important;
+	background: var(--background-secondary) !important;
+	z-index: 20 !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.csv-sticky-col {
+	position: sticky !important;
+	left: 0 !important;
+	background: var(--background-secondary) !important;
+	z-index: 15 !important;
+	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 同时是sticky行和列的单元格 */
+.csv-sticky-row.csv-sticky-col {
+	z-index: 25 !important;
+	box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 确保表格容器支持sticky定位 */
+.table-container {
+	position: relative !important;
+	overflow: auto !important;
+}
+
+.csv-lite-table {
+	position: relative !important;
 }
 
 /* 搜索栏样式 */
@@ -151,6 +216,8 @@ td input:focus {
 	position: relative; /* 确保可以使用 z-index */
 	z-index: 5; /* 设置表格的层级 */
 }
+
+
 
 /* 表格包装器，包含滚动条和主表格 */
 .table-wrapper {
@@ -310,7 +377,6 @@ td.csv-row-number{
 	left: 0;
 	z-index: 10;
 	overflow: visible; /* 确保按钮不会被遮挡 */
-	position: relative; /* 确保定位的按钮能够正确显示 */
 }
 
 .csv-col-number {

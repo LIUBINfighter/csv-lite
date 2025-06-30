@@ -29,6 +29,11 @@ export interface TableRenderOptions {
   // 拖拽排序回调
   onColumnReorder?: (from: number, to: number) => void;
   onRowReorder?: (from: number, to: number) => void;
+  // 新增：固定行列相关
+  stickyRows?: Set<number>;
+  stickyColumns?: Set<number>;
+  toggleRowSticky?: (rowIndex: number) => void;
+  toggleColumnSticky?: (colIndex: number) => void;
 }
 
 export function renderTable(options: TableRenderOptions) {
@@ -57,6 +62,10 @@ export function renderTable(options: TableRenderOptions) {
     renderEditBar,
     onColumnReorder,
     onRowReorder,
+    stickyRows,
+    stickyColumns,
+    toggleRowSticky,
+    toggleColumnSticky,
   } = options;
 
   tableEl.empty();
@@ -101,6 +110,20 @@ export function renderTable(options: TableRenderOptions) {
         e.stopPropagation();
         selectColumn(index);
       };
+
+      // 添加pin/unpin按钮
+      if (toggleColumnSticky) {
+        const isSticky = stickyColumns?.has(index) || false;
+        const pinBtn = th.createEl("button", {
+          cls: `csv-pin-btn csv-pin-col ${isSticky ? 'pinned' : ''}`,
+          attr: { title: isSticky ? "Unpin column" : "Pin column" }
+        });
+        pinBtn.innerHTML = isSticky ? "📌" : "📍";
+        pinBtn.onclick = (e) => {
+          e.stopPropagation();
+          toggleColumnSticky(index);
+        };
+      }
       // 拖拽排序事件
       th.ondragstart = (e) => {
         e.dataTransfer?.setData("text/col-index", String(index));
@@ -173,6 +196,20 @@ export function renderTable(options: TableRenderOptions) {
       e.stopPropagation();
       selectRow(i);
     };
+
+    // 添加pin/unpin按钮
+    if (toggleRowSticky) {
+      const isSticky = stickyRows?.has(i) || false;
+      const pinBtn = rowNumberCell.createEl("button", {
+        cls: `csv-pin-btn csv-pin-row ${isSticky ? 'pinned' : ''}`,
+        attr: { title: isSticky ? "Unpin row" : "Pin row" }
+      });
+      pinBtn.innerHTML = isSticky ? "📌" : "📍";
+      pinBtn.onclick = (e) => {
+        e.stopPropagation();
+        toggleRowSticky(i);
+      };
+    }
     // 拖拽排序事件
     rowNumberCell.ondragstart = (e) => {
       e.dataTransfer?.setData("text/row-index", String(i));

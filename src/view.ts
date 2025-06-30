@@ -69,6 +69,10 @@ export class CSVView extends TextFileView {
 	// 新增：header context menu 解绑函数
 	private headerContextMenuCleanup: (() => void) | null = null;
 
+	// 新增：固定行列功能
+	private stickyRows: Set<number> = new Set();
+	private stickyColumns: Set<number> = new Set();
+
 	constructor(leaf: any) {
 		super(leaf);
 		this.historyManager = new TableHistoryManager(
@@ -204,7 +208,7 @@ export class CSVView extends TextFileView {
 			this.tableData = [[""]];
 		}
 
-		// 迁移：表格渲染全部交由 table-render.ts 处理
+		// 恢复原有表格渲染方式
 		// 传递renderEditBar给renderTable，实现双向同步
 		const renderEditBarBridge = (row: number, col: number, cellEl: HTMLInputElement) => {
 			renderEditBar({
@@ -298,7 +302,15 @@ export class CSVView extends TextFileView {
 				this.refresh();
 				this.requestSave();
 			},
+			// 新增：固定行列相关回调
+			stickyRows: this.stickyRows,
+			stickyColumns: this.stickyColumns,
+			toggleRowSticky: (rowIndex: number) => this.toggleRowSticky(rowIndex),
+			toggleColumnSticky: (colIndex: number) => this.toggleColumnSticky(colIndex),
 		});
+
+		// 应用sticky样式
+		this.applyStickyStyles();
 
 		// 在完成表格渲染后，更新滚动条容器的宽度
 		// 现在topScrollContainer在operationEl下方
@@ -646,6 +658,8 @@ export class CSVView extends TextFileView {
 					this.refresh();
 				});
 
+
+
 			// 编辑栏（sticky工具栏内，按钮和搜索栏之后）
 			this.editBarEl = this.operationEl.createEl("div", {
 				cls: "csv-edit-bar",
@@ -908,6 +922,65 @@ export class CSVView extends TextFileView {
 		this.tableData.splice(toIndex, 0, row);
 		this.refresh();
 		this.requestSave();
+	}
+
+	// 新增：切换行固定状态
+	private toggleRowSticky(rowIndex: number) {
+		if (this.stickyRows.has(rowIndex)) {
+			this.stickyRows.delete(rowIndex);
+		} else {
+			this.stickyRows.add(rowIndex);
+		}
+		this.applyStickyStyles();
+	}
+
+	// 新增：切换列固定状态
+	private toggleColumnSticky(colIndex: number) {
+		if (this.stickyColumns.has(colIndex)) {
+			this.stickyColumns.delete(colIndex);
+		} else {
+			this.stickyColumns.add(colIndex);
+		}
+		this.applyStickyStyles();
+	}
+
+	// 新增：应用sticky样式
+	private applyStickyStyles() {
+		if (!this.tableEl) return;
+
+		// 移除所有现有的sticky类
+		this.tableEl.querySelectorAll('.csv-sticky-row, .csv-sticky-col').forEach(el => {
+			el.classList.remove('csv-sticky-row', 'csv-sticky-col');
+		});
+
+		// 应用固定行样式
+		this.stickyRows.forEach(rowIndex => {
+			// 表头行（列标题行）
+			if (rowIndex === -1) {
+				const headerCells = this.tableEl.querySelectorAll('thead tr th');
+				headerCells.forEach(cell => cell.classList.add('csv-sticky-row'));
+			} else {
+				// 数据行（在tbody中，从第1个tr开始）
+				const rowCells = this.tableEl.querySelectorAll(`tbody tr:nth-child(${rowIndex + 1}) td`);
+				rowCells.forEach(cell => cell.classList.add('csv-sticky-row'));
+			}
+		});
+
+		// 应用固定列样式  
+		this.stickyColumns.forEach(colIndex => {
+			// 列头（在thead中）
+			const headerCell = this.tableEl.querySelector(`thead tr th:nth-child(${colIndex + 2})`);
+			if (headerCell) headerCell.classList.add('csv-sticky-col');
+			
+			// 数据列（在tbody的所有行中）
+			const dataCells = this.tableEl.querySelectorAll(`tbody tr td:nth-child(${colIndex + 2})`);
+			dataCells.forEach(cell => cell.classList.add('csv-sticky-col'));
+		});
+
+		console.log('Applied sticky styles:', {
+			stickyRows: Array.from(this.stickyRows),
+			stickyColumns: Array.from(this.stickyColumns)
+		});
 	}
 	moveCol(fromIndex: number, toIndex: number) {
 		if (fromIndex < 0 || toIndex < 0 || fromIndex >= this.tableData[0].length || toIndex >= this.tableData[0].length) return;
