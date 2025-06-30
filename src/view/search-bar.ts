@@ -59,6 +59,8 @@ export class SearchBar {
         e.preventDefault();
         this.selectCurrentSearchResult();
       } else if (e.key === "Escape") {
+        this.searchInput.value = "";
+        this.performSearch("");
         this.hideSearchResults();
       }
     });
