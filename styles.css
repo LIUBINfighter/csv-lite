@@ -503,12 +503,12 @@ td.csv-row-number{
 }
 
 /* 暂时隐藏行和列操作按钮 */
-/* .csv-insert-row-btn,
+.csv-insert-row-btn,
 .csv-insert-col-btn,
 .csv-del-row-btn,
 .csv-del-col-btn {
   display: none !important;
-} */
+}
 
 /* 插入/删除行列按钮样式 */
 .csv-insert-row-btn,
