@@ -1,6 +1,7 @@
 import { TableUtils } from "../utils/table-utils";
 import { CSVUtils } from "../utils/csv-utils";
 import { i18n } from "../i18n";
+import { setIcon } from "obsidian";
 
 export interface TableRenderOptions {
   tableData: string[][];
@@ -118,7 +119,7 @@ export function renderTable(options: TableRenderOptions) {
           cls: `csv-pin-btn csv-pin-col ${isSticky ? 'pinned' : ''}`,
           attr: { title: isSticky ? "Unpin column" : "Pin column" }
         });
-        pinBtn.innerHTML = isSticky ? "📌" : "📍";
+        setIcon(pinBtn, isSticky ? "pin-off" : "pin");
         pinBtn.onclick = (e) => {
           e.stopPropagation();
           toggleColumnSticky(index);
@@ -204,7 +205,7 @@ export function renderTable(options: TableRenderOptions) {
         cls: `csv-pin-btn csv-pin-row ${isSticky ? 'pinned' : ''}`,
         attr: { title: isSticky ? "Unpin row" : "Pin row" }
       });
-      pinBtn.innerHTML = isSticky ? "📌" : "📍";
+      setIcon(pinBtn, isSticky ? "pin-off" : "pin");
       pinBtn.onclick = (e) => {
         e.stopPropagation();
         toggleRowSticky(i);

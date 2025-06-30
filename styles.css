@@ -112,11 +112,18 @@ If your plugin does not need CSS, delete this file.
 	padding: 0;
 	border: none;
 	background: transparent;
-	font-size: 10px;
 	cursor: pointer;
 	opacity: 0;
 	transition: opacity 0.2s ease;
 	z-index: 10;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.csv-pin-btn svg {
+	width: 12px;
+	height: 12px;
 }
 
 .csv-row-number:hover .csv-pin-btn,
@@ -144,19 +151,10 @@ If your plugin does not need CSS, delete this file.
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
-/* 第一个数据列的表头（A列）需要在行号列右侧 */
-.csv-sticky-header:nth-child(2) {
-	left: 40px !important;
-	z-index: 22 !important;
-}
-
-/* 第一个数据列的所有单元格（A列数据）也需要在行号列右侧 */
-tbody tr td:nth-child(2) {
-	position: sticky !important;
-	left: 40px !important;
-	z-index: 18 !important;
-	background: var(--background-secondary) !important;
-	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1) !important;
+/* 表头行和行号列的交叉处理 */
+.csv-sticky-header.csv-sticky-row-number {
+	left: 0 !important;
+	top: 0 !important;
 }
 
 /* 默认固定行号列样式（0、1、2、3...） */
