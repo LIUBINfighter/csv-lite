@@ -894,3 +894,13 @@ td.csv-row-number{
 		transform: scale(1);
 	}
 }
+
+/* 固定列的左侧边界标记（非首列） */
+.csv-sticky-col:not(:first-child) {
+	border-left: 1.5px solid var(--interactive-accent-hover) !important;
+}
+
+/* 如果是表头固定列也要有左边界 */
+.csv-sticky-header.csv-sticky-col:not(:first-child) {
+	border-left: 2px solid var(--interactive-accent) !important;
+}
