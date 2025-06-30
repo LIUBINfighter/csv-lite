@@ -72,6 +72,8 @@ export class CSVView extends TextFileView {
 	// 新增：固定行列功能
 	private stickyRows: Set<number> = new Set();
 	private stickyColumns: Set<number> = new Set();
+	private stickyHeaders: boolean = true; // 表头默认固定
+	private stickyRowNumbers: boolean = true; // 行号默认固定
 
 	constructor(leaf: any) {
 		super(leaf);
@@ -949,35 +951,48 @@ export class CSVView extends TextFileView {
 		if (!this.tableEl) return;
 
 		// 移除所有现有的sticky类
-		this.tableEl.querySelectorAll('.csv-sticky-row, .csv-sticky-col').forEach(el => {
-			el.classList.remove('csv-sticky-row', 'csv-sticky-col');
+		this.tableEl.querySelectorAll('.csv-sticky-row, .csv-sticky-col, .csv-sticky-header, .csv-sticky-row-number').forEach(el => {
+			el.classList.remove('csv-sticky-row', 'csv-sticky-col', 'csv-sticky-header', 'csv-sticky-row-number');
 		});
 
-		// 应用固定行样式
+		// 默认固定表头行（A、B、C、D...）
+		if (this.stickyHeaders) {
+			const headerCells = this.tableEl.querySelectorAll('thead tr th');
+			headerCells.forEach(cell => cell.classList.add('csv-sticky-header'));
+		}
+
+		// 默认固定行号列（0、1、2、3...）
+		if (this.stickyRowNumbers) {
+			// 行号列在表头中（左上角和行号标题）
+			const headerRowNumber = this.tableEl.querySelector('thead tr th:first-child');
+			if (headerRowNumber) headerRowNumber.classList.add('csv-sticky-row-number');
+			
+			// 行号列在数据行中
+			const rowNumberCells = this.tableEl.querySelectorAll('tbody tr td:first-child');
+			rowNumberCells.forEach(cell => cell.classList.add('csv-sticky-row-number'));
+		}
+
+		// 应用用户手动固定的行样式
 		this.stickyRows.forEach(rowIndex => {
-			// 表头行（列标题行）
-			if (rowIndex === -1) {
-				const headerCells = this.tableEl.querySelectorAll('thead tr th');
-				headerCells.forEach(cell => cell.classList.add('csv-sticky-row'));
-			} else {
-				// 数据行（在tbody中，从第1个tr开始）
-				const rowCells = this.tableEl.querySelectorAll(`tbody tr:nth-child(${rowIndex + 1}) td`);
-				rowCells.forEach(cell => cell.classList.add('csv-sticky-row'));
-			}
+			// 数据行（在tbody中，从第1个tr开始）
+			const rowCells = this.tableEl.querySelectorAll(`tbody tr:nth-child(${rowIndex + 1}) td`);
+			rowCells.forEach(cell => cell.classList.add('csv-sticky-row'));
 		});
 
-		// 应用固定列样式  
+		// 应用用户手动固定的列样式  
 		this.stickyColumns.forEach(colIndex => {
-			// 列头（在thead中）
+			// 列头（在thead中，跳过行号列）
 			const headerCell = this.tableEl.querySelector(`thead tr th:nth-child(${colIndex + 2})`);
 			if (headerCell) headerCell.classList.add('csv-sticky-col');
 			
-			// 数据列（在tbody的所有行中）
+			// 数据列（在tbody的所有行中，跳过行号列）
 			const dataCells = this.tableEl.querySelectorAll(`tbody tr td:nth-child(${colIndex + 2})`);
 			dataCells.forEach(cell => cell.classList.add('csv-sticky-col'));
 		});
 
 		console.log('Applied sticky styles:', {
+			stickyHeaders: this.stickyHeaders,
+			stickyRowNumbers: this.stickyRowNumbers,
 			stickyRows: Array.from(this.stickyRows),
 			stickyColumns: Array.from(this.stickyColumns)
 		});

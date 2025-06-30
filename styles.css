@@ -134,25 +134,67 @@ If your plugin does not need CSS, delete this file.
 }
 
 /* Sticky行列样式 */
-.csv-sticky-row {
+
+/* 默认固定表头样式（A、B、C、D...） */
+.csv-sticky-header {
 	position: sticky !important;
 	top: 0 !important;
-	background: var(--background-secondary) !important;
 	z-index: 20 !important;
+	background: var(--background-secondary) !important;
 	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
 }
 
-.csv-sticky-col {
+/* 第一个数据列的表头（A列）需要在行号列右侧 */
+.csv-sticky-header:nth-child(2) {
+	left: 40px !important;
+	z-index: 22 !important;
+}
+
+/* 第一个数据列的所有单元格（A列数据）也需要在行号列右侧 */
+tbody tr td:nth-child(2) {
+	position: sticky !important;
+	left: 40px !important;
+	z-index: 18 !important;
+	background: var(--background-secondary) !important;
+	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 默认固定行号列样式（0、1、2、3...） */
+.csv-sticky-row-number {
 	position: sticky !important;
 	left: 0 !important;
+	z-index: 20 !important;
 	background: var(--background-secondary) !important;
+	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 左上角单元格（行号表头）同时是表头和行号 */
+.csv-sticky-header.csv-sticky-row-number {
+	z-index: 25 !important;
+	background: var(--background-modifier-hover) !important;
+}
+
+/* 用户手动固定行样式 */
+.csv-sticky-row {
+	position: sticky !important;
+	top: 30px !important; /* 在表头下方 */
 	z-index: 15 !important;
+	background: var(--background-primary) !important;
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 用户手动固定列样式 */
+.csv-sticky-col {
+	position: sticky !important;
+	left: 40px !important; /* 在行号列右侧 */
+	z-index: 15 !important;
+	background: var(--background-primary) !important;
 	box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* 同时是sticky行和列的单元格 */
 .csv-sticky-row.csv-sticky-col {
-	z-index: 25 !important;
+	z-index: 18 !important;
 	box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15) !important;
 }
 
