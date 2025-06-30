@@ -311,8 +311,10 @@ export class CSVView extends TextFileView {
 			toggleColumnSticky: (colIndex: number) => this.toggleColumnSticky(colIndex),
 		});
 
-		// 应用sticky样式
-		this.applyStickyStyles();
+		// 延迟应用sticky样式，确保DOM已完全渲染
+		requestAnimationFrame(() => {
+			this.applyStickyStyles();
+		});
 
 		// 在完成表格渲染后，更新滚动条容器的宽度
 		// 现在topScrollContainer在operationEl下方
@@ -950,51 +952,126 @@ export class CSVView extends TextFileView {
 	private applyStickyStyles() {
 		if (!this.tableEl) return;
 
-		// 移除所有现有的sticky类
+		// 移除所有现有的sticky类和内联样式
 		this.tableEl.querySelectorAll('.csv-sticky-row, .csv-sticky-col, .csv-sticky-header, .csv-sticky-row-number').forEach(el => {
 			el.classList.remove('csv-sticky-row', 'csv-sticky-col', 'csv-sticky-header', 'csv-sticky-row-number');
+			// 清除之前设置的内联样式
+			(el as HTMLElement).style.removeProperty('left');
+			(el as HTMLElement).style.removeProperty('top');
 		});
+
+		// 获取行号列的实际宽度
+		const getRowNumberWidth = (): number => {
+			const firstRowNumber = this.tableEl.querySelector('tbody tr td:first-child') as HTMLElement;
+			return firstRowNumber ? firstRowNumber.offsetWidth : 40; // 默认40px
+		};
+
+		// 获取表头的实际高度
+		const getHeaderHeight = (): number => {
+			const headerRow = this.tableEl.querySelector('thead tr') as HTMLElement;
+			return headerRow ? headerRow.offsetHeight : 30; // 默认30px
+		};
+
+		// 计算累积的固定列宽度
+		const calculateStickyColumnsWidth = (upToIndex: number): number => {
+			let totalWidth = getRowNumberWidth(); // 从行号列开始
+			for (let i = 0; i < upToIndex; i++) {
+				if (this.stickyColumns.has(i)) {
+					const headerCell = this.tableEl.querySelector(`thead tr th:nth-child(${i + 2})`) as HTMLElement;
+					if (headerCell) {
+						totalWidth += headerCell.offsetWidth;
+					} else {
+						totalWidth += this.columnWidths[i] || 100; // 使用预设宽度或默认值
+					}
+				}
+			}
+			return totalWidth;
+		};
+
+		// 计算累积的固定行高度
+		const calculateStickyRowsHeight = (upToIndex: number): number => {
+			let totalHeight = getHeaderHeight(); // 从表头开始
+			for (let i = 0; i < upToIndex; i++) {
+				if (this.stickyRows.has(i)) {
+					const row = this.tableEl.querySelector(`tbody tr:nth-child(${i + 1})`) as HTMLElement;
+					if (row) {
+						totalHeight += row.offsetHeight;
+					} else {
+						totalHeight += 32; // 默认行高
+					}
+				}
+			}
+			return totalHeight;
+		};
 
 		// 默认固定表头行（A、B、C、D...）
 		if (this.stickyHeaders) {
 			const headerCells = this.tableEl.querySelectorAll('thead tr th');
-			headerCells.forEach(cell => cell.classList.add('csv-sticky-header'));
+			headerCells.forEach(cell => {
+				cell.classList.add('csv-sticky-header');
+				(cell as HTMLElement).style.top = '0px';
+			});
 		}
 
 		// 默认固定行号列（0、1、2、3...）
 		if (this.stickyRowNumbers) {
-			// 行号列在表头中（左上角和行号标题）
-			const headerRowNumber = this.tableEl.querySelector('thead tr th:first-child');
-			if (headerRowNumber) headerRowNumber.classList.add('csv-sticky-row-number');
+			const rowNumberWidth = getRowNumberWidth();
+			
+			// 行号列在表头中（左上角）
+			const headerRowNumber = this.tableEl.querySelector('thead tr th:first-child') as HTMLElement;
+			if (headerRowNumber) {
+				headerRowNumber.classList.add('csv-sticky-row-number');
+				headerRowNumber.style.left = '0px';
+				headerRowNumber.style.top = '0px';
+			}
 			
 			// 行号列在数据行中
 			const rowNumberCells = this.tableEl.querySelectorAll('tbody tr td:first-child');
-			rowNumberCells.forEach(cell => cell.classList.add('csv-sticky-row-number'));
+			rowNumberCells.forEach(cell => {
+				cell.classList.add('csv-sticky-row-number');
+				(cell as HTMLElement).style.left = '0px';
+			});
 		}
 
 		// 应用用户手动固定的行样式
+		const headerHeight = getHeaderHeight();
 		this.stickyRows.forEach(rowIndex => {
+			const stickyTop = calculateStickyRowsHeight(rowIndex);
 			// 数据行（在tbody中，从第1个tr开始）
 			const rowCells = this.tableEl.querySelectorAll(`tbody tr:nth-child(${rowIndex + 1}) td`);
-			rowCells.forEach(cell => cell.classList.add('csv-sticky-row'));
+			rowCells.forEach(cell => {
+				cell.classList.add('csv-sticky-row');
+				(cell as HTMLElement).style.top = `${stickyTop}px`;
+			});
 		});
 
-		// 应用用户手动固定的列样式  
+		// 应用用户手动固定的列样式
 		this.stickyColumns.forEach(colIndex => {
+			const stickyLeft = calculateStickyColumnsWidth(colIndex);
+			
 			// 列头（在thead中，跳过行号列）
-			const headerCell = this.tableEl.querySelector(`thead tr th:nth-child(${colIndex + 2})`);
-			if (headerCell) headerCell.classList.add('csv-sticky-col');
+			const headerCell = this.tableEl.querySelector(`thead tr th:nth-child(${colIndex + 2})`) as HTMLElement;
+			if (headerCell) {
+				headerCell.classList.add('csv-sticky-col');
+				headerCell.style.left = `${stickyLeft}px`;
+				headerCell.style.top = '0px';
+			}
 			
 			// 数据列（在tbody的所有行中，跳过行号列）
 			const dataCells = this.tableEl.querySelectorAll(`tbody tr td:nth-child(${colIndex + 2})`);
-			dataCells.forEach(cell => cell.classList.add('csv-sticky-col'));
+			dataCells.forEach(cell => {
+				cell.classList.add('csv-sticky-col');
+				(cell as HTMLElement).style.left = `${stickyLeft}px`;
+			});
 		});
 
 		console.log('Applied sticky styles:', {
 			stickyHeaders: this.stickyHeaders,
 			stickyRowNumbers: this.stickyRowNumbers,
 			stickyRows: Array.from(this.stickyRows),
-			stickyColumns: Array.from(this.stickyColumns)
+			stickyColumns: Array.from(this.stickyColumns),
+			rowNumberWidth: getRowNumberWidth(),
+			headerHeight: getHeaderHeight()
 		});
 	}
 	moveCol(fromIndex: number, toIndex: number) {
