@@ -80,6 +80,86 @@ export function renderTable(options: TableRenderOptions) {
     columnWidths.splice(0, columnWidths.length, ...widths);
   }
 
+  // 创建列号行（在表格顶部）- 修复：先渲染表头
+  const headerRow = tableEl.createEl("thead").createEl("tr");
+
+  // 添加左上角单元格
+  const cornerTh = headerRow.createEl("th", { cls: "csv-corner-cell" });
+
+  // 创建列号行
+  if (tableData[0]) {
+    tableData[0].forEach((headerCell, index) => {
+      const th = headerRow.createEl("th", {
+        cls: "csv-col-number",
+        attr: {
+          style: `width: ${columnWidths[index] || 100}px`,
+          draggable: "true",
+        },
+      });
+      th.textContent = getColumnLabel(index);
+      th.onclick = (e) => {
+        e.stopPropagation();
+        selectColumn(index);
+      };
+      // 拖拽排序事件
+      th.ondragstart = (e) => {
+        e.dataTransfer?.setData("text/col-index", String(index));
+        th.classList.add("dragging");
+        setDragState('col', index);
+        if (typeof requestSave === 'function') requestSave();
+      };
+      th.ondragend = () => {
+        th.classList.remove("dragging");
+        setDragState(null, null);
+        if (typeof requestSave === 'function') requestSave();
+      };
+      th.ondragover = (e) => {
+        e.preventDefault();
+        th.classList.add("drag-over");
+      };
+      th.ondragleave = () => {
+        th.classList.remove("drag-over");
+      };
+      th.ondrop = (e) => {
+        e.preventDefault();
+        th.classList.remove("drag-over");
+        setDragState(null, null);
+        const from = Number(e.dataTransfer?.getData("text/col-index"));
+        const to = index;
+        if (onColumnReorder && from !== to) {
+          onColumnReorder(from, to);
+        }
+      };
+      // 插入列操作按钮（拖拽时隐藏）
+      if (!(dragState.type === 'col')) {
+        const insertLeft = th.createEl("button", { cls: "csv-insert-col-btn left" });
+        insertLeft.innerText = "+";
+        insertLeft.title = i18n.t("buttons.insertColBefore") || "Insert column before";
+        insertLeft.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, false); };
+        const insertRight = th.createEl("button", { cls: "csv-insert-col-btn right" });
+        insertRight.innerText = "+";
+        insertRight.title = i18n.t("buttons.insertColAfter") || "Insert column after";
+        insertRight.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, true); };
+        const delCol = th.createEl("button", { cls: "csv-del-col-btn" });
+        delCol.innerText = "-";
+        delCol.title = i18n.t("buttons.deleteColumn") || "Delete column";
+        delCol.onclick = (e) => { e.stopPropagation(); options.deleteColAt(index); };
+      }
+      // 拖拽高亮整列及相邻列
+      if (dragState.type === 'col' && dragState.index !== null) {
+        const colStart = Math.max(0, dragState.index - 2);
+        const colEnd = Math.min(tableData[0].length - 1, dragState.index + 2);
+        if (index >= colStart && index <= colEnd) {
+          th.classList.add('csv-dragging-highlight');
+        }
+      }
+
+      // 在列号单元格中添加拖拽事件处理逻辑
+      const resizeHandle = th.createEl("div", { cls: "resize-handle" });
+      setupColumnResize(resizeHandle, index);
+    });
+  }
+
   // 创建表格主体 - 所有行都作为普通数据行处理
   const tableBody = tableEl.createEl("tbody");
   
@@ -177,86 +257,6 @@ export function renderTable(options: TableRenderOptions) {
       input.onfocus = (ev) => {
         setActiveCell(i, j, ev.currentTarget as HTMLInputElement);
       };
-    });
-  }
-
-  // 创建列号行（在表格顶部）
-  const headerRow = tableEl.createEl("thead").createEl("tr");
-
-  // 添加左上角单元格
-  const cornerTh = headerRow.createEl("th", { cls: "csv-corner-cell" });
-
-  // 创建列号行
-  if (tableData[0]) {
-    tableData[0].forEach((headerCell, index) => {
-      const th = headerRow.createEl("th", {
-        cls: "csv-col-number",
-        attr: {
-          style: `width: ${columnWidths[index] || 100}px`,
-          draggable: "true",
-        },
-      });
-      th.textContent = getColumnLabel(index);
-      th.onclick = (e) => {
-        e.stopPropagation();
-        selectColumn(index);
-      };
-      // 拖拽排序事件
-      th.ondragstart = (e) => {
-        e.dataTransfer?.setData("text/col-index", String(index));
-        th.classList.add("dragging");
-        setDragState('col', index);
-        if (typeof requestSave === 'function') requestSave();
-      };
-      th.ondragend = () => {
-        th.classList.remove("dragging");
-        setDragState(null, null);
-        if (typeof requestSave === 'function') requestSave();
-      };
-      th.ondragover = (e) => {
-        e.preventDefault();
-        th.classList.add("drag-over");
-      };
-      th.ondragleave = () => {
-        th.classList.remove("drag-over");
-      };
-      th.ondrop = (e) => {
-        e.preventDefault();
-        th.classList.remove("drag-over");
-        setDragState(null, null);
-        const from = Number(e.dataTransfer?.getData("text/col-index"));
-        const to = index;
-        if (onColumnReorder && from !== to) {
-          onColumnReorder(from, to);
-        }
-      };
-      // 插入列操作按钮（拖拽时隐藏）
-      if (!(dragState.type === 'col')) {
-        const insertLeft = th.createEl("button", { cls: "csv-insert-col-btn left" });
-        insertLeft.innerText = "+";
-        insertLeft.title = i18n.t("buttons.insertColBefore") || "Insert column before";
-        insertLeft.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, false); };
-        const insertRight = th.createEl("button", { cls: "csv-insert-col-btn right" });
-        insertRight.innerText = "+";
-        insertRight.title = i18n.t("buttons.insertColAfter") || "Insert column after";
-        insertRight.onclick = (e) => { e.stopPropagation(); options.insertColAt(index, true); };
-        const delCol = th.createEl("button", { cls: "csv-del-col-btn" });
-        delCol.innerText = "-";
-        delCol.title = i18n.t("buttons.deleteColumn") || "Delete column";
-        delCol.onclick = (e) => { e.stopPropagation(); options.deleteColAt(index); };
-      }
-      // 拖拽高亮整列及相邻列
-      if (dragState.type === 'col' && dragState.index !== null) {
-        const colStart = Math.max(0, dragState.index - 2);
-        const colEnd = Math.min(tableData[0].length - 1, dragState.index + 2);
-        if (index >= colStart && index <= colEnd) {
-          th.classList.add('csv-dragging-highlight');
-        }
-      }
-
-      // 在列号单元格中添加拖拽事件处理逻辑
-      const resizeHandle = th.createEl("div", { cls: "resize-handle" });
-      setupColumnResize(resizeHandle, index);
     });
   }
 

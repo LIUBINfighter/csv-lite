@@ -52,7 +52,8 @@ export class HighlightManager {
 		console.log('[HighlightManager] highlightRow called with index:', rowIndex);
 		const rows = this.tableEl?.querySelectorAll('tbody tr');
 		console.log('[HighlightManager] 找到的tbody行数:', rows?.length);
-		const targetRowIndex = rowIndex - 1;
+		// 修复：rowIndex 已经是正确的索引，不需要减 1
+		const targetRowIndex = rowIndex;
 		if (rows && rows[targetRowIndex]) {
 			console.log('[HighlightManager] 高亮目标行:', rows[targetRowIndex]);
 			(rows[targetRowIndex] as HTMLElement).classList.add('csv-row-selected');
