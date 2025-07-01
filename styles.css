@@ -306,6 +306,10 @@ If your plugin does not need CSS, delete this file.
 	overflow: auto !important;
 }
 
+.table-container.main-scroll {
+	overflow: hidden !important;
+}
+
 .csv-lite-table {
 	position: relative !important;
 }
