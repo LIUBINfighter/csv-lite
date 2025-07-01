@@ -554,8 +554,8 @@ td.csv-row-number {
 	left: 0;
 	top: 0;
 	z-index: 11;
-	width: 80px;
-	min-width: 70px;
+	width: 100px;
+	min-width: 100px;
 	max-width: 100px;
 	height: 25px;
 	min-height: 25px;
