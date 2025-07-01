@@ -686,11 +686,6 @@ export class CSVView extends TextFileView {
 				},
 			});
 
-			// 创建顶部横向滚动条（移动到工具栏下方）
-			const topScrollContainer = this.operationEl.createEl("div", {
-				cls: "scroll-container top-scroll",
-			});
-
 			// 创建表格区域 - 移除顶部滚动条
 			const tableWrapper = this.contentEl.createEl("div", {
 				cls: "table-wrapper",
@@ -704,9 +699,6 @@ export class CSVView extends TextFileView {
 			});
 			// 初始化高亮管理器
 			this.highlightManager = new HighlightManager(this.tableEl);
-
-			// 设置滚动同步（传递新的topScrollContainer）
-			this.setupScrollSync(topScrollContainer, tableContainer);
 
 			// 初始化历史记录
 			if (!this.historyManager) {
@@ -800,19 +792,6 @@ export class CSVView extends TextFileView {
 	// 计算列宽
 	calculateColumnWidths() {
 		this.columnWidths = TableUtils.calculateColumnWidths(this.tableData);
-	}
-
-	// 简化滚动同步方法
-	private setupScrollSync(topScroll: HTMLElement, mainScroll: HTMLElement) {
-		// 监听主表格容器的滚动事件，同步到顶部滚动条
-		mainScroll.addEventListener('scroll', () => {
-			topScroll.scrollLeft = mainScroll.scrollLeft;
-		});
-
-		// 监听顶部滚动条的滚动事件，同步到主表格
-		topScroll.addEventListener('scroll', () => {
-			mainScroll.scrollLeft = topScroll.scrollLeft;
-		});
 	}
 
 	async onClose() {
@@ -988,9 +967,9 @@ export class CSVView extends TextFileView {
 			return totalWidth;
 		};
 
-		// 计算累积的固定行高度
+		// 计算累积的固定行高度（在新的滚动结构下，行固定相对于tbody顶部）
 		const calculateStickyRowsHeight = (upToIndex: number): number => {
-			let totalHeight = getHeaderHeight(); // 从表头开始
+			let totalHeight = 0; // 从tbody顶部开始
 			for (let i = 0; i < upToIndex; i++) {
 				if (this.stickyRows.has(i)) {
 					const row = this.tableEl.querySelector(`tbody tr:nth-child(${i + 1})`) as HTMLElement;
@@ -1034,7 +1013,6 @@ export class CSVView extends TextFileView {
 		}
 
 		// 应用用户手动固定的行样式
-		const headerHeight = getHeaderHeight();
 		this.stickyRows.forEach(rowIndex => {
 			const stickyTop = calculateStickyRowsHeight(rowIndex);
 			// 数据行（在tbody中，从第1个tr开始）

@@ -17,6 +17,48 @@ If your plugin does not need CSS, delete this file.
 	overflow: visible; /* 确保表格内的按钮可见 */
 }
 
+/* 表格tbody内部滚动 */
+.csv-lite-table tbody {
+	display: block;
+	overflow-y: auto;
+	max-height: 60vh; /* 设置最大高度，可根据需要调整 */
+	width: 100%;
+}
+
+/* 表格thead保持正常显示 */
+.csv-lite-table thead {
+	display: table;
+	width: 100%;
+	table-layout: fixed;
+}
+
+/* 表格行保持表格布局 */
+.csv-lite-table tbody tr {
+	display: table;
+	width: 100%;
+	table-layout: fixed;
+}
+
+/* 确保滚动条样式 */
+.csv-lite-table tbody::-webkit-scrollbar {
+	width: 8px;
+}
+
+.csv-lite-table tbody::-webkit-scrollbar-track {
+	background: var(--background-primary);
+	border-radius: 4px;
+}
+
+.csv-lite-table tbody::-webkit-scrollbar-thumb {
+	background-color: var(--background-modifier-border);
+	border-radius: 4px;
+	transition: background-color 0.2s ease;
+}
+
+.csv-lite-table tbody::-webkit-scrollbar-thumb:hover {
+	background-color: var(--background-modifier-border-hover);
+}
+
 .csv-lite-table td,
 .csv-lite-table th {
 	border: 1px solid var(--background-modifier-border);
@@ -164,6 +206,7 @@ If your plugin does not need CSS, delete this file.
 /* 默认固定表头样式（A、B、C、D...） */
 .csv-sticky-header {
 	position: sticky !important;
+	top: 0 !important;
 	z-index: 20 !important;
 	background: var(--background-secondary) !important;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
@@ -352,12 +395,12 @@ td input:focus {
 	background-color: var(--background-modifier-border-hover);
 }
 
-/* 主表格滚动区域 */
+/* 主表格滚动区域 - 移除外部滚动 */
 .main-scroll {
-	overflow-y: auto; /* 只保留垂直滚动 */
 	flex-grow: 1;
 	border: 1px solid var(--background-modifier-border);
 	border-radius: 4px;
+	overflow: hidden; /* 移除外部滚动 */
 }
 
 /* 清除之前的 margin 设置，使用 gap 代替 */
