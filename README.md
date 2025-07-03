@@ -11,8 +11,6 @@ Simple enough for csv, no more fancy function you need to learn and think!
 
 ![v1.1.0](./asssets/1.1.0-action-menu.png)
 
-> if you encounter any problems, download `test/test-sample.csv` to see what's different from the test csv file. Issue with an screenshot will help us fix it faster.
-
 ## Introduction
 
 Keep your mind on track! Don't waste time creating fancy tables.
@@ -22,7 +20,7 @@ A plugin designed to view and edit `CSV files` directly within Obsidian.
 -   **View** CSV files in a clean, readable table.
 -   **Search** the entire file to quickly find data (`esc` to clean).
 -   **Navigate** easily with numbered rows and columns.
--   **Pin** the first column so it's always visible.
+-   **Pin** the selected column so it's always visible.
 -   **Toggle** between the table view and raw source-mode.
 -   **Edit** cells directly by clicking and typing.
 -   **Manage** rows and columns (add, delete, move) with a simple right-click on the header.
@@ -40,8 +38,8 @@ Because it is designed to be simple and straightforward. It also keeps up with t
 -   No fancy UI, SAY NO TO
     -   modals
     -   sidebar
-    -   settingTab <!-- -   Readme. Actually it's important to update readme, I hope you won't mention this line [#33](https://github.com/LIUBINfighter/csv-lite/issues/33) -->
-    -   Online docs & tutorials
+    -   settingTab <!-- -   Readme. Actually it's important to update readme, I hope you won't notice this line QAQ [#33](https://github.com/LIUBINfighter/csv-lite/issues/33) -->
+    -   other online docs & tutorials
 -   All functions of the ui components above will be covered in a single File view.
 -   All in TextFileView/workspace.
 -   No more pollution to your vault, all metadata store in `./.obsidian/plugins/csv` in json format. (Currently no `data.json`)
@@ -54,13 +52,6 @@ Because it is designed to be simple and straightforward. It also keeps up with t
 -   Users shouldn't need to leave their workflow environment.
 -   CSV manipulation should be as natural as text editing.
 
-## Features
-
--   View CSV files in table format
--   Edit CSV files within Obsidian
--   Supports standard CSV formatting
--   Compatible with Obsidian's interface
-
 ## Purpose
 
 This plugin enhances Obsidian's functionality by allowing users to work with CSV (Comma-Separated Values) files seamlessly within their vault, eliminating the need to switch between different applications for CSV handling.
@@ -68,3 +59,9 @@ This plugin enhances Obsidian's functionality by allowing users to work with CSV
 ## Getting Started
 
 Install the plugin through Obsidian's community plugins section and start viewing your CSV files directly in your notes.
+
+## Trouble Shooting
+
+You can [issue here](https://github.com/LIUBINfighter/csv-lite/issues/new).
+
+> if you encounter any problems exactly with csv, download `test/test-sample.csv` to see what's different from the test csv file. Issue with an screenshot will help us fix it faster.
