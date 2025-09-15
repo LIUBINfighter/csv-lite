@@ -27,6 +27,7 @@ A plugin designed to view and edit `CSV files` directly within Obsidian.
 -   **Toggle** between the table view and raw source-mode.
 -   **Edit** cells directly by clicking and typing.
 -   **Manage** rows and columns (add, delete, move) with a simple right-click on the header.
+- **Switch Delimiter Non‑Destructively**: Auto‑detects the file delimiter (comma, semicolon, tab, etc.). Changing the delimiter in the toolbar only re-parses the view; it does NOT rewrite your file. Your original delimiter is preserved when saving edits.
 
 I have a plan to design my own database using json and csv only. If you have fancy idea about tables or csv, please feel free to issue (I will consider it in csv-lite or my new plugin) or search it in community. <!-- For in-markdown edit, I recommend `anyblock` with a much more complex syntax. -->
 
@@ -38,26 +39,37 @@ Because it is designed to be simple and straightforward. It also keeps up with t
 
 ## Philosophy
 
--   No fancy UI, SAY NO TO
-    -   modals
-    -   sidebar
-    -   settingTab <!-- -   Readme. Actually it's important to update readme, I hope you won't notice this line QAQ [#33](https://github.com/LIUBINfighter/csv-lite/issues/33) -->
-    -   other online docs & tutorials
--   All functions of the ui components above will be covered in a single File view.
--   All in TextFileView/workspace.
--   No more pollution to your vault, all metadata store in `./.obsidian/plugins/csv` in json format. (Currently no `data.json`)
--   Every function must be completed within 3 steps: 
+- No fancy UI, SAY NO TO
+        - modals
+        - sidebar
+        - settingTab <!-- - Readme. Actually it's important to update readme, I hope you won't notice this line QAQ [#33](https://github.com/LIUBINfighter/csv-lite/issues/33) -->
+        - other online docs & tutorials
+- All functions of the ui components above will be covered in a single File view.
+- All in TextFileView/workspace.
+- No more pollution to your vault, all metadata store in `./.obsidian/plugins/csv` in json format. (Currently no `data.json`)
+- Every function must be completed within 3 steps:
     0. Locate it visually
-    1.  Click/Hotkey
-    2.  Input (if needed)
-    3.  Confirm/Leave
--   The interface should remain minimal yet functional.
--   Users shouldn't need to leave their workflow environment.
--   CSV manipulation should be as natural as text editing.
+    1. Click/Hotkey
+    2. Input (if needed)
+    3. Confirm/Leave
+- The interface should remain minimal yet functional.
+- Users shouldn't need to leave their workflow environment.
+- CSV manipulation should be as natural as text editing.
 
 ## Purpose
 
 This plugin enhances Obsidian's functionality by allowing users to work with CSV (Comma-Separated Values) files seamlessly within their vault, eliminating the need to switch between different applications for CSV handling.
+
+### Delimiter Handling Philosophy
+
+Team repositories or shared datasets often mix delimiter styles (`,` `;` `\t`). For safety:
+
+1. The plugin auto-detects the delimiter when opening a file.
+2. The dropdown ("Auto, , ;") lets you temporarily re-interpret the file without changing it on disk.
+3. Saving edits (cell changes, row/column operations) writes the file back using the ORIGINAL detected delimiter, not the one you temporarily selected—unless the file already used that delimiter.
+4. This prevents accidental mass diffs in version control or breaking pipelines that assume a specific separator.
+
+If you ever need an explicit “convert delimiter” feature, open an issue—we’ll gate it behind a confirmation instead of doing it silently.
 
 ## Getting Started
 

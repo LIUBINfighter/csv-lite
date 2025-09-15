@@ -38,8 +38,10 @@ export class CSVView extends TextFileView {
 	private autoResize: boolean = true;
 
 	// 新增：解析器设置状态
-	private delimiter: string = ",";
+	private delimiter: string = 'auto';
 	private quoteChar: string = '"';
+	// 保存文件原始分隔符（用于非破坏性编辑后保存仍保持原始格式）
+	private originalFileDelimiter: string | null = null;
 
 	// 编辑栏
 	private editBarEl: HTMLElement;
@@ -93,7 +95,9 @@ export class CSVView extends TextFileView {
 		return "table";
 	}
 	getViewData() {
-		return CSVUtils.unparseCSV(this.tableData);
+		// 使用原始文件分隔符（如果已检测到），否则使用当前解析器的实际分隔符
+		const delim = this.originalFileDelimiter || (this.delimiter === 'auto' ? undefined : this.delimiter);
+		return CSVUtils.unparseCSV(this.tableData, delim ? { delimiter: delim } as any : undefined);
 	}
 
 	// We need to create a wrapper for the original requestSave
@@ -132,6 +136,15 @@ export class CSVView extends TextFileView {
 				delimiter: this.delimiter,
 				quoteChar: this.quoteChar,
 			});
+
+			// 初次或在未设置 originalFileDelimiter 时检测并缓存原始分隔符
+			if (!this.originalFileDelimiter) {
+				try {
+					this.originalFileDelimiter = CSVUtils.detectDelimiter(data, this.quoteChar);
+				} catch (e) {
+					console.warn('Failed to detect original delimiter:', e);
+				}
+			}
 
 			// 确保至少有一行一列
 			if (!this.tableData || this.tableData.length === 0) {
@@ -595,17 +608,42 @@ export class CSVView extends TextFileView {
 				cls: "csv-parser-settings",
 			});
 
+			// 分隔符选择：下拉（Auto, comma, semicolon）
 			new Setting(parserSettingsEl)
 				.setName(i18n.t("settings.fieldSeparator"))
 				.setDesc(i18n.t("settings.fieldSeparatorDesc"))
-				.addText((text) => {
-					text.setValue(this.delimiter)
-						.setPlaceholder("例如：, 或 ; 或 \\t 表示制表符")
-						.onChange(async (value) => {
-							// 处理制表符的特殊情况
-							this.delimiter = value === "\\t" ? "\t" : value;
-							this.reparseAndRefresh();
-						});
+				.addDropdown((dropdown: DropdownComponent) => {
+					// 初始值：优先使用主插件的全局偏好
+					try {
+						const mainPlugin: any = (this.app as any).plugins?.getPlugin?.('csv-lite');
+						if (mainPlugin && mainPlugin.settings && mainPlugin.settings.preferredDelimiter) {
+							this.delimiter = mainPlugin.settings.preferredDelimiter;
+						}
+					} catch (e) {}
+
+					// 检测当前文件的分隔符（用于在 Auto 模式下显示检测结果）
+					const detected = CSVUtils.detectDelimiter(this.data || '', this.quoteChar);
+
+					dropdown.addOption('auto', `Auto (detected: ${detected})`);
+					dropdown.addOption(',', ',');
+					dropdown.addOption(';', ';');
+					// set initial
+					dropdown.setValue(this.delimiter || 'auto');
+
+					dropdown.onChange(async (value) => {
+						this.delimiter = value === '\\t' ? '\t' : value;
+						// 保存全局偏好（如果主插件可用）
+						try {
+							const mainPlugin: any = (this.app as any).plugins?.getPlugin?.('csv-lite');
+							if (mainPlugin && typeof mainPlugin.saveSettings === 'function') {
+								mainPlugin.settings = { ...(mainPlugin.settings || {}), preferredDelimiter: this.delimiter };
+								await mainPlugin.saveSettings();
+							}
+						} catch (e) {}
+
+						 // 非破坏性：仅重新解析视图，不写回文件
+						 this.reparseAndRefresh();
+					});
 				});
 
 			new Setting(parserSettingsEl)
@@ -660,6 +698,40 @@ export class CSVView extends TextFileView {
 					this.columnWidths = [];
 					this.calculateColumnWidths();
 					this.refresh();
+				});
+
+			// 紧凑型：分隔符下拉（放在重置按钮旁，便于快速切换），使用简短的Label
+			const delimiterContainer = buttonsGroup.createEl('div', { cls: 'csv-delimiter-compact' });
+			new Setting(delimiterContainer)
+				.addDropdown((dropdown: DropdownComponent) => {
+					// 初始化值（与 parser settings 保持一致）
+					try {
+						const mainPlugin: any = (this.app as any).plugins?.getPlugin?.('csv-lite');
+						if (mainPlugin && mainPlugin.settings && mainPlugin.settings.preferredDelimiter) {
+							this.delimiter = mainPlugin.settings.preferredDelimiter;
+						}
+					} catch (e) {}
+
+					const detected = CSVUtils.detectDelimiter(this.data || '', this.quoteChar);
+					dropdown.addOption('auto', `Auto (${detected})`);
+					dropdown.addOption(',', ',');
+					dropdown.addOption(';', ';');
+					dropdown.setValue(this.delimiter || 'auto');
+
+					dropdown.onChange(async (value) => {
+						this.delimiter = value === '\\t' ? '\t' : value;
+						// 保存偏好
+						try {
+							const mainPlugin: any = (this.app as any).plugins?.getPlugin?.('csv-lite');
+							if (mainPlugin && typeof mainPlugin.saveSettings === 'function') {
+								mainPlugin.settings = { ...(mainPlugin.settings || {}), preferredDelimiter: this.delimiter };
+								await mainPlugin.saveSettings();
+							}
+						} catch (e) {}
+
+						 // 非破坏性：仅重新解析视图
+						 this.reparseAndRefresh();
+					});
 				});
 
 
@@ -959,50 +1031,49 @@ export class CSVView extends TextFileView {
 			(el as HTMLElement).style.removeProperty('left');
 			(el as HTMLElement).style.removeProperty('top');
 		});
+			// 计算行号的实际宽度
+			const getRowNumberWidth = (): number => {
+				const firstRowNumber = this.tableEl.querySelector('tbody tr td:first-child') as HTMLElement;
+				return firstRowNumber ? firstRowNumber.offsetWidth : 40; // 默认40px
+			};
 
-		// 获取行号列的实际宽度
-		const getRowNumberWidth = (): number => {
-			const firstRowNumber = this.tableEl.querySelector('tbody tr td:first-child') as HTMLElement;
-			return firstRowNumber ? firstRowNumber.offsetWidth : 40; // 默认40px
-		};
+			// 获取表头的实际高度
+			const getHeaderHeight = (): number => {
+				const headerRow = this.tableEl.querySelector('thead tr') as HTMLElement;
+				return headerRow ? headerRow.offsetHeight : 30; // 默认30px
+			};
 
-		// 获取表头的实际高度
-		const getHeaderHeight = (): number => {
-			const headerRow = this.tableEl.querySelector('thead tr') as HTMLElement;
-			return headerRow ? headerRow.offsetHeight : 30; // 默认30px
-		};
-
-		// 计算累积的固定列宽度
-		const calculateStickyColumnsWidth = (upToIndex: number): number => {
-			let totalWidth = getRowNumberWidth(); // 从行号列开始
-			for (let i = 0; i < upToIndex; i++) {
-				if (this.stickyColumns.has(i)) {
-					const headerCell = this.tableEl.querySelector(`thead tr th:nth-child(${i + 2})`) as HTMLElement;
-					if (headerCell) {
-						totalWidth += headerCell.offsetWidth;
-					} else {
-						totalWidth += this.columnWidths[i] || 100; // 使用预设宽度或默认值
+			// 计算累积的固定列宽度（从行号列开始）
+			const calculateStickyColumnsWidth = (upToIndex: number): number => {
+				let totalWidth = getRowNumberWidth(); // 从行号列开始
+				for (let i = 0; i < upToIndex; i++) {
+					if (this.stickyColumns.has(i)) {
+						const headerCell = this.tableEl.querySelector(`thead tr th:nth-child(${i + 2})`) as HTMLElement;
+						if (headerCell) {
+							totalWidth += headerCell.offsetWidth;
+						} else {
+							totalWidth += this.columnWidths[i] || 100; // 使用预设宽度或默认
+						}
 					}
 				}
-			}
-			return totalWidth;
-		};
+				return totalWidth;
+			};
 
-		// 计算累积的固定行高度
-		const calculateStickyRowsHeight = (upToIndex: number): number => {
-			let totalHeight = getHeaderHeight(); // 从表头开始
-			for (let i = 0; i < upToIndex; i++) {
-				if (this.stickyRows.has(i)) {
-					const row = this.tableEl.querySelector(`tbody tr:nth-child(${i + 1})`) as HTMLElement;
-					if (row) {
-						totalHeight += row.offsetHeight;
-					} else {
-						totalHeight += 32; // 默认行高
+			// 计算累积的固定行高度（从表头开始）
+			const calculateStickyRowsHeight = (upToIndex: number): number => {
+				let totalHeight = getHeaderHeight(); // 从表头开始
+				for (let i = 0; i < upToIndex; i++) {
+					if (this.stickyRows.has(i)) {
+						const row = this.tableEl.querySelector(`tbody tr:nth-child(${i + 1})`) as HTMLElement;
+						if (row) {
+							totalHeight += row.offsetHeight;
+						} else {
+							totalHeight += 32; // 默认行高
+						}
 					}
 				}
-			}
-			return totalHeight;
-		};
+				return totalHeight;
+			};
 
 		// 默认固定表头行（A、B、C、D...）
 		if (this.stickyHeaders) {
