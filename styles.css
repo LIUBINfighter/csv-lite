@@ -108,15 +108,26 @@ If your plugin does not need CSS, delete this file.
  	align-items: center;
 }
 .csv-delimiter-compact .setting-item {
-    padding-top: 0 !important;
-    padding-bottom: 0 !important; /* 去掉 11.25px 的底部内边距 */
-    margin: 0 !important;
+	display: flex !important;
+	align-items: center !important;
+	padding-top: 0 !important;
+	padding-bottom: 0 !important; /* 去掉 11.25px 的底部内边距 */
+	margin: 0 !important;
 }
 .csv-delimiter-compact .setting-item .setting-item-info {
     display: none; /* 隐藏多余描述，保持紧凑 */
 }
 .csv-delimiter-compact .dropdown {
-    min-width: 72px; /* 视觉上和按钮宽度接近 */
+	min-width: 72px; /* 视觉上和按钮宽度接近 */
+}
+/* Align dropdown vertically with buttons */
+.csv-delimiter-compact .setting-item-control {
+	margin: 0 !important;
+}
+.csv-delimiter-compact .setting-item-control .dropdown {
+	height: 32px !important;
+	padding: 0 8px !important;
+	line-height: 32px !important;
 }
 
 /* Pin按钮样式 */
