@@ -5,10 +5,12 @@ import { i18n } from "./i18n";
 
 interface CSVPluginSettings {
 	csvSettings: string;
+	preferredDelimiter?: string; // user global preference, e.g. ',' ';' '\t' or 'auto'
 }
 
 const DEFAULT_SETTINGS: CSVPluginSettings = {
 	csvSettings: "default",
+	preferredDelimiter: 'auto',
 };
 
 export default class CSVPlugin extends Plugin {
