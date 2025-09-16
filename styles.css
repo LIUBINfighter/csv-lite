@@ -105,7 +105,7 @@ If your plugin does not need CSS, delete this file.
 /* 紧凑型分隔符下拉容器，放在按钮组内：去掉 Setting 默认的下方 padding 并垂直居中 */
 .csv-delimiter-compact {
 	display: flex;
-	align-items: center;
+ 	align-items: center;
 }
 .csv-delimiter-compact .setting-item {
     padding-top: 0 !important;
@@ -117,23 +117,6 @@ If your plugin does not need CSS, delete this file.
 }
 .csv-delimiter-compact .dropdown {
     min-width: 72px; /* 视觉上和按钮宽度接近 */
-}
-
-/* Fix: ensure compact dropdown aligns with buttons (same height and vertical centering) */
-.csv-delimiter-compact .setting-item {
-	display: flex !important;
-	align-items: center !important;
-	height: 32px !important; /* match button/search input height */
-}
-.csv-delimiter-compact .setting-item .setting-item-control {
-	display: flex !important;
-	align-items: center !important;
-	height: 32px !important;
-}
-.csv-delimiter-compact .dropdown,
-.csv-delimiter-compact .dropdown .dropdown-content {
-	height: 32px !important;
-	line-height: 32px !important;
 }
 
 /* Pin按钮样式 */
