@@ -77,6 +77,9 @@ export class CSVView extends TextFileView {
 	private stickyHeaders: boolean = true; // 表头默认固定
 	private stickyRowNumbers: boolean = true; // 行号默认固定
 
+	// 新增：是否使用首行为表头（仅影响视图，不修改文件）
+	private useFirstRowAsHeader: boolean = false;
+
 	constructor(leaf: any) {
 		super(leaf);
 		this.historyManager = new TableHistoryManager(
@@ -242,6 +245,7 @@ export class CSVView extends TextFileView {
 		};
 
 		renderTable({
+				useFirstRowAsHeader: this.useFirstRowAsHeader,
 			tableData: this.tableData,
 			columnWidths: this.columnWidths,
 			autoResize: this.autoResize,
@@ -391,6 +395,7 @@ export class CSVView extends TextFileView {
 				onDeleteCol: (colIdx) => this.refreshDeleteCol(colIdx),
 				onMoveColLeft: (colIdx) => this.moveCol(colIdx, colIdx - 1),
 				onMoveColRight: (colIdx) => this.moveCol(colIdx, colIdx + 1),
+						onToggleTopRowHeader: (rowIdx) => this.toggleTopRowHeader(rowIdx),
 			}
 		);
 
@@ -1018,6 +1023,17 @@ export class CSVView extends TextFileView {
 			this.stickyColumns.add(colIndex);
 		}
 		this.applyStickyStyles();
+	}
+
+	// 切换首行作为表头（视图级别，不修改文件）
+	private toggleTopRowHeader(rowIndex: number) {
+		if (rowIndex !== 0) {
+			new Notice(i18n.t('notifications.onlyFirstRowHeader') || 'Only the first row can be used as header.');
+			return;
+		}
+		this.useFirstRowAsHeader = !this.useFirstRowAsHeader;
+		this.refresh();
+		new Notice(this.useFirstRowAsHeader ? (i18n.t('notifications.topRowHeaderEnabled') || 'Using first row as header') : (i18n.t('notifications.topRowHeaderDisabled') || 'First row is no longer used as header'));
 	}
 
 	// 新增：应用sticky样式

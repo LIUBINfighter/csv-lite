@@ -44,5 +44,12 @@ export const enUS = {
     deleteCol: 'Delete this column',
     moveColLeft: 'Move column left',
     moveColRight: 'Move column right',
+    toggleTopRowHeader: 'Toggle first row as header',
+  }
+  ,
+  notifications: {
+    onlyFirstRowHeader: 'Only the first row can be used as header.',
+    topRowHeaderEnabled: 'Using first row as header',
+    topRowHeaderDisabled: 'First row is no longer used as header'
   }
 };

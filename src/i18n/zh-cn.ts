@@ -46,5 +46,12 @@ export const zhCN = {
     deleteCol: '删除本列',
     moveColLeft: '向左移动一列',
     moveColRight: '向右移动一列',
+    toggleTopRowHeader: '切换首行为表头',
+  }
+  ,
+  notifications: {
+    onlyFirstRowHeader: '只有第一行可以用作表头。',
+    topRowHeaderEnabled: '已将首行作为表头',
+    topRowHeaderDisabled: '不再将首行用作表头'
   }
 };

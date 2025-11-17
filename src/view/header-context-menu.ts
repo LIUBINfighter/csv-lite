@@ -20,6 +20,7 @@ interface HeaderContextMenuOptions {
   selectColumn?: (colIndex: number) => void;
   clearSelection?: () => void;
   onMenuClose?: () => void;
+  onToggleTopRowHeader?: (rowIndex: number) => void;
 }
 
 class MenuManager {
@@ -98,6 +99,14 @@ export function setupHeaderContextMenu(tableEl: HTMLElement, options: HeaderCont
         { label: 'contextMenu.moveRowUp', onClick: () => options.onMoveRowUp(rowIndex) },
         { label: 'contextMenu.moveRowDown', onClick: () => options.onMoveRowDown(rowIndex) },
       ];
+
+      // Add option to toggle first row as header when clicking row 0
+      if (typeof options.onToggleTopRowHeader === 'function') {
+        items.push({
+          label: 'contextMenu.toggleTopRowHeader',
+          onClick: () => options.onToggleTopRowHeader!(rowIndex),
+        });
+      }
       menuManager.showMenu(items, event.pageX, event.pageY, () => {
         if (options.clearSelection) options.clearSelection();
         if (options.onMenuClose) options.onMenuClose();

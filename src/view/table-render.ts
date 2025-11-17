@@ -35,6 +35,8 @@ export interface TableRenderOptions {
   stickyColumns?: Set<number>;
   toggleRowSticky?: (rowIndex: number) => void;
   toggleColumnSticky?: (colIndex: number) => void;
+  // 如果为 true，则使用 tableData[0] 作为列标题，并从 tbody 中排除该行
+  useFirstRowAsHeader?: boolean;
 }
 
 export function renderTable(options: TableRenderOptions) {
@@ -98,6 +100,7 @@ export function renderTable(options: TableRenderOptions) {
 
   // 创建列号行
   if (tableData[0]) {
+    const useHeaderRow = !!options.useFirstRowAsHeader;
     tableData[0].forEach((headerCell, index) => {
       const th = headerRow.createEl("th", {
         cls: "csv-col-number",
@@ -106,7 +109,8 @@ export function renderTable(options: TableRenderOptions) {
           draggable: "true",
         },
       });
-      th.textContent = getColumnLabel(index);
+      // 如果启用首行为表头，则使用该单元格文本作为列标题
+      th.textContent = useHeaderRow ? String(headerCell) || getColumnLabel(index) : getColumnLabel(index);
       th.onclick = (e) => {
         e.stopPropagation();
         selectColumn(index);
@@ -187,11 +191,13 @@ export function renderTable(options: TableRenderOptions) {
   // 创建表格主体 - 所有行都作为普通数据行处理
   const tableBody = tableEl.createEl("tbody");
   
-  // 从索引0开始，包括第一行
-  for (let i = 0; i < tableData.length; i++) {
+  // 如果使用首行为表头，则从索引1开始渲染tbody，否则从0开始
+  const startRow = options.useFirstRowAsHeader ? 1 : 0;
+  for (let i = startRow; i < tableData.length; i++) {
     const row = tableData[i];
     const tableRow = tableBody.createEl("tr");
     const rowNumberCell = tableRow.createEl("td", { cls: "csv-row-number", attr: { draggable: "true" } });
+    // 显示原始数据行索引
     rowNumberCell.textContent = i.toString();
     rowNumberCell.onclick = (e) => {
       e.stopPropagation();
