@@ -51,5 +51,7 @@ export const enUS = {
     onlyFirstRowHeader: 'Only the first row can be used as header.',
     topRowHeaderEnabled: 'Using first row as header',
     topRowHeaderDisabled: 'First row is no longer used as header'
+  ,
+    persistFailed: 'Failed to persist setting to data.json'
   }
 };

@@ -85,12 +85,13 @@ export function setupHeaderContextMenu(tableEl: HTMLElement, options: HeaderCont
   const menuManager = new MenuManager();
   const handler = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
-    if (target.classList.contains('csv-row-number')) {
+    // Allow right-click on row-number cell OR any cell within tbody's tr to open row menu
+    const rowTr = target.closest('tr');
+    const isRowNumber = target.classList.contains('csv-row-number');
+    if (rowTr && rowTr.parentElement && rowTr.parentElement.tagName.toLowerCase() === 'tbody') {
       event.preventDefault();
-      const tr = target.closest('tr');
-      if (!tr) return;
-      const trs = Array.from(tr.parentElement!.children);
-      const rowIndex = trs.indexOf(tr);
+      const trs = Array.from(rowTr.parentElement.children);
+      const rowIndex = trs.indexOf(rowTr);
       if (options.selectRow) options.selectRow(rowIndex);
       const items = [
         { label: 'contextMenu.insertRowAbove', onClick: () => options.onInsertRowAbove(rowIndex) },
@@ -100,13 +101,14 @@ export function setupHeaderContextMenu(tableEl: HTMLElement, options: HeaderCont
         { label: 'contextMenu.moveRowDown', onClick: () => options.onMoveRowDown(rowIndex) },
       ];
 
-      // Add option to toggle first row as header when clicking row 0
-      if (typeof options.onToggleTopRowHeader === 'function') {
+      // Only show toggle option when right-clicking the first data row (index 0)
+      if (rowIndex === 0 && typeof options.onToggleTopRowHeader === 'function') {
         items.push({
           label: 'contextMenu.toggleTopRowHeader',
           onClick: () => options.onToggleTopRowHeader!(rowIndex),
         });
       }
+
       menuManager.showMenu(items, event.pageX, event.pageY, () => {
         if (options.clearSelection) options.clearSelection();
         if (options.onMenuClose) options.onMenuClose();

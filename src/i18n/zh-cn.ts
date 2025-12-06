@@ -53,5 +53,7 @@ export const zhCN = {
     onlyFirstRowHeader: '只有第一行可以用作表头。',
     topRowHeaderEnabled: '已将首行作为表头',
     topRowHeaderDisabled: '不再将首行用作表头'
+  ,
+    persistFailed: '将设置持久化到 data.json 失败'
   }
 };

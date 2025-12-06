@@ -561,6 +561,15 @@ export class CSVView extends TextFileView {
 
 	async onOpen() {
 		try {
+			// 读取持久化设置（如果存在）
+			try {
+				const cfg = await DataJson.read();
+				if (cfg && typeof cfg.useFirstRowAsHeader !== 'undefined') {
+					this.useFirstRowAsHeader = !!cfg.useFirstRowAsHeader;
+				}
+			} catch (e) {
+				console.warn('Failed to read data.json for persisted settings', e);
+			}
 			// 1. 在 view header 的 view-actions 区域插入切换按钮（lucide/file-code 图标）
 			// 交互说明：
 			// - 切换按钮始终位于 header 区域，风格与 Obsidian 原生一致。
@@ -1026,12 +1035,21 @@ export class CSVView extends TextFileView {
 	}
 
 	// 切换首行作为表头（视图级别，不修改文件）
-	private toggleTopRowHeader(rowIndex: number) {
+	private async toggleTopRowHeader(rowIndex: number) {
 		if (rowIndex !== 0) {
 			new Notice(i18n.t('notifications.onlyFirstRowHeader') || 'Only the first row can be used as header.');
 			return;
 		}
 		this.useFirstRowAsHeader = !this.useFirstRowAsHeader;
+		// 持久化到 data.json
+		try {
+			const cfg = await DataJson.read();
+			const newCfg = { ...cfg, useFirstRowAsHeader: this.useFirstRowAsHeader };
+			await DataJson.write(newCfg);
+		} catch (e) {
+			console.warn('Failed to persist useFirstRowAsHeader to data.json', e);
+			new Notice(i18n.t('notifications.persistFailed') || 'Failed to persist setting to data.json');
+		}
 		this.refresh();
 		new Notice(this.useFirstRowAsHeader ? (i18n.t('notifications.topRowHeaderEnabled') || 'Using first row as header') : (i18n.t('notifications.topRowHeaderDisabled') || 'First row is no longer used as header'));
 	}
