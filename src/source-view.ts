@@ -3,7 +3,7 @@ import { EditorState, Extension, RangeSetBuilder } from "@codemirror/state";
 import { EditorView, keymap, placeholder, lineNumbers, drawSelection, Decoration, ViewPlugin, ViewUpdate, DecorationSet } from "@codemirror/view";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 
-export const VIEW_TYPE_CSV_SOURCE = "csv-source-view";
+export const VIEW_TYPE_CSV_SOURCE = "csv-lite-source-view";
 
 // 分隔符高亮插件（逗号、分号、制表符）
 const separatorHighlightPlugin = ViewPlugin.fromClass(class {
@@ -75,7 +75,7 @@ export class SourceView extends TextFileView {
       btn.onclick = async () => {
         const file = this.file;
         if (!file) return;
-        const leaves = this.app.workspace.getLeavesOfType('csv-view');
+        const leaves = this.app.workspace.getLeavesOfType('csv-lite-view');
         let found = false;
         for (const leaf of leaves) {
           if (leaf.view && (leaf.view as any).file && (leaf.view as any).file.path === file.path) {
@@ -88,7 +88,7 @@ export class SourceView extends TextFileView {
           const newLeaf = this.app.workspace.getLeaf(true);
           await newLeaf.openFile(file, { active: true });
           await newLeaf.setViewState({
-            type: 'csv-view',
+            type: 'csv-lite-view',
             active: true,
             state: { file: file.path }
           });

@@ -19,7 +19,7 @@ import { renderTable } from "./view/table-render";
 import { HighlightManager } from "./utils/highlight-manager";
 import { setupHeaderContextMenu } from "./view/header-context-menu";
 
-export const VIEW_TYPE_CSV = "csv-view";
+export const VIEW_TYPE_CSV = "csv-lite-view";
 
 export class CSVView extends TextFileView {
 	public file: TFile | null;
@@ -572,7 +572,7 @@ export class CSVView extends TextFileView {
 				btn.onclick = async () => {
 					const file = this.file;
 					if (!file) return;
-					const leaves = this.app.workspace.getLeavesOfType('csv-source-view');
+					const leaves = this.app.workspace.getLeavesOfType('csv-lite-source-view');
 					let found = false;
 					for (const leaf of leaves) {
 						if (leaf.view && (leaf.view as any).file && (leaf.view as any).file.path === file.path) {
@@ -585,7 +585,7 @@ export class CSVView extends TextFileView {
 						const newLeaf = this.app.workspace.getLeaf(true);
 						await newLeaf.openFile(file, { active: true, state: { mode: "source" } });
 						await newLeaf.setViewState({
-							type: "csv-source-view",
+							type: "csv-lite-source-view",
 							active: true,
 							state: { file: file.path }
 						});
@@ -983,7 +983,7 @@ export class CSVView extends TextFileView {
 		const leaf = this.app.workspace.getLeaf(true);
 		await leaf.openFile(file, { active: true, state: { mode: "source" } });
 		await leaf.setViewState({
-			type: "csv-source-view",
+			type: "csv-lite-source-view",
 			active: true,
 			state: { file: file.path }
 		});
