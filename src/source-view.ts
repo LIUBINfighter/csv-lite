@@ -62,7 +62,7 @@ export class SourceView extends TextFileView {
     // 1. 在 view header 的 view-actions 区域插入切换按钮（lucide/table 图标）
     // 交互说明：
     // - 切换按钮始终位于 header 区域，风格与 Obsidian 原生一致。
-    // - 点击时遍历所有 leaf，查找同一文件的目标视图（csv-view）。
+    // - 点击时遍历所有 leaf，查找同一文件的目标视图（csv-lite-view）。
     //   - 若有，则激活该 leaf（workspace.setActiveLeaf）。
     //   - 若无，则新建 leaf 并打开目标视图。
     // - 不主动关闭原有视图，用户可自行关闭。
