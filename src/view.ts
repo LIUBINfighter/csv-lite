@@ -793,6 +793,9 @@ export class CSVView extends TextFileView {
 				document,
 				"keydown",
 				(event: KeyboardEvent) => {
+					// Only handle undo/redo when this view is the active leaf
+					if (this.app.workspace.activeLeaf !== this.leaf) return;
+
 					// 检测Ctrl+Z (或Mac上的Cmd+Z)
 					if ((event.ctrlKey || event.metaKey) && event.key === "z") {
 						if (event.shiftKey) {
