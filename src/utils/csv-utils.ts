@@ -120,8 +120,8 @@ export class CSVUtils {
 
 			return parseResult.data as string[][];
 		} catch (error) {
-			console.error("CSV解析错误:", error);
-			new Notice(`${i18n.t("csv.error")}: CSV解析失败，请检查文件格式`);
+			console.error("CSV parse error:", error);
+			new Notice(i18n.t("csv.parsingFailed"));
 			return [[""]];
 		}
 	}
