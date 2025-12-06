@@ -19,7 +19,7 @@ import { renderTable } from "./view/table-render";
 import { HighlightManager } from "./utils/highlight-manager";
 import { setupHeaderContextMenu } from "./view/header-context-menu";
 
-export const VIEW_TYPE_CSV = "csv-view";
+export const VIEW_TYPE_CSV = "csv-lite-view";
 
 export class CSVView extends TextFileView {
 	public file: TFile | null;
@@ -559,7 +559,7 @@ export class CSVView extends TextFileView {
 			// 1. 在 view header 的 view-actions 区域插入切换按钮（lucide/file-code 图标）
 			// 交互说明：
 			// - 切换按钮始终位于 header 区域，风格与 Obsidian 原生一致。
-			// - 点击时遍历所有 leaf，查找同一文件的目标视图（csv-source-view）。
+			// - 点击时遍历所有 leaf，查找同一文件的目标视图（csv-lite-source-view）。
 			//   - 若有，则激活该 leaf（workspace.setActiveLeaf）。
 			//   - 若无，则新建 leaf 并打开目标视图。
 			// - 不主动关闭原有视图，用户可自行关闭。
@@ -572,7 +572,7 @@ export class CSVView extends TextFileView {
 				btn.onclick = async () => {
 					const file = this.file;
 					if (!file) return;
-					const leaves = this.app.workspace.getLeavesOfType('csv-source-view');
+					const leaves = this.app.workspace.getLeavesOfType('csv-lite-source-view');
 					let found = false;
 					for (const leaf of leaves) {
 						if (leaf.view && (leaf.view as any).file && (leaf.view as any).file.path === file.path) {
@@ -585,7 +585,7 @@ export class CSVView extends TextFileView {
 						const newLeaf = this.app.workspace.getLeaf(true);
 						await newLeaf.openFile(file, { active: true, state: { mode: "source" } });
 						await newLeaf.setViewState({
-							type: "csv-source-view",
+							type: "csv-lite-source-view",
 							active: true,
 							state: { file: file.path }
 						});
@@ -793,6 +793,9 @@ export class CSVView extends TextFileView {
 				document,
 				"keydown",
 				(event: KeyboardEvent) => {
+					// Only handle undo/redo when this view is the active leaf
+					if (this.app.workspace.activeLeaf !== this.leaf) return;
+
 					// 检测Ctrl+Z (或Mac上的Cmd+Z)
 					if ((event.ctrlKey || event.metaKey) && event.key === "z") {
 						if (event.shiftKey) {
@@ -983,7 +986,7 @@ export class CSVView extends TextFileView {
 		const leaf = this.app.workspace.getLeaf(true);
 		await leaf.openFile(file, { active: true, state: { mode: "source" } });
 		await leaf.setViewState({
-			type: "csv-source-view",
+			type: "csv-lite-source-view",
 			active: true,
 			state: { file: file.path }
 		});

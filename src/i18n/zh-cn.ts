@@ -17,7 +17,8 @@ export const zhCN = {
   },
   csv: {
     error: '错误',
-    parsingFailed: 'CSV解析失败，请检查文件格式'
+    parsingFailed: 'CSV解析失败，请检查文件格式',
+    parseWarning: 'CSV解析提示:'
   },
   settings: {
     fieldSeparator: '字段分隔符',
@@ -46,5 +47,17 @@ export const zhCN = {
     deleteCol: '删除本列',
     moveColLeft: '向左移动一列',
     moveColRight: '向右移动一列',
+  }
+  ,
+  tableMessages: {
+    atLeastOneRow: '至少需要保留一行',
+    atLeastOneColumn: '至少需要保留一列'
+  }
+  ,
+  notifications: {
+    undo: '已撤销上一步操作',
+    noMoreUndo: '没有更多可撤销的操作',
+    redo: '已重做操作',
+    noMoreRedo: '没有更多可重做的操作'
   }
 };

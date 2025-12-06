@@ -114,14 +114,14 @@ export class CSVUtils {
 			const parseResult: any = Papa.parse(csvString, parseConfig as any);
 
 			if (parseResult.errors && parseResult.errors.length > 0) {
-				console.warn("CSV解析警告:", parseResult.errors);
-				new Notice(`CSV解析提示: ${parseResult.errors[0].message}`);
+				console.warn("CSV parse warnings:", parseResult.errors);
+				new Notice(`${i18n.t("csv.parseWarning")} ${parseResult.errors[0].message}`);
 			}
 
 			return parseResult.data as string[][];
 		} catch (error) {
-			console.error("CSV解析错误:", error);
-			new Notice(`${i18n.t("csv.error")}: CSV解析失败，请检查文件格式`);
+			console.error("CSV parse error:", error);
+			new Notice(i18n.t("csv.parsingFailed"));
 			return [[""]];
 		}
 	}
