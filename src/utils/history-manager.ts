@@ -1,4 +1,5 @@
 import { Notice } from "obsidian";
+import { i18n } from "../i18n";
 
 export class HistoryManager<T> {
 	private history: T[] = [];
@@ -38,10 +39,10 @@ export class HistoryManager<T> {
 	undo(): T | null {
 		if (this.canUndo()) {
 			this.currentIndex--;
-			new Notice("已撤销上一步操作");
+			new Notice(i18n.t("notifications.undo"));
 			return this.getCurrentState();
 		} else {
-			new Notice("没有更多可撤销的操作");
+			new Notice(i18n.t("notifications.noMoreUndo"));
 			return null;
 		}
 	}
@@ -52,10 +53,10 @@ export class HistoryManager<T> {
 	redo(): T | null {
 		if (this.canRedo()) {
 			this.currentIndex++;
-			new Notice("已重做操作");
+			new Notice(i18n.t("notifications.redo"));
 			return this.getCurrentState();
 		} else {
-			new Notice("没有更多可重做的操作");
+			new Notice(i18n.t("notifications.noMoreRedo"));
 			return null;
 		}
 	}

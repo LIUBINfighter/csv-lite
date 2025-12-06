@@ -1,4 +1,5 @@
 import { Notice } from "obsidian";
+import { i18n } from "../i18n";
 
 export class TableUtils {
 	/**
@@ -42,7 +43,7 @@ export class TableUtils {
 	 */
 	static deleteRow(tableData: string[][]): string[][] {
 		if (tableData.length <= 1) {
-			new Notice("至少需要保留一行");
+			new Notice(i18n.t("tableMessages.atLeastOneRow"));
 			return tableData;
 		}
 
@@ -61,7 +62,7 @@ export class TableUtils {
 	 */
 	static deleteColumn(tableData: string[][]): string[][] {
 		if (!tableData[0] || tableData[0].length <= 1) {
-			new Notice("至少需要保留一列");
+			new Notice(i18n.t("tableMessages.atLeastOneColumn"));
 			return tableData;
 		}
 

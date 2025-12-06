@@ -15,7 +15,8 @@ export const enUS = {
   },
   csv: {
     error: 'Error',
-    parsingFailed: 'Failed to parse CSV. Please check file format.'
+    parsingFailed: 'Failed to parse CSV. Please check file format.',
+    parseWarning: 'CSV parse warning:'
   },
   settings: {
     fieldSeparator: 'Field Separator',
@@ -44,5 +45,17 @@ export const enUS = {
     deleteCol: 'Delete this column',
     moveColLeft: 'Move column left',
     moveColRight: 'Move column right',
+  }
+  ,
+  tableMessages: {
+    atLeastOneRow: 'At least one row must remain',
+    atLeastOneColumn: 'At least one column must remain'
+  }
+  ,
+  notifications: {
+    undo: 'Undid last action',
+    noMoreUndo: 'There is nothing more to undo',
+    redo: 'Redid action',
+    noMoreRedo: 'There is nothing more to redo'
   }
 };
