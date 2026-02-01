@@ -53,6 +53,74 @@ If your plugin does not need CSS, delete this file.
 	line-height: 1.4;
 }
 
+/* URL display layer */
+.csv-cell-display {
+	padding: 2px 4px;
+	min-height: 24px;
+	cursor: text;
+	white-space: pre-wrap;
+	word-break: break-word;
+	line-height: 1.4;
+	user-select: text;
+	transition: background-color 0.15s ease;
+	position: relative;
+	padding-right: 24px; /* Space for edit button */
+}
+
+/* Hover effect on cell to show it's editable */
+.csv-cell-display:hover {
+	background-color: var(--background-modifier-hover);
+	border-radius: 3px;
+}
+
+/* Edit button for URL cells */
+.csv-cell-edit-btn {
+	cursor: pointer;
+	color: var(--text-muted);
+	font-size: 12px;
+	padding: 2px 4px;
+	border-radius: 3px;
+	opacity: 0;
+	transition: opacity 0.15s ease, background-color 0.15s ease;
+	position: absolute;
+	right: 2px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.csv-cell-display:hover .csv-cell-edit-btn {
+	opacity: 1;
+}
+
+.csv-cell-edit-btn:hover {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+/* Clickable URL links */
+.csv-cell-link {
+	color: var(--link-color);
+	text-decoration: none;
+	cursor: pointer;
+	border-bottom: 1px solid var(--link-color);
+	transition: all 0.2s ease;
+	position: relative;
+	z-index: 1;
+}
+
+.csv-cell-link:hover {
+	color: var(--link-color-hover);
+	border-bottom-color: var(--link-color-hover);
+	text-decoration: none;
+	background-color: rgba(var(--interactive-accent-rgb), 0.1);
+	padding: 0 2px;
+	border-radius: 2px;
+}
+
+.csv-cell-link:active {
+	opacity: 0.7;
+}
+
 /* csv-cell-input 特有样式（宽度由 JS 控制） */
 .csv-cell-input {
 	width: 100%;

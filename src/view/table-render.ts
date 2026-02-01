@@ -2,6 +2,7 @@ import { TableUtils } from "../utils/table-utils";
 import { CSVUtils } from "../utils/csv-utils";
 import { i18n } from "../i18n";
 import { setIcon } from "obsidian";
+import { containsUrl, createUrlDisplay } from "../utils/url-utils";
 
 export interface TableRenderOptions {
   tableData: string[][];
@@ -270,11 +271,39 @@ export function renderTable(options: TableRenderOptions) {
       const td = tableRow.createEl("td", {
         attr: { style: `width: ${columnWidths[j] || 100}px` },
       });
+      
       const input = td.createEl("input", {
         cls: "csv-cell-input",
         attr: { value: cell },
       });
+      
+      // Create display layer for URL rendering
+      const hasUrl = containsUrl(cell);
+      let displayEl: HTMLElement | null = null;
+      
+      // Function to enter edit mode
+      const enterEditMode = () => {
+        const display = td.querySelector('.csv-cell-display') as HTMLElement;
+        if (display) {
+          display.style.display = 'none';
+        }
+        input.style.display = 'block';
+        input.focus();
+      };
+      
+      if (hasUrl) {
+        displayEl = createUrlDisplay(cell, enterEditMode);
+        td.insertBefore(displayEl, input);
+      }
+      
       setupAutoResize(input);
+      
+      // Hide input initially if URL display is shown
+      if (hasUrl && displayEl) {
+        input.style.display = 'none';
+        displayEl.style.display = 'block';
+      }
+      
       input.oninput = (ev) => {
         if (ev.currentTarget instanceof HTMLInputElement) {
           saveSnapshot();
@@ -290,10 +319,63 @@ export function renderTable(options: TableRenderOptions) {
           if (autoResize) {
             adjustInputHeight(ev.currentTarget);
           }
+          
+          // Update display on input change
+          const newHasUrl = containsUrl(ev.currentTarget.value);
+          const tdEl = ev.currentTarget.parentElement;
+          if (tdEl) {
+            const existingDisplay = tdEl.querySelector('.csv-cell-display');
+            if (newHasUrl) {
+              // Create or update display
+              if (existingDisplay) {
+                existingDisplay.remove();
+              }
+              const inputEl = ev.currentTarget;
+              const newDisplay = createUrlDisplay(ev.currentTarget.value, () => {
+                // Enter edit mode: show input first, then focus
+                const disp = tdEl.querySelector('.csv-cell-display') as HTMLElement;
+                if (disp) {
+                  disp.style.display = 'none';
+                }
+                inputEl.style.display = 'block';
+                inputEl.focus();
+              });
+              tdEl.insertBefore(newDisplay, ev.currentTarget);
+            } else if (existingDisplay) {
+              // Remove display if no URLs
+              existingDisplay.remove();
+            }
+          }
         }
       };
+      
       input.onfocus = (ev) => {
-        setActiveCell(i, j, ev.currentTarget as HTMLInputElement);
+        if (ev.currentTarget instanceof HTMLInputElement) {
+          setActiveCell(i, j, ev.currentTarget);
+          // Hide display and show input when focused
+          const tdEl = ev.currentTarget.parentElement;
+          if (tdEl) {
+            const display = tdEl.querySelector('.csv-cell-display') as HTMLElement;
+            if (display) {
+              display.style.display = 'none';
+              ev.currentTarget.style.display = 'block';
+            }
+          }
+        }
+      };
+      
+      input.onblur = (ev) => {
+        if (ev.currentTarget instanceof HTMLInputElement) {
+          // Show display and hide input when blurred (if contains URL)
+          const tdEl = ev.currentTarget.parentElement;
+          if (tdEl) {
+            const display = tdEl.querySelector('.csv-cell-display') as HTMLElement;
+            if (display && containsUrl(ev.currentTarget.value)) {
+              display.style.display = 'block';
+              ev.currentTarget.style.display = 'none';
+            }
+          }
+        }
       };
     });
   }
