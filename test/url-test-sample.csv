@@ -1,0 +1,12 @@
+name,website,documentation,description
+GitHub,https://github.com,https://docs.github.com,Popular code hosting platform
+Stack Overflow,https://stackoverflow.com,https://stackoverflow.com/help,Q&A site for developers
+MDN,https://developer.mozilla.org,https://developer.mozilla.org/en-US/docs/Web,Web technology documentation
+Obsidian,https://obsidian.md,https://help.obsidian.md,Note-taking and knowledge base app
+TypeScript,https://www.typescriptlang.org,https://www.typescriptlang.org/docs/,JavaScript with types
+React,https://react.dev,https://react.dev/learn,UI library for web
+Vue,https://vuejs.org,https://vuejs.org/guide/,Progressive framework
+Node.js,https://nodejs.org,https://nodejs.org/docs/latest/api/,JavaScript runtime
+NPM,https://www.npmjs.com,https://docs.npmjs.com/,Package manager
+Python,https://www.python.org,https://docs.python.org/3/,General-purpose programming
+Mixed Content,https://example.com,Check https://docs.example.com for details,Text with inline URLs

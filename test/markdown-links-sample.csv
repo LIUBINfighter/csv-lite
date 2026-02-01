@@ -1,0 +1,7 @@
+name,website,documentation,description
+GitHub,[Visit GitHub](https://github.com),[Docs](https://docs.github.com),Code hosting with Markdown links
+Stack Overflow,[SO Community](https://stackoverflow.com),[Help Center](https://stackoverflow.com/help),Q&A for developers - compact display
+MDN,[MDN Docs](https://developer.mozilla.org),https://developer.mozilla.org/en-US/docs/Web,Mixed: Markdown and plain URL
+Obsidian,https://obsidian.md,[Help](https://help.obsidian.md),Mixed: Plain URL and Markdown
+TypeScript,[TS Lang](https://www.typescriptlang.org),[Documentation](https://www.typescriptlang.org/docs/),"Cleaner tables with [TS](https://www.typescriptlang.org)"
+Multiple Links,[GitHub](https://github.com) and [GitLab](https://gitlab.com),[Docs1](https://docs.github.com) | [Docs2](https://docs.gitlab.com),Multiple Markdown links in one cell

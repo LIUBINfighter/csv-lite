@@ -28,6 +28,7 @@ A plugin designed to view and edit `CSV files` directly within Obsidian.
 -   **Edit** cells directly by clicking and typing.
 -   **Manage** rows and columns (add, delete, move) with a simple right-click on the header.
 - **Switch Delimiter Non‑Destructively**: Auto‑detects the file delimiter (comma, semicolon, tab, etc.). Changing the delimiter in the toolbar only re-parses the view; it does NOT rewrite your file. Your original delimiter is preserved when saving edits.
+- **Clickable URLs**: Plain-text URLs and Markdown-style links (`[text](url)`) in cells are automatically detected and rendered as clickable links. Click a link to open it in your browser, or click the edit button (✎) to edit the cell content.
 
 I have a plan to design my own database using json and csv only. If you have fancy idea about tables or csv, please feel free to issue (I will consider it in csv-lite or my new plugin) or search it in community. <!-- For in-markdown edit, I recommend `anyblock` with a much more complex syntax. -->
 
