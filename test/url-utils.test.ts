@@ -36,6 +36,15 @@ describe('URL Utils', () => {
     it('should handle multiple URLs in text', () => {
       expect(containsUrl('Visit https://site1.com and https://site2.com')).toBe(true);
     });
+
+    it('should detect Markdown-style links', () => {
+      expect(containsUrl('[GitHub](https://github.com)')).toBe(true);
+      expect(containsUrl('Check [this link](https://example.com) out')).toBe(true);
+    });
+
+    it('should detect mixed URLs and Markdown links', () => {
+      expect(containsUrl('[GitHub](https://github.com) and https://example.com')).toBe(true);
+    });
   });
 
   describe('parseTextWithUrls', () => {
@@ -58,7 +67,8 @@ describe('URL Utils', () => {
       expect(result[1]).toEqual({
         text: 'https://example.com',
         isUrl: true,
-        url: 'https://example.com'
+        url: 'https://example.com',
+        displayText: 'https://example.com'
       });
       expect(result[2]).toEqual({
         text: ' today',
@@ -78,7 +88,8 @@ describe('URL Utils', () => {
       expect(result[0]).toEqual({
         text: 'https://example.com',
         isUrl: true,
-        url: 'https://example.com'
+        url: 'https://example.com',
+        displayText: 'https://example.com'
       });
     });
 
@@ -87,7 +98,8 @@ describe('URL Utils', () => {
       expect(result[result.length - 1]).toEqual({
         text: 'https://example.com',
         isUrl: true,
-        url: 'https://example.com'
+        url: 'https://example.com',
+        displayText: 'https://example.com'
       });
     });
 
@@ -97,6 +109,40 @@ describe('URL Utils', () => {
       expect(result).toHaveLength(1);
       expect(result[0].isUrl).toBe(true);
       expect(result[0].url).toBe(url);
+    });
+
+    it('should parse Markdown-style link', () => {
+      const result = parseTextWithUrls('[GitHub](https://github.com)');
+      expect(result).toHaveLength(1);
+      expect(result[0].isUrl).toBe(true);
+      expect(result[0].url).toBe('https://github.com');
+      expect(result[0].displayText).toBe('GitHub');
+    });
+
+    it('should parse text with Markdown link and plain text', () => {
+      const result = parseTextWithUrls('Visit [GitHub](https://github.com) now');
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual({
+        text: 'Visit ',
+        isUrl: false
+      });
+      expect(result[1].isUrl).toBe(true);
+      expect(result[1].url).toBe('https://github.com');
+      expect(result[1].displayText).toBe('GitHub');
+      expect(result[2]).toEqual({
+        text: ' now',
+        isUrl: false
+      });
+    });
+
+    it('should parse mixed Markdown links and plain URLs', () => {
+      const result = parseTextWithUrls('[GitHub](https://github.com) and https://example.com');
+      expect(result).toHaveLength(3);
+      expect(result[0].isUrl).toBe(true);
+      expect(result[0].displayText).toBe('GitHub');
+      expect(result[1].text).toBe(' and ');
+      expect(result[2].isUrl).toBe(true);
+      expect(result[2].url).toBe('https://example.com');
     });
   });
 

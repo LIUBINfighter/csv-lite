@@ -5,12 +5,16 @@
 // URL regex pattern that matches common URL formats
 const URL_PATTERN = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
 
+// Markdown link pattern: [text](url)
+const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+
 /**
- * Detect if text contains URLs
+ * Detect if text contains URLs or Markdown links
  */
 export function containsUrl(text: string): boolean {
   const urlRegex = new RegExp(URL_PATTERN);
-  return urlRegex.test(text);
+  const markdownRegex = new RegExp(MARKDOWN_LINK_PATTERN);
+  return urlRegex.test(text) || markdownRegex.test(text);
 }
 
 /**
@@ -20,18 +24,60 @@ export interface TextSegment {
   text: string;
   isUrl: boolean;
   url?: string;
+  displayText?: string; // For Markdown links
 }
 
 export function parseTextWithUrls(text: string): TextSegment[] {
   const segments: TextSegment[] = [];
-  let lastIndex = 0;
   
-  // Reset regex lastIndex
+  // Find all matches (both URLs and Markdown links) with their positions
+  interface Match {
+    index: number;
+    length: number;
+    displayText: string;
+    url: string;
+  }
+  
+  const matches: Match[] = [];
+  
+  // Find Markdown links first (they take precedence)
+  const markdownRegex = new RegExp(MARKDOWN_LINK_PATTERN);
+  let mdMatch: RegExpExecArray | null;
+  while ((mdMatch = markdownRegex.exec(text)) !== null) {
+    matches.push({
+      index: mdMatch.index,
+      length: mdMatch[0].length,
+      displayText: mdMatch[1], // The text inside [...]
+      url: mdMatch[2] // The URL inside (...)
+    });
+  }
+  
+  // Find plain URLs (but skip those inside Markdown links)
   const urlRegex = new RegExp(URL_PATTERN);
-  let match;
+  let urlMatch: RegExpExecArray | null;
+  while ((urlMatch = urlRegex.exec(text)) !== null) {
+    // Check if this URL is already part of a Markdown link
+    const isPartOfMarkdown = matches.some(m => 
+      urlMatch!.index >= m.index && urlMatch!.index < m.index + m.length
+    );
+    
+    if (!isPartOfMarkdown) {
+      matches.push({
+        index: urlMatch.index,
+        length: urlMatch[0].length,
+        displayText: urlMatch[0],
+        url: urlMatch[0]
+      });
+    }
+  }
   
-  while ((match = urlRegex.exec(text)) !== null) {
-    // Add text before URL
+  // Sort matches by position
+  matches.sort((a, b) => a.index - b.index);
+  
+  // Build segments
+  let lastIndex = 0;
+  for (const match of matches) {
+    // Add text before this match
     if (match.index > lastIndex) {
       segments.push({
         text: text.substring(lastIndex, match.index),
@@ -39,14 +85,15 @@ export function parseTextWithUrls(text: string): TextSegment[] {
       });
     }
     
-    // Add URL segment
+    // Add URL/link segment
     segments.push({
-      text: match[0],
+      text: match.displayText,
       isUrl: true,
-      url: match[0]
+      url: match.url,
+      displayText: match.displayText
     });
     
-    lastIndex = urlRegex.lastIndex;
+    lastIndex = match.index + match.length;
   }
   
   // Add remaining text
@@ -81,7 +128,8 @@ export function createUrlDisplay(text: string, onClick?: () => void): HTMLElemen
     if (segment.isUrl && segment.url) {
       const link = document.createElement('a');
       link.href = segment.url;
-      link.textContent = segment.text;
+      // Use displayText if available (for Markdown links), otherwise use text
+      link.textContent = segment.displayText || segment.text;
       link.className = 'csv-cell-link';
       link.target = '_blank';
       link.rel = 'noopener noreferrer';

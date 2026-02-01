@@ -2,18 +2,25 @@
 
 ## Overview
 
-The Clickable URLs feature automatically detects and renders plain-text URLs in CSV cells as clickable links. This makes it easy to navigate to external resources directly from your CSV data.
+The Clickable URLs feature automatically detects and renders plain-text URLs and Markdown-style links in CSV cells as clickable links. This makes it easy to navigate to external resources directly from your CSV data while keeping your tables clean and readable.
 
 ## How It Works
 
 ### URL Detection
 
-The plugin uses a regex pattern to detect URLs in the format:
+The plugin detects two types of links:
+
+**1. Plain URLs:**
 - `http://example.com`
 - `https://example.com`
 - URLs with paths: `https://example.com/path/to/page`
 - URLs with query parameters: `https://example.com?param=value`
 - URLs with fragments: `https://example.com#section`
+
+**2. Markdown-style Links:**
+- `[GitHub](https://github.com)` - Displays as "GitHub" but links to the URL
+- `[Documentation](https://docs.example.com)` - Clean, readable link text
+- Mixed content: `Visit [our site](https://example.com) for more` - Text with embedded Markdown links
 
 ### Display Modes
 
@@ -89,7 +96,32 @@ Unit tests are provided in `test/url-utils.test.ts`:
 
 ### Demo
 
-A sample CSV file with URLs is provided in `test/url-test-sample.csv` for testing the feature.
+Sample CSV files are provided for testing:
+- `test/url-test-sample.csv` - Plain URLs
+- `test/markdown-links-sample.csv` - Markdown-style links
+
+### Examples
+
+**Plain URLs:**
+```csv
+name,website
+GitHub,https://github.com
+```
+Displays: GitHub | https://github.com (as clickable link)
+
+**Markdown Links:**
+```csv
+name,website
+GitHub,[Visit GitHub](https://github.com)
+```
+Displays: GitHub | Visit GitHub (as clickable link, cleaner!)
+
+**Mixed Content:**
+```csv
+description
+Check [our docs](https://docs.example.com) and https://example.com
+```
+Both links are clickable, with Markdown link showing as "our docs"
 
 ## Future Enhancements
 
@@ -98,3 +130,5 @@ Possible improvements:
 - URL validation and error indicators
 - Custom link styling per column
 - Option to disable auto-linking for specific columns
+- Support for Obsidian internal links (`[[note]]`)
+- Support for Wiki-style links
