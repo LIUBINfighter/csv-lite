@@ -4,7 +4,7 @@ Simple enough for csv, no more fancy function you need to learn and think!
 
 [中文版本 Readme](./README_zh.md)
 
-![Obsidian Download](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=Downloads&query=$%5B%22csv-lite%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json) ![Total Downloads](https://img.shields.io/github/downloads/LIUBINfighter/csv-lite/total?style=flat&label=Total%20Downloads) ![GitHub Issues](https://img.shields.io/github/issues/LIUBINfighter/csv-lite?style=flat&label=Issues) ![GitHub Last Commit](https://img.shields.io/github/last-commit/LIUBINfighter/csv-lite?style=flat&label=Last%20Commit)
+[![DOI](https://zenodo.org/badge/953422745.svg)](https://doi.org/10.5281/zenodo.18447042) ![Obsidian Download](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=Downloads&query=$%5B%22csv-lite%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json) ![Total Downloads](https://img.shields.io/github/downloads/LIUBINfighter/csv-lite/total?style=flat&label=Total%20Downloads) ![GitHub Issues](https://img.shields.io/github/issues/LIUBINfighter/csv-lite?style=flat&label=Issues) ![GitHub Last Commit](https://img.shields.io/github/last-commit/LIUBINfighter/csv-lite?style=flat&label=Last%20Commit)
 
 
 <!-- ![image](https://github.com/user-attachments/assets/6d956e79-4be7-4172-92e2-6f14ddba0dda) -->
