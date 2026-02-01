@@ -191,6 +191,8 @@ If your plugin does not need CSS, delete this file.
 /* Align dropdown vertically with buttons */
 .csv-delimiter-compact .setting-item-control {
 	margin: 0 !important;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
 }
 .csv-delimiter-compact .setting-item-control .dropdown {
 	height: 32px !important;
