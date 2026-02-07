@@ -45,8 +45,13 @@ export const enUS = {
     deleteCol: 'Delete this column',
     moveColLeft: 'Move column left',
     moveColRight: 'Move column right',
+    createNewCsv: 'Create new CSV file'
   }
   ,
+  commands: {
+    createNewCsv: 'Create new CSV file',
+    fileExists: 'File already exists'
+  },
   tableMessages: {
     atLeastOneRow: 'At least one row must remain',
     atLeastOneColumn: 'At least one column must remain'
