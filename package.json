@@ -1,6 +1,6 @@
 {
   "name": "obsidian-csv",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "CSV viewer and editor for Obsidian",
   "main": "main.js",
   "scripts": {
