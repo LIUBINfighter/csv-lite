@@ -27,6 +27,7 @@ A plugin designed to view and edit `CSV files` directly within Obsidian.
 -   **Toggle** between the table view and raw source-mode.
 -   **Edit** cells directly by clicking and typing.
 -   **Manage** rows and columns (add, delete, move) with a simple right-click on the header.
+-   **Create** new CSV files: use the command palette or right-click in the File Explorer to quickly create a new `.csv` file. A unique name like `new.csv` or `new-1.csv` will be generated automatically.
 - **Switch Delimiter Non‑Destructively**: Auto‑detects the file delimiter (comma, semicolon, tab, etc.). Changing the delimiter in the toolbar only re-parses the view; it does NOT rewrite your file. Your original delimiter is preserved when saving edits.
 - **Clickable URLs**: Plain-text URLs and Markdown-style links (`[text](url)`) in cells are automatically detected and rendered as clickable links. Click a link to open it in your browser, or click the edit button (✎) to edit the cell content.
 

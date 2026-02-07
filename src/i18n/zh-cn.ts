@@ -10,7 +10,7 @@ export const zhCN = {
     sourceMode: '源码模式',
     tableMode: '表格模式',
     insertRowBefore: '上方插入行',
-    insertRowAfter: '下方插入行',
+    insertRowAfter: '下方插入行'
   },
   editBar: {
     placeholder: '编辑选中单元格...'
@@ -47,8 +47,13 @@ export const zhCN = {
     deleteCol: '删除本列',
     moveColLeft: '向左移动一列',
     moveColRight: '向右移动一列',
+    createNewCsv: '创建新 CSV 文件'
   }
   ,
+  commands: {
+    createNewCsv: '创建新 CSV 文件',
+    fileExists: '文件已存在'
+  },
   tableMessages: {
     atLeastOneRow: '至少需要保留一行',
     atLeastOneColumn: '至少需要保留一列'
