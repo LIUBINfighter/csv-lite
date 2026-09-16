@@ -56,10 +56,11 @@ If your plugin does not need CSS, delete this file.
 /* URL display layer */
 .csv-cell-display {
 	padding: 2px 4px;
-	min-height: 24px;
 	cursor: text;
-	white-space: pre-wrap;
-	word-break: break-word;
+	/* 与普通单元格（单行 input）保持一致：长链接单行截断，不再撑高行 */
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	line-height: 1.4;
 	user-select: text;
 	transition: background-color 0.15s ease;
