@@ -61,6 +61,7 @@ export const enUS = {
     undo: 'Undid last action',
     noMoreUndo: 'There is nothing more to undo',
     redo: 'Redid action',
-    noMoreRedo: 'There is nothing more to redo'
+    noMoreRedo: 'There is nothing more to redo',
+    virtualDisabledBySticky: 'Rows are pinned, so row virtualization is disabled for this file — large files may become slow. Unpin rows to re-enable it.'
   }
 };

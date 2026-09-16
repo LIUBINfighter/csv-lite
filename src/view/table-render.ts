@@ -22,6 +22,11 @@ export interface TableRenderOptions {
    * 普通单元格的点击由 CSVView 在 tableEl 上做事件委托处理（issue #51）。
    */
   onEditCell?: (row: number, col: number, td: HTMLElement) => void;
+  /**
+   * A2（issue #51）：只渲染 [start, end) 行，上下用 spacer 撑住总高度。
+   * 不传则全量渲染（小文件行为完全不变）。
+   */
+  virtualWindow?: { start: number; end: number; topPad: number; bottomPad: number };
   // 拖拽排序回调
   onColumnReorder?: (from: number, to: number) => void;
   onRowReorder?: (from: number, to: number) => void;
@@ -67,6 +72,7 @@ export function renderTable(options: TableRenderOptions) {
     insertColAt,
     deleteColAt,
     onEditCell,
+    virtualWindow,
     onColumnReorder,
     onRowReorder,
     stickyRows,
@@ -197,11 +203,35 @@ export function renderTable(options: TableRenderOptions) {
 
   // 创建表格主体 - 所有行都作为普通数据行处理
   const tableBody = tableEl.createEl("tbody");
-  
-  // 从索引0开始，包括第一行
-  for (let i = 0; i < tableData.length; i++) {
+
+  // A2（issue #51）：只渲染可见行窗口，上下用 spacer 撑住总高度，
+  // 这样滚动条长度不变、 scrollTop 不跳。
+  const firstRowIndex = virtualWindow ? Math.max(0, virtualWindow.start) : 0;
+  const lastRowIndex = virtualWindow
+    ? Math.min(tableData.length, virtualWindow.end)
+    : tableData.length;
+  const totalColumns = (tableData[0]?.length || 0) + 1; // 含行号列
+
+  const createSpacerRow = (height: number) => {
+    if (!(height > 0)) return;
+    const spacer = tableBody.createEl("tr", { cls: "csv-virtual-spacer" });
+    spacer.createEl("td", {
+      attr: {
+        colspan: String(Math.max(1, totalColumns)),
+        style: `height:${height}px;padding:0;border:0;`,
+      },
+    });
+  };
+
+  if (virtualWindow) createSpacerRow(virtualWindow.topPad);
+
+  // 从窗口起点开始，包括第一行
+  for (let i = firstRowIndex; i < lastRowIndex; i++) {
     const row = tableData[i];
-    const tableRow = tableBody.createEl("tr");
+    const tableRow = tableBody.createEl("tr", {
+      cls: "csv-data-row",
+      attr: { "data-row": String(i) },
+    });
     const rowNumberCell = tableRow.createEl("td", { cls: "csv-row-number", attr: { draggable: "true" } });
     rowNumberCell.textContent = i.toString();
     rowNumberCell.onclick = (e) => {
@@ -292,6 +322,8 @@ export function renderTable(options: TableRenderOptions) {
       renderCellDisplay(td, cell, () => onEditCell?.(i, j, td));
     });
   }
+
+  if (virtualWindow) createSpacerRow(virtualWindow.bottomPad);
 
   // 滚动条容器宽度同步逻辑建议由主类处理
   // 注：点击表格外部取消行/列选中的监听器已改到 CSVView.onOpen 里只注册一次，

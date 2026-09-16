@@ -19,8 +19,14 @@ import { renderTable, renderCellDisplay } from "./view/table-render";
 import { HighlightManager } from "./utils/highlight-manager";
 import { setupHeaderContextMenu } from "./view/header-context-menu";
 import { isSearchShortcut } from "./utils/keyboard-utils";
+import { computeVirtualWindow } from "./utils/virtual-window";
 
 export const VIEW_TYPE_CSV = "csv-lite-view";
+
+// A2（issue #51）：行数超过阈值才启用虚拟化；小文件全量渲染，行为不变。
+const VIRTUAL_THRESHOLD = 150;
+// 可视区上下各多渲染几行，避免快速滚动露白。
+const VIRTUAL_OVERSCAN = 8;
 
 export class CSVView extends TextFileView {
 	public file: TFile | null;
@@ -60,6 +66,13 @@ export class CSVView extends TextFileView {
 	private editingOriginalValue: string = "";
 	private editSnapshotTaken: boolean = false;
 	private activeCellTd: HTMLElement | null = null;
+
+	// A2（issue #51）：行虚拟化状态
+	private rowHeight: number = 24;
+	private virtualStart = 0;
+	private virtualEnd = 0;
+	private virtualRafId = 0;
+	private warnedVirtualDisabled = false;
 	private activeRowIndex: number = -1;
 	private activeColIndex: number = -1;
 
@@ -260,6 +273,7 @@ export class CSVView extends TextFileView {
 			tableEl: this.tableEl,
 			requestSave: () => this.requestSave(),
 			onEditCell: (row, col) => this.beginCellEdit(row, col),
+			virtualWindow: this.buildVirtualWindow(),
 			selectRow: (rowIndex) => this.highlightManager.selectRow(rowIndex),
 			selectColumn: (colIndex) => this.highlightManager.selectColumn(colIndex),
 			getColumnLabel: (index) => this.getColumnLabel(index),
@@ -328,6 +342,7 @@ export class CSVView extends TextFileView {
 		// 延迟应用sticky样式，确保DOM已完全渲染
 		requestAnimationFrame(() => {
 			this.applyStickyStyles();
+			this.measureRowHeight();
 		});
 
 		// 在完成表格渲染后，更新滚动条容器的宽度
@@ -530,13 +545,131 @@ export class CSVView extends TextFileView {
 		});
 	}
 
-	/** 根据行列号找到对应的 <td> */
+	/** 根据行列号找到对应的 <td>（用 data-row，兼容虚拟化） */
 	private getCellTd(row: number, col: number): HTMLElement | null {
-		const tr = this.tableEl?.querySelector(`tbody tr:nth-child(${row + 1})`);
+		const tr = this.tableEl?.querySelector(`tbody tr[data-row="${row}"]`);
 		if (!tr) return null;
 		const cells = tr.querySelectorAll("td");
 		// cells[0] 是行号列，数据列从 1 开始
 		return (cells[col + 1] as HTMLElement) || null;
+	}
+
+	// ================= A2：行虚拟化（issue #51） =================
+
+	private getScrollContainer(): HTMLElement | null {
+		// 优先找真正能纵向滚动的祖先，否则退回最近一个 overflow:auto/scroll 的祖先
+		let el: HTMLElement | null =
+			(this.tableEl?.parentElement as HTMLElement) || null;
+		let fallback: HTMLElement | null = null;
+		while (el && el !== document.body) {
+			const oy = window.getComputedStyle(el).overflowY;
+			if (oy === "auto" || oy === "scroll") {
+				if (!fallback) fallback = el;
+				if (el.scrollHeight > el.clientHeight + 1) return el;
+			}
+			el = el.parentElement;
+		}
+		return fallback || (this.contentEl as HTMLElement) || null;
+	}
+
+	/**
+	 * 表格体已经被滚过去多少像素。
+	 * 不直接拿 scrollTop，是因为滚动容器未必以表格为起点
+	 * （.view-content 上方还有工具栏、编辑栏等）。
+	 */
+	private getScrolledOffset(scroller: HTMLElement): number {
+		const tbody = this.tableEl?.querySelector("tbody");
+		if (!tbody) return 0;
+		const rect = scroller.getBoundingClientRect();
+		const tbodyTop = (tbody as HTMLElement).getBoundingClientRect().top;
+		return Math.max(0, rect.top - tbodyTop);
+	}
+
+	/** 当前是否应对这张表启用虚拟化 */
+	private isVirtualizable(): boolean {
+		return (
+			this.tableData.length > VIRTUAL_THRESHOLD && this.stickyRows.size === 0
+		);
+	}
+
+	/** 根据当前滚动位置算出要渲染的行窗口 */
+	private buildVirtualWindow() {
+		const rows = this.tableData.length;
+		if (!this.isVirtualizable()) {
+			if (
+				rows > VIRTUAL_THRESHOLD &&
+				this.stickyRows.size > 0 &&
+				!this.warnedVirtualDisabled
+			) {
+				this.warnedVirtualDisabled = true;
+				new Notice(i18n.t("notifications.virtualDisabledBySticky"));
+			}
+			this.virtualStart = 0;
+			this.virtualEnd = rows;
+			return { start: 0, end: rows, topPad: 0, bottomPad: 0 };
+		}
+		const scroller = this.getScrollContainer();
+		const w = computeVirtualWindow(
+			rows,
+			this.rowHeight,
+			scroller ? this.getScrolledOffset(scroller) : 0,
+			scroller ? scroller.clientHeight : 800,
+			VIRTUAL_OVERSCAN
+		);
+		this.virtualStart = w.start;
+		this.virtualEnd = w.end;
+		return w;
+	}
+
+	/** 滚动时（rAF 合并）重算窗口，变化才重渲染 */
+	private onVirtualScroll() {
+		if (!this.isVirtualizable()) return;
+		if (this.virtualRafId) return;
+		this.virtualRafId = requestAnimationFrame(() => {
+			this.virtualRafId = 0;
+			const scroller = this.getScrollContainer();
+			if (!scroller) return;
+			const w = computeVirtualWindow(
+				this.tableData.length,
+				this.rowHeight,
+				this.getScrolledOffset(scroller),
+				scroller.clientHeight,
+				VIRTUAL_OVERSCAN
+			);
+			if (w.start === this.virtualStart && w.end === this.virtualEnd) return;
+			// 编辑器可能正在被移除的行里，先提交
+			if (this.editingRow >= 0) this.commitCellEdit();
+			this.virtualStart = w.start;
+			this.virtualEnd = w.end;
+			this.refresh();
+		});
+	}
+
+	/** 确保指定行在当前渲染窗口内（虚拟化下搜索跳转用） */
+	private ensureRowRendered(row: number) {
+		if (!this.isVirtualizable()) return;
+		if (row >= this.virtualStart && row < this.virtualEnd) return;
+		const scroller = this.getScrollContainer();
+		if (scroller) {
+			const viewport = scroller.clientHeight || 600;
+			const target = Math.max(0, row * this.rowHeight - Math.floor(viewport / 2));
+			const delta = target - this.getScrolledOffset(scroller);
+			scroller.scrollTop = Math.max(0, scroller.scrollTop + delta);
+		}
+		this.virtualStart = -1;
+		this.virtualEnd = -1;
+		this.refresh();
+	}
+
+	/** 量一下真实行高，让 spacer 高度与渲染行一致 */
+	private measureRowHeight() {
+		if (!this.isVirtualizable()) return;
+		const firstRow = this.tableEl?.querySelector(
+			"tbody tr.csv-data-row"
+		) as HTMLElement | null;
+		if (firstRow && firstRow.offsetHeight > 0) {
+			this.rowHeight = firstRow.offsetHeight;
+		}
 	}
 
 	/** 进入单元格编辑：把共享 input 移进 <td> 并聚焦 */
@@ -641,7 +774,7 @@ export class CSVView extends TextFileView {
 			startX = e.clientX;
 			startWidth = this.columnWidths[columnIndex] || 100;
 			// nth-child 从 1 开始，第 1 列是行号列，所以目标列是 columnIndex + 2
-			const selector = `thead tr th:nth-child(${columnIndex + 2}), tbody tr td:nth-child(${columnIndex + 2})`;
+			const selector = `thead tr th:nth-child(${columnIndex + 2}), tbody tr.csv-data-row td:nth-child(${columnIndex + 2})`;
 			affectedCells = Array.from(
 				this.tableEl?.querySelectorAll(selector) || []
 			) as HTMLElement[];
@@ -946,6 +1079,16 @@ export class CSVView extends TextFileView {
 			this.setupSharedCellEditor();
 			this.setupCellDelegation();
 
+			// A2（issue #51）：滚动时重算虚拟窗口。
+			// 真正的纵向滚动容器可能是 .main-scroll，也可能是 Obsidian 的 .view-content，
+			// 所以用 document + capture 捕获所有 scroll 事件，实际窗口由 getScrollContainer() 判定。
+			this.registerDomEvent(
+				document,
+				"scroll",
+				() => this.onVirtualScroll(),
+				{ capture: true }
+			);
+
 			// 初始化历史记录
 			if (!this.historyManager) {
 				this.historyManager = new TableHistoryManager(
@@ -1136,15 +1279,20 @@ export class CSVView extends TextFileView {
 	private jumpToCell(row: number, col: number) {
 		// 清除之前的高亮
 		this.clearSearchHighlights();
+		// 虚拟化时目标行可能没渲染，先把窗口挪过去
+		this.ensureRowRendered(row);
 		const td = this.getCellTd(row, col);
 		if (!td) return;
 		td.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
 		setTimeout(() => {
 			this.beginCellEdit(row, col);
-			td.classList.add("csv-search-current");
-			setTimeout(() => {
-				td.classList.remove("csv-search-current");
-			}, 3000);
+			const tdNow = this.getCellTd(row, col);
+			if (tdNow) {
+				tdNow.classList.add("csv-search-current");
+				setTimeout(() => {
+					tdNow.classList.remove("csv-search-current");
+				}, 3000);
+			}
 		}, 100);
 	}
 
@@ -1224,7 +1372,7 @@ export class CSVView extends TextFileView {
 		});
 			// 计算行号的实际宽度
 			const getRowNumberWidth = (): number => {
-				const firstRowNumber = this.tableEl.querySelector('tbody tr td:first-child') as HTMLElement;
+				const firstRowNumber = this.tableEl.querySelector('tbody tr.csv-data-row td:first-child') as HTMLElement;
 				return firstRowNumber ? firstRowNumber.offsetWidth : 40; // 默认40px
 			};
 
@@ -1288,7 +1436,7 @@ export class CSVView extends TextFileView {
 			}
 			
 			// 行号列在数据行中
-			const rowNumberCells = this.tableEl.querySelectorAll('tbody tr td:first-child');
+			const rowNumberCells = this.tableEl.querySelectorAll('tbody tr.csv-data-row td:first-child');
 			rowNumberCells.forEach(cell => {
 				cell.classList.add('csv-sticky-row-number');
 				(cell as HTMLElement).style.left = '0px';
@@ -1300,7 +1448,7 @@ export class CSVView extends TextFileView {
 		this.stickyRows.forEach(rowIndex => {
 			const stickyTop = calculateStickyRowsHeight(rowIndex);
 			// 数据行（在tbody中，从第1个tr开始）
-			const rowCells = this.tableEl.querySelectorAll(`tbody tr:nth-child(${rowIndex + 1}) td`);
+			const rowCells = this.tableEl.querySelectorAll(`tbody tr[data-row="${rowIndex}"] td`);
 			rowCells.forEach(cell => {
 				cell.classList.add('csv-sticky-row');
 				(cell as HTMLElement).style.top = `${stickyTop}px`;
@@ -1320,7 +1468,7 @@ export class CSVView extends TextFileView {
 			}
 			
 			// 数据列（在tbody的所有行中，跳过行号列）
-			const dataCells = this.tableEl.querySelectorAll(`tbody tr td:nth-child(${colIndex + 2})`);
+			const dataCells = this.tableEl.querySelectorAll(`tbody tr.csv-data-row td:nth-child(${colIndex + 2})`);
 			dataCells.forEach(cell => {
 				cell.classList.add('csv-sticky-col');
 				(cell as HTMLElement).style.left = `${stickyLeft}px`;
