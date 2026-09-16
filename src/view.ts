@@ -194,6 +194,15 @@ export class CSVView extends TextFileView {
 			// 使所有行的列数一致
 			this.tableData = CSVUtils.normalizeTableData(this.tableData);
 
+			// 自动列宽：换文件 / 列数变化（例如换分隔符）时清空列宽，
+			// 让 renderTable 重新按内容估算，无需手动点「重置列宽」。
+			// （以前 onOpen 的占位渲染会先把 columnWidths 填成 [100]，
+			//  导致真实数据加载时不再重算。）
+			const columnCount = this.tableData[0]?.length || 0;
+			if (clear || this.columnWidths.length !== columnCount) {
+				this.columnWidths = [];
+			}
+
 			// 初始化历史记录
 			if (clear) {
 				this.historyManager.reset(this.tableData);
