@@ -3,6 +3,12 @@ import { i18n } from "../i18n";
 
 export class TableUtils {
 	/**
+	 * 自动列宽只采样前 N 行。
+	 * 大表（几万格）没必要为算列宽全表扫一遍；取值硬编码，不做设置项。
+	 */
+	static readonly COLUMN_WIDTH_SAMPLE_ROWS = 200;
+
+	/**
 	 * 计算表格列宽
 	 */
 	static calculateColumnWidths(tableData: string[][]): number[] {
@@ -11,20 +17,26 @@ export class TableUtils {
 		// 初始化所有列为默认宽度
 		const columnWidths = tableData[0].map(() => 100);
 
-		// 根据内容长度进行简单调整
-		tableData.forEach((row) => {
-			row.forEach((cell, index) => {
-				// 根据内容长度估算合适的宽度
+		// 只采样前 N 行，根据内容长度做简单调整
+		const sampleRows = Math.min(
+			tableData.length,
+			TableUtils.COLUMN_WIDTH_SAMPLE_ROWS
+		);
+		for (let r = 0; r < sampleRows; r++) {
+			const row = tableData[r];
+			if (!row) continue;
+			for (let c = 0; c < row.length; c++) {
+				const cell = row[c] ?? "";
 				const estimatedWidth = Math.max(
 					50,
 					Math.min(300, cell.length * 10)
 				);
-				columnWidths[index] = Math.max(
-					columnWidths[index],
+				columnWidths[c] = Math.max(
+					columnWidths[c] ?? 100,
 					estimatedWidth
 				);
-			});
-		});
+			}
+		}
 
 		return columnWidths;
 	}

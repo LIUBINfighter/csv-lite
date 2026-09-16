@@ -40,4 +40,33 @@ describe("TableUtils.calculateColumnWidths (auto column width on load)", () => {
 		const widths = TableUtils.calculateColumnWidths([["a", "b", "c"]]);
 		expect(widths).toHaveLength(3);
 	});
+
+	test("only samples the first N rows on large tables", () => {
+		const n = TableUtils.COLUMN_WIDTH_SAMPLE_ROWS;
+		const rows: string[][] = [];
+		for (let i = 0; i < n; i++) rows.push(["short", "short"]);
+		// 第 N+1 行有一个超长单元格，应该被忽略
+		rows.push(["short", "x".repeat(200)]);
+
+		const widths = TableUtils.calculateColumnWidths(rows);
+		expect(widths[1]).toBe(100);
+	});
+
+	test("a long cell inside the sampled range still widens the column", () => {
+		const n = TableUtils.COLUMN_WIDTH_SAMPLE_ROWS;
+		const rows: string[][] = [];
+		rows.push(["short", "x".repeat(20)]); // 前 N 行之内
+		for (let i = 1; i < n; i++) rows.push(["short", "short"]);
+
+		const widths = TableUtils.calculateColumnWidths(rows);
+		expect(widths[1]).toBe(200);
+	});
+
+	test("does not crash on missing cells", () => {
+		const widths = TableUtils.calculateColumnWidths([
+			["a", "b", "c"],
+			["x"],
+		]);
+		expect(widths).toHaveLength(3);
+	});
 });
