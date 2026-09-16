@@ -482,10 +482,18 @@ export class CSVView extends TextFileView {
 	private setupColumnResize(handle: HTMLElement, columnIndex: number) {
 		let startX: number;
 		let startWidth: number;
+		// 拖拽前缓存该列的所有单元格，拖动时只改它们的宽度，
+		// 避免像以前那样每个 mousemove 都 this.refresh() 重建整张表（issue #51）
+		let affectedCells: HTMLElement[] = [];
 
 		const onMouseDown = (e: MouseEvent) => {
 			startX = e.clientX;
 			startWidth = this.columnWidths[columnIndex] || 100;
+			// nth-child 从 1 开始，第 1 列是行号列，所以目标列是 columnIndex + 2
+			const selector = `thead tr th:nth-child(${columnIndex + 2}), tbody tr td:nth-child(${columnIndex + 2})`;
+			affectedCells = Array.from(
+				this.tableEl?.querySelectorAll(selector) || []
+			) as HTMLElement[];
 
 			document.addEventListener("mousemove", onMouseMove);
 			document.addEventListener("mouseup", onMouseUp);
@@ -498,13 +506,18 @@ export class CSVView extends TextFileView {
 			if (width >= 50) {
 				// 最小宽度限制
 				this.columnWidths[columnIndex] = width;
-				this.refresh();
+				for (const cell of affectedCells) {
+					cell.style.width = `${width}px`;
+				}
 			}
 		};
 
 		const onMouseUp = () => {
 			document.removeEventListener("mousemove", onMouseMove);
 			document.removeEventListener("mouseup", onMouseUp);
+			affectedCells = [];
+			// 列宽变化会影响 sticky 列/行号的偏移量，收尾时重算一次
+			this.applyStickyStyles();
 		};
 
 		handle.addEventListener("mousedown", onMouseDown);
@@ -836,6 +849,17 @@ export class CSVView extends TextFileView {
 				}
 			);
 
+			// 点击表格外部时取消行/列头选中。
+			// 只在这里注册一次；以前放在 renderTable 里，导致每次刷新都往 document 上
+			// 叠加一个永不释放的监听器（列宽拖拽时会瞬间泄漏上百个，issue #51）
+			this.registerDomEvent(document, "click", (e: MouseEvent) => {
+				const target = e.target as HTMLElement | null;
+				if (target?.closest(".csv-col-number, .csv-row-number")) return;
+				this.tableEl
+					?.querySelectorAll(".csv-col-number.active, .csv-row-number.active")
+					.forEach((el) => el.classList.remove("active"));
+			});
+
 			// Ensure tableData is initialized before refreshing
 			if (
 				!this.tableData ||
@@ -903,16 +927,27 @@ export class CSVView extends TextFileView {
 	}
 
 	// 简化滚动同步方法
+	// 高频 scroll 事件用 rAF 合并，避免布局抖动以及两个容器互相触发形成回环（issue #51）
 	private setupScrollSync(topScroll: HTMLElement, mainScroll: HTMLElement) {
-		// 监听主表格容器的滚动事件，同步到顶部滚动条
-		mainScroll.addEventListener('scroll', () => {
-			topScroll.scrollLeft = mainScroll.scrollLeft;
-		});
+		let rafId = 0;
+		let source: HTMLElement | null = null;
 
-		// 监听顶部滚动条的滚动事件，同步到主表格
-		topScroll.addEventListener('scroll', () => {
-			mainScroll.scrollLeft = topScroll.scrollLeft;
-		});
+		const flush = () => {
+			rafId = 0;
+			const src = source;
+			source = null;
+			if (!src) return;
+			(src === mainScroll ? topScroll : mainScroll).scrollLeft = src.scrollLeft;
+		};
+
+		const onScroll = (src: HTMLElement) => {
+			source = src;
+			if (!rafId) rafId = requestAnimationFrame(flush);
+		};
+
+		// registerDomEvent 会在视图关闭时自动解绑
+		this.registerDomEvent(mainScroll, "scroll", () => onScroll(mainScroll));
+		this.registerDomEvent(topScroll, "scroll", () => onScroll(topScroll));
 	}
 
 	async onClose() {
@@ -1172,15 +1207,6 @@ export class CSVView extends TextFileView {
 				cell.classList.add('csv-sticky-col');
 				(cell as HTMLElement).style.left = `${stickyLeft}px`;
 			});
-		});
-
-		console.log('Applied sticky styles:', {
-			stickyHeaders: this.stickyHeaders,
-			stickyRowNumbers: this.stickyRowNumbers,
-			stickyRows: Array.from(this.stickyRows),
-			stickyColumns: Array.from(this.stickyColumns),
-			rowNumberWidth: getRowNumberWidth(),
-			headerHeight: getHeaderHeight()
 		});
 	}
 	moveCol(fromIndex: number, toIndex: number) {

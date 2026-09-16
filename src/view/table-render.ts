@@ -70,6 +70,11 @@ export function renderTable(options: TableRenderOptions) {
     toggleColumnSticky,
   } = options;
 
+  // 插入/删除行列按钮目前在 styles.css 里被 display:none 隐藏（见 docs/button-visibility.md）。
+  // 1000 行的大表会白白多出数千个 DOM 节点与事件处理器，所以直接不创建（issue #51）。
+  // 以后要恢复这些按钮，把这里改成 true 并去掉 CSS 里的 display:none 即可。
+  const SHOW_STRUCTURE_BUTTONS = false;
+
   tableEl.empty();
 
   // 拖拽状态变量移到函数外部作用域
@@ -156,7 +161,7 @@ export function renderTable(options: TableRenderOptions) {
         }
       };
       // 插入列操作按钮（拖拽时隐藏）
-      if (!(dragState.type === 'col')) {
+      if (SHOW_STRUCTURE_BUTTONS && !(dragState.type === 'col')) {
         const insertLeft = th.createEl("button", { cls: "csv-insert-col-btn left" });
         insertLeft.innerText = "+";
         insertLeft.title = i18n.t("buttons.insertColBefore") || "Insert column before";
@@ -242,7 +247,7 @@ export function renderTable(options: TableRenderOptions) {
       }
     };
     // 插入行操作按钮（拖拽时隐藏）
-    if (!(dragState.type === 'row')) {
+    if (SHOW_STRUCTURE_BUTTONS && !(dragState.type === 'row')) {
       const insertAbove = rowNumberCell.createEl("button", { cls: "csv-insert-row-btn above" });
       insertAbove.innerText = "+";
       insertAbove.title = i18n.t("buttons.insertRowBefore") || "Insert row before";
@@ -304,9 +309,15 @@ export function renderTable(options: TableRenderOptions) {
         displayEl.style.display = 'block';
       }
       
+      // 一次编辑会话只存一次快照（否则每敲一个键都深拷贝整张表，issue #51）
+      let snapshotTaken = false;
+
       input.oninput = (ev) => {
         if (ev.currentTarget instanceof HTMLInputElement) {
-          saveSnapshot();
+          if (!snapshotTaken) {
+            saveSnapshot();
+            snapshotTaken = true;
+          }
           tableData[i][j] = ev.currentTarget.value;
           if (activeCellEl === ev.currentTarget && editInput) {
             editInput.value = ev.currentTarget.value;
@@ -365,6 +376,8 @@ export function renderTable(options: TableRenderOptions) {
       };
       
       input.onblur = (ev) => {
+        // 编辑会话结束，下次聚焦编辑重新计快照
+        snapshotTaken = false;
         if (ev.currentTarget instanceof HTMLInputElement) {
           // Show display and hide input when blurred (if contains URL)
           const tdEl = ev.currentTarget.parentElement;
@@ -381,20 +394,8 @@ export function renderTable(options: TableRenderOptions) {
   }
 
   // 滚动条容器宽度同步逻辑建议由主类处理
-
-  // Add event listener to deselect active row or column when clicking outside
-  const deselectActiveHeader = () => {
-    const activeHeaders = tableEl.querySelectorAll('.csv-col-number.active, .csv-row-number.active');
-    activeHeaders.forEach(header => header.classList.remove('active'));
-  };
-
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement | null;
-    const isHeaderClick = target?.closest('.csv-col-number, .csv-row-number');
-    if (!isHeaderClick) {
-      deselectActiveHeader();
-    }
-  });
+  // 注：点击表格外部取消行/列选中的监听器已改到 CSVView.onOpen 里只注册一次，
+  // 否则每次 renderTable 都会往 document 上叠加一个永不释放的监听器（issue #51）
 }
 
 // 建议在 styles.css 添加 .dragging 和 .drag-over 的样式以增强拖拽反馈
