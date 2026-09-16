@@ -121,6 +121,8 @@ export function parseTextWithUrls(text: string): TextSegment[] {
 export function createUrlDisplay(text: string, onClick?: () => void): HTMLElement {
   const display = document.createElement('div');
   display.className = 'csv-cell-display';
+  // 截断时用原生 tooltip 展示完整内容，避免 hover 展开造成行高跳动（issue #53）
+  display.title = text;
   
   const segments = parseTextWithUrls(text);
   
