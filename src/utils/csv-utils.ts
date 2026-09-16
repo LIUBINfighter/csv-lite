@@ -138,6 +138,63 @@ export class CSVUtils {
 		return Papa.unparse(data, { ...defaultUnparseConfig, ...config });
 	}
 
+	/**
+	 * 检测文件主要使用的换行风格（CRLF 或 LF）。
+	 * 用于保存时无损还原原始换行，避免只是查看就把 CRLF 静默改成 LF（issue #52）。
+	 */
+	static detectNewline(csvString: string): string {
+		if (!csvString) return "\n";
+		let crlf = 0;
+		let lf = 0;
+		for (let i = 0; i < csvString.length; i++) {
+			if (csvString.charCodeAt(i) === 10 /* \n */) {
+				if (i > 0 && csvString.charCodeAt(i - 1) === 13 /* \r */) crlf++;
+				else lf++;
+			}
+		}
+		if (crlf > 0 && lf === 0) return "\r\n";
+		return crlf > lf ? "\r\n" : "\n";
+	}
+
+	/**
+	 * 提取文件结尾的换行序列（如 "\n"、"\n\n"、"\r\n"），
+	 * 以及它会让 Papa 解析器多出来的「幽灵空行」数量。
+	 * 每个 \n 计为一个逻辑行结束符（\r\n 只算一个）。
+	 */
+	static getTrailingNewline(csvString: string): {
+		newline: string;
+		rowCount: number;
+	} {
+		if (!csvString) return { newline: "", rowCount: 0 };
+		let start = csvString.length;
+		while (
+			start > 0 &&
+			(csvString[start - 1] === "\n" || csvString[start - 1] === "\r")
+		) {
+			start--;
+		}
+		const newline = csvString.slice(start);
+		let rowCount = 0;
+		for (let i = 0; i < newline.length; i++) {
+			if (newline.charCodeAt(i) === 10 /* \n */) rowCount++;
+		}
+		return { newline, rowCount };
+	}
+
+	/**
+	 * 移除解析器因文件结尾换行而生成的幽灵空行。
+	 * 至少保留一行，避免出现空表；保存时由调用方原样补回换行。
+	 */
+	static dropTrailingRows(
+		tableData: string[][],
+		rowCount: number
+	): string[][] {
+		if (!tableData || rowCount <= 0) return tableData;
+		const removable = Math.min(rowCount, Math.max(0, tableData.length - 1));
+		if (removable <= 0) return tableData;
+		return tableData.slice(0, tableData.length - removable);
+	}
+
 
 	/**
 	 * 确保表格数据规整（所有行的列数相同）
