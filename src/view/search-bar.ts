@@ -35,6 +35,17 @@ export class SearchBar {
     this.setupSearchEvents();
   }
 
+  /**
+   * 聚焦搜索框并选中已有内容（供 Ctrl+F / Cmd+F 调用，issue #18）。
+   */
+  public focus(): void {
+    this.searchInput.focus();
+    this.searchInput.select();
+    if (this.searchMatches.length > 0) {
+      this.searchResults.classList.add("show");
+    }
+  }
+
   private setupSearchEvents() {
     let searchTimeout: NodeJS.Timeout;
     this.searchInput.addEventListener("input", () => {

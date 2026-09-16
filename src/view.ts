@@ -18,6 +18,7 @@ import { SearchBar } from "./view/search-bar";
 import { renderTable } from "./view/table-render";
 import { HighlightManager } from "./utils/highlight-manager";
 import { setupHeaderContextMenu } from "./view/header-context-menu";
+import { isSearchShortcut } from "./utils/keyboard-utils";
 
 export const VIEW_TYPE_CSV = "csv-lite-view";
 
@@ -813,6 +814,13 @@ export class CSVView extends TextFileView {
 					// Only handle undo/redo when this view is the active leaf
 					if (this.app.workspace.activeLeaf !== this.leaf) return;
 
+					// Ctrl+F / Cmd+F：聚焦表格内搜索框（issue #18）
+					if (isSearchShortcut(event)) {
+						event.preventDefault();
+						this.focusSearch();
+						return;
+					}
+
 					// 检测Ctrl+Z (或Mac上的Cmd+Z)
 					if ((event.ctrlKey || event.metaKey) && event.key === "z") {
 						if (event.shiftKey) {
@@ -994,6 +1002,16 @@ export class CSVView extends TextFileView {
 				el.classList.remove("csv-search-current");
 			}
 		});
+	}
+
+	/**
+	 * 聚焦表格内搜索框（Ctrl+F / Cmd+F，issue #18）。
+	 * 搜索栏本身已在 onOpen 中创建，这里只负责把焦点交给它。
+	 */
+	private focusSearch() {
+		if (this.searchBar && typeof this.searchBar.focus === "function") {
+			this.searchBar.focus();
+		}
 	}
 
 	// 新增：源码模式切换
