@@ -42,6 +42,9 @@ export class CSVView extends TextFileView {
 	private quoteChar: string = '"';
 	// 保存文件原始分隔符（用于非破坏性编辑后保存仍保持原始格式）
 	private originalFileDelimiter: string | null = null;
+	// 保存文件原始换行风格与结尾换行，确保「只是查看」也不改格式（issue #52）
+	private originalFileNewline: string = "\n";
+	private originalTrailingNewline: string = "";
 
 	// 编辑栏
 	private editBarEl: HTMLElement;
@@ -97,7 +100,11 @@ export class CSVView extends TextFileView {
 	getViewData() {
 		// 使用原始文件分隔符（如果已检测到），否则使用当前解析器的实际分隔符
 		const delim = this.originalFileDelimiter || (this.delimiter === 'auto' ? undefined : this.delimiter);
-		return CSVUtils.unparseCSV(this.tableData, delim ? { delimiter: delim } as any : undefined);
+		const config: any = { newline: this.originalFileNewline };
+		if (delim) config.delimiter = delim;
+		const body = CSVUtils.unparseCSV(this.tableData, config);
+		// 原样补回文件结尾的换行，避免丢失结尾换行或产生幽灵空行（issue #52）
+		return body + this.originalTrailingNewline;
 	}
 
 	// We need to create a wrapper for the original requestSave
@@ -136,6 +143,16 @@ export class CSVView extends TextFileView {
 				delimiter: this.delimiter,
 				quoteChar: this.quoteChar,
 			});
+
+			// 记录原始换行风格与结尾换行，并在内存中移除解析器为结尾换行补出的
+			// 幽灵空行；保存时由 getViewData 原样补回（issue #52）
+			this.originalFileNewline = CSVUtils.detectNewline(data);
+			const trailing = CSVUtils.getTrailingNewline(data);
+			this.originalTrailingNewline = trailing.newline;
+			this.tableData = CSVUtils.dropTrailingRows(
+				this.tableData,
+				trailing.rowCount
+			);
 
 			// 初次或在未设置 originalFileDelimiter 时检测并缓存原始分隔符
 			if (!this.originalFileDelimiter) {
