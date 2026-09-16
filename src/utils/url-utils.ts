@@ -126,7 +126,7 @@ export function parseTextWithUrls(text: string): TextSegment[] {
  */
 export function createUrlDisplay(text: string, onClick?: () => void): HTMLElement {
   const display = document.createElement('div');
-  display.className = 'csv-cell-display';
+  display.className = 'csv-cell-display csv-cell-display-has-url';
   // 截断时用原生 tooltip 展示完整内容，避免 hover 展开造成行高跳动（issue #53）
   display.title = text;
   
@@ -166,14 +166,6 @@ export function createUrlDisplay(text: string, onClick?: () => void): HTMLElemen
       onClick();
     };
     display.appendChild(editBtn);
-    
-    // Also make display clickable (for areas that aren't links)
-    display.onclick = (e) => {
-      // Only trigger if not clicking on a link
-      if ((e.target as HTMLElement).tagName !== 'A') {
-        onClick();
-      }
-    };
   }
   
   return display;

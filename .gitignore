@@ -34,3 +34,6 @@ coverage/
 
 # currently local
 test/complex-test.csv
+
+# 生成的大体积测试 CSV（见 test/fixtures/generate-large-csv.js）
+test/fixtures/*.csv

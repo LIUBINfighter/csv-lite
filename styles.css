@@ -53,11 +53,12 @@ If your plugin does not need CSS, delete this file.
 	line-height: 1.4;
 }
 
-/* URL display layer */
+/* 单元格显示层（现在所有单元格都用它；编辑交给共享 input） */
 .csv-cell-display {
 	padding: 2px 4px;
+	min-height: 1.4em; /* 空单元格也保留一行高度，方便点击编辑 */
 	cursor: text;
-	/* 与普通单元格（单行 input）保持一致：长链接单行截断，不再撑高行 */
+	/* 单行截断，不再撑高行 */
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -65,7 +66,21 @@ If your plugin does not need CSS, delete this file.
 	user-select: text;
 	transition: background-color 0.15s ease;
 	position: relative;
-	padding-right: 24px; /* Space for edit button */
+}
+
+/* 含链接的单元格给 ✎ 编辑按钮留出位置 */
+.csv-cell-display-has-url {
+	padding-right: 24px;
+}
+
+/* A1（issue #51）：共享单元格编辑器，平时藏在 holder 里 */
+.csv-cell-editor-holder {
+	display: none;
+}
+
+.csv-cell-input-shared {
+	width: 100%;
+	box-sizing: border-box;
 }
 
 /* Hover effect on cell to show it's editable */
