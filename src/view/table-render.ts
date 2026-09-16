@@ -7,17 +7,8 @@ import { containsUrl, createUrlDisplay } from "../utils/url-utils";
 export interface TableRenderOptions {
   tableData: string[][];
   columnWidths: number[];
-  autoResize: boolean;
   tableEl: HTMLElement;
-  editInput: HTMLInputElement;
-  activeCellEl: HTMLInputElement | null;
-  activeRowIndex: number;
-  activeColIndex: number;
-  setActiveCell: (row: number, col: number, cellEl: HTMLInputElement) => void;
-  saveSnapshot: () => void;
   requestSave: () => void;
-  setupAutoResize: (input: HTMLInputElement) => void;
-  adjustInputHeight: (input: HTMLInputElement) => void;
   selectRow: (rowIndex: number) => void;
   selectColumn: (colIndex: number) => void;
   getColumnLabel: (index: number) => string;
@@ -26,33 +17,52 @@ export interface TableRenderOptions {
   deleteRowAt: (rowIndex: number) => void;
   insertColAt: (colIndex: number, after?: boolean) => void;
   deleteColAt: (colIndex: number) => void;
-  // 新增：可选的renderEditBar回调
-  renderEditBar?: (row: number, col: number, cellEl: HTMLInputElement) => void;
+  /**
+   * URL/Markdown 单元格里的编辑按钮（✎）被点击时触发。
+   * 普通单元格的点击由 CSVView 在 tableEl 上做事件委托处理（issue #51）。
+   */
+  onEditCell?: (row: number, col: number, td: HTMLElement) => void;
+  /**
+   * A2（issue #51）：只渲染 [start, end) 行，上下用 spacer 撑住总高度。
+   * 不传则全量渲染（小文件行为完全不变）。
+   */
+  virtualWindow?: { start: number; end: number; topPad: number; bottomPad: number };
   // 拖拽排序回调
   onColumnReorder?: (from: number, to: number) => void;
   onRowReorder?: (from: number, to: number) => void;
-  // 新增：固定行列相关
+  // 固定行列相关
   stickyRows?: Set<number>;
   stickyColumns?: Set<number>;
   toggleRowSticky?: (rowIndex: number) => void;
   toggleColumnSticky?: (colIndex: number) => void;
 }
 
+/**
+ * 把一个单元格的内容渲染成只读显示层（链接仍可点击）。
+ * 编辑交给 CSVView 里那个共享的 <input>，所以这里不再创建输入框。
+ */
+export function renderCellDisplay(
+  td: HTMLElement,
+  cell: string,
+  onEditClick?: () => void
+) {
+  const old = td.querySelector(".csv-cell-display");
+  if (old) old.remove();
+  if (containsUrl(cell)) {
+    td.appendChild(createUrlDisplay(cell, onEditClick));
+  } else {
+    const display = td.createEl("div", { cls: "csv-cell-display" });
+    display.textContent = cell;
+    if (cell) display.title = cell;
+  }
+}
+
 export function renderTable(options: TableRenderOptions) {
   const {
     tableData,
     columnWidths,
-    autoResize,
     tableEl,
-    editInput,
-    activeCellEl,
-    activeRowIndex,
-    activeColIndex,
-    setActiveCell,
-    saveSnapshot,
     requestSave,
-    setupAutoResize,
-    adjustInputHeight,
     selectRow,
     selectColumn,
     getColumnLabel,
@@ -61,7 +71,8 @@ export function renderTable(options: TableRenderOptions) {
     deleteRowAt,
     insertColAt,
     deleteColAt,
-    renderEditBar,
+    onEditCell,
+    virtualWindow,
     onColumnReorder,
     onRowReorder,
     stickyRows,
@@ -69,6 +80,11 @@ export function renderTable(options: TableRenderOptions) {
     toggleRowSticky,
     toggleColumnSticky,
   } = options;
+
+  // 插入/删除行列按钮目前在 styles.css 里被 display:none 隐藏（见 docs/button-visibility.md）。
+  // 1000 行的大表会白白多出数千个 DOM 节点与事件处理器，所以直接不创建（issue #51）。
+  // 以后要恢复这些按钮，把这里改成 true 并去掉 CSS 里的 display:none 即可。
+  const SHOW_STRUCTURE_BUTTONS = false;
 
   tableEl.empty();
 
@@ -156,7 +172,7 @@ export function renderTable(options: TableRenderOptions) {
         }
       };
       // 插入列操作按钮（拖拽时隐藏）
-      if (!(dragState.type === 'col')) {
+      if (SHOW_STRUCTURE_BUTTONS && !(dragState.type === 'col')) {
         const insertLeft = th.createEl("button", { cls: "csv-insert-col-btn left" });
         insertLeft.innerText = "+";
         insertLeft.title = i18n.t("buttons.insertColBefore") || "Insert column before";
@@ -187,11 +203,35 @@ export function renderTable(options: TableRenderOptions) {
 
   // 创建表格主体 - 所有行都作为普通数据行处理
   const tableBody = tableEl.createEl("tbody");
-  
-  // 从索引0开始，包括第一行
-  for (let i = 0; i < tableData.length; i++) {
+
+  // A2（issue #51）：只渲染可见行窗口，上下用 spacer 撑住总高度，
+  // 这样滚动条长度不变、 scrollTop 不跳。
+  const firstRowIndex = virtualWindow ? Math.max(0, virtualWindow.start) : 0;
+  const lastRowIndex = virtualWindow
+    ? Math.min(tableData.length, virtualWindow.end)
+    : tableData.length;
+  const totalColumns = (tableData[0]?.length || 0) + 1; // 含行号列
+
+  const createSpacerRow = (height: number) => {
+    if (!(height > 0)) return;
+    const spacer = tableBody.createEl("tr", { cls: "csv-virtual-spacer" });
+    spacer.createEl("td", {
+      attr: {
+        colspan: String(Math.max(1, totalColumns)),
+        style: `height:${height}px;padding:0;border:0;`,
+      },
+    });
+  };
+
+  if (virtualWindow) createSpacerRow(virtualWindow.topPad);
+
+  // 从窗口起点开始，包括第一行
+  for (let i = firstRowIndex; i < lastRowIndex; i++) {
     const row = tableData[i];
-    const tableRow = tableBody.createEl("tr");
+    const tableRow = tableBody.createEl("tr", {
+      cls: "csv-data-row",
+      attr: { "data-row": String(i) },
+    });
     const rowNumberCell = tableRow.createEl("td", { cls: "csv-row-number", attr: { draggable: "true" } });
     rowNumberCell.textContent = i.toString();
     rowNumberCell.onclick = (e) => {
@@ -242,7 +282,7 @@ export function renderTable(options: TableRenderOptions) {
       }
     };
     // 插入行操作按钮（拖拽时隐藏）
-    if (!(dragState.type === 'row')) {
+    if (SHOW_STRUCTURE_BUTTONS && !(dragState.type === 'row')) {
       const insertAbove = rowNumberCell.createEl("button", { cls: "csv-insert-row-btn above" });
       insertAbove.innerText = "+";
       insertAbove.title = i18n.t("buttons.insertRowBefore") || "Insert row before";
@@ -269,132 +309,25 @@ export function renderTable(options: TableRenderOptions) {
     }
     row.forEach((cell, j) => {
       const td = tableRow.createEl("td", {
-        attr: { style: `width: ${columnWidths[j] || 100}px` },
+        cls: "csv-cell",
+        attr: {
+          style: `width: ${columnWidths[j] || 100}px`,
+          "data-row": String(i),
+          "data-col": String(j),
+        },
       });
-      
-      const input = td.createEl("input", {
-        cls: "csv-cell-input",
-        attr: { value: cell },
-      });
-      
-      // Create display layer for URL rendering
-      const hasUrl = containsUrl(cell);
-      let displayEl: HTMLElement | null = null;
-      
-      // Function to enter edit mode
-      const enterEditMode = () => {
-        const display = td.querySelector('.csv-cell-display') as HTMLElement;
-        if (display) {
-          display.style.display = 'none';
-        }
-        input.style.display = 'block';
-        input.focus();
-      };
-      
-      if (hasUrl) {
-        displayEl = createUrlDisplay(cell, enterEditMode);
-        td.insertBefore(displayEl, input);
-      }
-      
-      setupAutoResize(input);
-      
-      // Hide input initially if URL display is shown
-      if (hasUrl && displayEl) {
-        input.style.display = 'none';
-        displayEl.style.display = 'block';
-      }
-      
-      input.oninput = (ev) => {
-        if (ev.currentTarget instanceof HTMLInputElement) {
-          saveSnapshot();
-          tableData[i][j] = ev.currentTarget.value;
-          if (activeCellEl === ev.currentTarget && editInput) {
-            editInput.value = ev.currentTarget.value;
-          }
-          // 新增：表格单元格编辑时同步编辑栏
-          if (renderEditBar) {
-            renderEditBar(i, j, ev.currentTarget);
-          }
-          requestSave();
-          if (autoResize) {
-            adjustInputHeight(ev.currentTarget);
-          }
-          
-          // Update display on input change
-          const newHasUrl = containsUrl(ev.currentTarget.value);
-          const tdEl = ev.currentTarget.parentElement;
-          if (tdEl) {
-            const existingDisplay = tdEl.querySelector('.csv-cell-display');
-            if (newHasUrl) {
-              // Create or update display
-              if (existingDisplay) {
-                existingDisplay.remove();
-              }
-              const inputEl = ev.currentTarget;
-              const newDisplay = createUrlDisplay(ev.currentTarget.value, () => {
-                // Enter edit mode: show input first, then focus
-                const disp = tdEl.querySelector('.csv-cell-display') as HTMLElement;
-                if (disp) {
-                  disp.style.display = 'none';
-                }
-                inputEl.style.display = 'block';
-                inputEl.focus();
-              });
-              tdEl.insertBefore(newDisplay, ev.currentTarget);
-            } else if (existingDisplay) {
-              // Remove display if no URLs
-              existingDisplay.remove();
-            }
-          }
-        }
-      };
-      
-      input.onfocus = (ev) => {
-        if (ev.currentTarget instanceof HTMLInputElement) {
-          setActiveCell(i, j, ev.currentTarget);
-          // Hide display and show input when focused
-          const tdEl = ev.currentTarget.parentElement;
-          if (tdEl) {
-            const display = tdEl.querySelector('.csv-cell-display') as HTMLElement;
-            if (display) {
-              display.style.display = 'none';
-              ev.currentTarget.style.display = 'block';
-            }
-          }
-        }
-      };
-      
-      input.onblur = (ev) => {
-        if (ev.currentTarget instanceof HTMLInputElement) {
-          // Show display and hide input when blurred (if contains URL)
-          const tdEl = ev.currentTarget.parentElement;
-          if (tdEl) {
-            const display = tdEl.querySelector('.csv-cell-display') as HTMLElement;
-            if (display && containsUrl(ev.currentTarget.value)) {
-              display.style.display = 'block';
-              ev.currentTarget.style.display = 'none';
-            }
-          }
-        }
-      };
+
+      // 只渲染只读显示层；编辑由 CSVView 里那个共享的 <input> 负责。
+      // 以前每格一个 <input>，1000 x 27 的表就是 27,000 个 input + 54,000 个监器（issue #51）。
+      renderCellDisplay(td, cell, () => onEditCell?.(i, j, td));
     });
   }
 
+  if (virtualWindow) createSpacerRow(virtualWindow.bottomPad);
+
   // 滚动条容器宽度同步逻辑建议由主类处理
-
-  // Add event listener to deselect active row or column when clicking outside
-  const deselectActiveHeader = () => {
-    const activeHeaders = tableEl.querySelectorAll('.csv-col-number.active, .csv-row-number.active');
-    activeHeaders.forEach(header => header.classList.remove('active'));
-  };
-
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement | null;
-    const isHeaderClick = target?.closest('.csv-col-number, .csv-row-number');
-    if (!isHeaderClick) {
-      deselectActiveHeader();
-    }
-  });
+  // 注：点击表格外部取消行/列选中的监听器已改到 CSVView.onOpen 里只注册一次，
+  // 否则每次 renderTable 都会往 document 上叠加一个永不释放的监听器（issue #51）
 }
 
 // 建议在 styles.css 添加 .dragging 和 .drag-over 的样式以增强拖拽反馈

@@ -9,8 +9,8 @@ export class HighlightManager {
 	constructor(tableEl: HTMLElement) {
 		this.tableEl = tableEl;
 	}
+
 	public selectRow(rowIndex: number) {
-		console.log('[HighlightManager] selectRow called with index:', rowIndex);
 		if (this.selectedRow === rowIndex) {
 			this.clearSelection();
 			return;
@@ -21,7 +21,6 @@ export class HighlightManager {
 	}
 
 	public selectColumn(colIndex: number) {
-		console.log('[HighlightManager] selectColumn called with index:', colIndex);
 		if (this.selectedCol === colIndex) {
 			this.clearSelection();
 			return;
@@ -32,7 +31,6 @@ export class HighlightManager {
 	}
 
 	public clearSelection() {
-		console.log('[HighlightManager] clearSelection called');
 		this.selectedRow = -1;
 		this.selectedCol = -1;
 		this.clearHighlight();
@@ -41,6 +39,7 @@ export class HighlightManager {
 	public getSelectedRow() {
 		return this.selectedRow;
 	}
+
 	public getSelectedCol() {
 		return this.selectedCol;
 	}
@@ -48,42 +47,36 @@ export class HighlightManager {
 	public setTableEl(tableEl: HTMLElement) {
 		this.tableEl = tableEl;
 	}
+
 	private highlightRow(rowIndex: number) {
-		console.log('[HighlightManager] highlightRow called with index:', rowIndex);
-		const rows = this.tableEl?.querySelectorAll('tbody tr');
-		console.log('[HighlightManager] 找到的tbody行数:', rows?.length);
-		// 修复：rowIndex 已经是正确的索引，不需要减 1
-		const targetRowIndex = rowIndex;
-		if (rows && rows[targetRowIndex]) {
-			console.log('[HighlightManager] 高亮目标行:', rows[targetRowIndex]);
-			(rows[targetRowIndex] as HTMLElement).classList.add('csv-row-selected');
-		} else {
-			console.log('[HighlightManager] 未找到目标行，rowIndex:', rowIndex, 'targetRowIndex:', targetRowIndex);
+		// 用 data-row 定位，兼容行虚拟化（issue #51）
+		const row = this.tableEl?.querySelector(
+			`tbody tr[data-row="${rowIndex}"]`
+		) as HTMLElement | null;
+		if (row) {
+			row.classList.add("csv-row-selected");
 		}
 	}
 
 	private highlightColumn(colIndex: number) {
-		console.log('[HighlightManager] highlightColumn called with index:', colIndex);
-		const columnCells = this.tableEl?.querySelectorAll(`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`);
-		console.log('[HighlightManager] 找到的列单元格数:', columnCells?.length);
-		if (columnCells) {
-			console.log('[HighlightManager] 列单元格:', columnCells);
-		}
-		columnCells?.forEach(cell => {
+		const columnCells = this.tableEl?.querySelectorAll(
+			`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`
+		);
+		columnCells?.forEach((cell) => {
 			if (cell instanceof HTMLElement) {
-				cell.classList.add('csv-col-selected');
+				cell.classList.add("csv-col-selected");
 			}
 		});
 	}
 
 	private clearHighlight() {
-		console.log('[HighlightManager] clearHighlight called');
-		const selectedElements = this.tableEl?.querySelectorAll('.csv-row-selected, .csv-col-selected');
-		console.log('[HighlightManager] 清除高亮元素数:', selectedElements?.length);
-		selectedElements?.forEach(el => {
+		const selectedElements = this.tableEl?.querySelectorAll(
+			".csv-row-selected, .csv-col-selected"
+		);
+		selectedElements?.forEach((el) => {
 			if (el instanceof HTMLElement) {
-				el.classList.remove('csv-row-selected');
-				el.classList.remove('csv-col-selected');
+				el.classList.remove("csv-row-selected");
+				el.classList.remove("csv-col-selected");
 			}
 		});
 	}

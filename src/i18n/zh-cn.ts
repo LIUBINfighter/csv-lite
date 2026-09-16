@@ -63,6 +63,7 @@ export const zhCN = {
     undo: '已撤销上一步操作',
     noMoreUndo: '没有更多可撤销的操作',
     redo: '已重做操作',
-    noMoreRedo: '没有更多可重做的操作'
+    noMoreRedo: '没有更多可重做的操作',
+    virtualDisabledBySticky: '已固定行，因此对该文件关闭了行虚拟化，大文件可能变慢。取消固定行即可恢复。'
   }
 };

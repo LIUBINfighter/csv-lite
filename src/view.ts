@@ -15,11 +15,18 @@ import { FileUtils } from "./utils/file-utils";
 import { i18n } from "./i18n"; // 修正导入路径
 import { renderEditBar } from "./view/edit-bar";
 import { SearchBar } from "./view/search-bar";
-import { renderTable } from "./view/table-render";
+import { renderTable, renderCellDisplay } from "./view/table-render";
 import { HighlightManager } from "./utils/highlight-manager";
 import { setupHeaderContextMenu } from "./view/header-context-menu";
+import { isSearchShortcut } from "./utils/keyboard-utils";
+import { computeVirtualWindow } from "./utils/virtual-window";
 
 export const VIEW_TYPE_CSV = "csv-lite-view";
+
+// A2（issue #51）：行数超过阈值才启用虚拟化；小文件全量渲染，行为不变。
+const VIRTUAL_THRESHOLD = 150;
+// 可视区上下各多渲染几行，避免快速滚动露白。
+const VIRTUAL_OVERSCAN = 8;
 
 export class CSVView extends TextFileView {
 	public file: TFile | null;
@@ -35,7 +42,6 @@ export class CSVView extends TextFileView {
 
 	// 列宽调整设置
 	private columnWidths: number[] = [];
-	private autoResize: boolean = true;
 
 	// 新增：解析器设置状态
 	private delimiter: string = 'auto';
@@ -50,6 +56,23 @@ export class CSVView extends TextFileView {
 	private editBarEl: HTMLElement;
 	private editInput: HTMLInputElement;
 	private activeCellEl: HTMLInputElement | null = null;
+
+	// A1（issue #51）：单元格编辑改用**一个共享的 <input>**，
+	// 编辑时移动到目标 <td> 里；平时隐藏并放在 holder 中。
+	private cellInput: HTMLInputElement;
+	private cellEditorHolder: HTMLElement;
+	private editingRow: number = -1;
+	private editingCol: number = -1;
+	private editingOriginalValue: string = "";
+	private editSnapshotTaken: boolean = false;
+	private activeCellTd: HTMLElement | null = null;
+
+	// A2（issue #51）：行虚拟化状态
+	private rowHeight: number = 24;
+	private virtualStart = 0;
+	private virtualEnd = 0;
+	private virtualRafId = 0;
+	private warnedVirtualDisabled = false;
 	private activeRowIndex: number = -1;
 	private activeColIndex: number = -1;
 
@@ -171,6 +194,15 @@ export class CSVView extends TextFileView {
 			// 使所有行的列数一致
 			this.tableData = CSVUtils.normalizeTableData(this.tableData);
 
+			// 自动列宽：换文件 / 列数变化（例如换分隔符）时清空列宽，
+			// 让 renderTable 重新按内容估算，无需手动点「重置列宽」。
+			// （以前 onOpen 的占位渲染会先把 columnWidths 填成 [100]，
+			//  导致真实数据加载时不再重算。）
+			const columnCount = this.tableData[0]?.length || 0;
+			if (clear || this.columnWidths.length !== columnCount) {
+				this.columnWidths = [];
+			}
+
 			// 初始化历史记录
 			if (clear) {
 				this.historyManager.reset(this.tableData);
@@ -234,6 +266,9 @@ export class CSVView extends TextFileView {
 		// 	return;
 		// }
 
+		// renderTable 会清空 tableEl；先把共享编辑器收回来，避免它被一并删掉（issue #51）
+		this.detachCellEditor();
+
 		// Safety check: ensure tableData is initialized
 		if (!this.tableData || !Array.isArray(this.tableData) || this.tableData.length === 0) {
 			console.warn("Table data not properly initialized, setting default");
@@ -241,40 +276,13 @@ export class CSVView extends TextFileView {
 		}
 
 		// 恢复原有表格渲染方式
-		// 传递renderEditBar给renderTable，实现双向同步
-		const renderEditBarBridge = (row: number, col: number, cellEl: HTMLInputElement) => {
-			renderEditBar({
-				editBarEl: this.editBarEl,
-				editInput: this.editInput,
-				activeCellEl: cellEl,
-				activeRowIndex: row,
-				activeColIndex: col,
-				tableData: this.tableData,
-				onEdit: (r, c, value) => {
-					this.saveSnapshot();
-					this.tableData[r][c] = value;
-					this.requestSave();
-				},
-			});
-		};
-
 		renderTable({
 			tableData: this.tableData,
 			columnWidths: this.columnWidths,
-			autoResize: this.autoResize,
 			tableEl: this.tableEl,
-			editInput: this.editInput,
-			activeCellEl: this.activeCellEl,
-			activeRowIndex: this.activeRowIndex,
-			activeColIndex: this.activeColIndex,
-			setActiveCell: (row, col, cellEl) => {
-				this.setActiveCell(row, col, cellEl);
-				renderEditBarBridge(row, col, cellEl);
-			},
-			saveSnapshot: () => this.saveSnapshot(),
 			requestSave: () => this.requestSave(),
-			setupAutoResize: (input) => this.setupAutoResize(input),
-			adjustInputHeight: (input) => this.adjustInputHeight(input),
+			onEditCell: (row, col) => this.beginCellEdit(row, col),
+			virtualWindow: this.buildVirtualWindow(),
 			selectRow: (rowIndex) => this.highlightManager.selectRow(rowIndex),
 			selectColumn: (colIndex) => this.highlightManager.selectColumn(colIndex),
 			getColumnLabel: (index) => this.getColumnLabel(index),
@@ -307,8 +315,7 @@ export class CSVView extends TextFileView {
 				this.refresh();
 				this.requestSave();
 			},
-			// 新增：表格单元格编辑时同步编辑栏
-			renderEditBar: renderEditBarBridge,
+			// 新增：表格单元格编辑时同步编辑栏（已移到共享编辑器处理）
 			// 新增：拖拽排序回调
 			onColumnReorder: (from, to) => {
 				if (from === to) return;
@@ -344,6 +351,7 @@ export class CSVView extends TextFileView {
 		// 延迟应用sticky样式，确保DOM已完全渲染
 		requestAnimationFrame(() => {
 			this.applyStickyStyles();
+			this.measureRowHeight();
 		});
 
 		// 在完成表格渲染后，更新滚动条容器的宽度
@@ -442,21 +450,22 @@ export class CSVView extends TextFileView {
 	private setActiveCell(
 		rowIndex: number,
 		colIndex: number,
-		cellEl: HTMLInputElement
+		td: HTMLElement | null
 	) {
 		// 移除之前单元格的高亮
-		if (this.activeCellEl && this.activeCellEl.parentElement) {
-			this.activeCellEl.parentElement.classList.remove("csv-active-cell");
+		if (this.activeCellTd) {
+			this.activeCellTd.classList.remove("csv-active-cell");
 		}
 
 		// 设置新的活动单元格
 		this.activeRowIndex = rowIndex;
 		this.activeColIndex = colIndex;
-		this.activeCellEl = cellEl;
+		this.activeCellTd = td;
+		this.activeCellEl = this.cellInput || null;
 
 		// 高亮当前单元格
-		if (cellEl.parentElement) {
-			cellEl.parentElement.classList.add("csv-active-cell");
+		if (td) {
+			td.classList.add("csv-active-cell");
 		}
 
 		// 更新编辑栏内容
@@ -464,27 +473,320 @@ export class CSVView extends TextFileView {
 			renderEditBar({
 				editBarEl: this.editBarEl,
 				editInput: this.editInput,
-				activeCellEl: cellEl,
+				activeCellEl: this.cellInput || null,
 				activeRowIndex: rowIndex,
 				activeColIndex: colIndex,
 				tableData: this.tableData,
 				onEdit: (row, col, value) => {
 					this.saveSnapshot();
 					this.tableData[row][col] = value;
+					// 若正在编辑同一格，同步共享输入框
+					if (this.editingRow === row && this.editingCol === col) {
+						this.cellInput.value = value;
+					}
+					this.updateCellDisplay(row, col);
 					this.requestSave();
 				},
 			});
 		}
 	}
 
+	// ================= A1：共享单元格编辑器（issue #51） =================
+
+	/**
+	 * 共享编辑器的输入/键盘/失焦处理。只绑定一次。
+	 */
+	private setupSharedCellEditor() {
+		// 输入时即时写回（保持与旧行为一致），但一次编辑会话只存一次快照
+		this.registerDomEvent(this.cellInput, "input", () => {
+			if (this.editingRow < 0 || this.editingCol < 0) return;
+			if (!this.editSnapshotTaken) {
+				this.saveSnapshot();
+				this.editSnapshotTaken = true;
+			}
+			this.tableData[this.editingRow][this.editingCol] = this.cellInput.value;
+			if (this.editInput) this.editInput.value = this.cellInput.value;
+			this.requestSave();
+		});
+
+		this.registerDomEvent(this.cellInput, "keydown", (e: KeyboardEvent) => {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				this.commitCellEdit();
+				this.moveEdit(1, 0);
+			} else if (e.key === "Escape") {
+				e.preventDefault();
+				this.cancelCellEdit();
+			} else if (e.key === "Tab") {
+				e.preventDefault();
+				const dCol = e.shiftKey ? -1 : 1;
+				this.commitCellEdit();
+				this.moveEdit(0, dCol);
+			}
+		});
+
+		// 失焦即提交（点击到别处）；若随后又开始了新的单元格编辑则不重复提交
+		this.registerDomEvent(this.cellInput, "blur", () => {
+			setTimeout(() => {
+				if (document.activeElement !== this.cellInput) {
+					this.commitCellEdit();
+				}
+			}, 0);
+		});
+	}
+
+	/**
+	 * 单元格点击用事件委托，整个表格只挂一个监听器（以前是每格一套 handler）。
+	 */
+	private setupCellDelegation() {
+		this.registerDomEvent(this.tableEl, "click", (e: MouseEvent) => {
+			const target = e.target as HTMLElement | null;
+			// 链接自己处理点击（打开 URL）
+			if (target?.closest("a")) return;
+			// 点击正在编辑的共享输入框（挪动光标）不要重新开始编辑
+			if (target?.closest(".csv-cell-input-shared")) return;
+			const td = target?.closest("td.csv-cell") as HTMLElement | null;
+			if (!td) return;
+			const row = Number(td.dataset.row);
+			const col = Number(td.dataset.col);
+			if (Number.isNaN(row) || Number.isNaN(col)) return;
+			this.beginCellEdit(row, col);
+		});
+	}
+
+	/** 根据行列号找到对应的 <td>（用 data-row，兼容虚拟化） */
+	private getCellTd(row: number, col: number): HTMLElement | null {
+		const tr = this.tableEl?.querySelector(`tbody tr[data-row="${row}"]`);
+		if (!tr) return null;
+		const cells = tr.querySelectorAll("td");
+		// cells[0] 是行号列，数据列从 1 开始
+		return (cells[col + 1] as HTMLElement) || null;
+	}
+
+	// ================= A2：行虚拟化（issue #51） =================
+
+	private getScrollContainer(): HTMLElement | null {
+		// 优先找真正能纵向滚动的祖先，否则退回最近一个 overflow:auto/scroll 的祖先
+		let el: HTMLElement | null =
+			(this.tableEl?.parentElement as HTMLElement) || null;
+		let fallback: HTMLElement | null = null;
+		while (el && el !== document.body) {
+			const oy = window.getComputedStyle(el).overflowY;
+			if (oy === "auto" || oy === "scroll") {
+				if (!fallback) fallback = el;
+				if (el.scrollHeight > el.clientHeight + 1) return el;
+			}
+			el = el.parentElement;
+		}
+		return fallback || (this.contentEl as HTMLElement) || null;
+	}
+
+	/**
+	 * 表格体已经被滚过去多少像素。
+	 * 不直接拿 scrollTop，是因为滚动容器未必以表格为起点
+	 * （.view-content 上方还有工具栏、编辑栏等）。
+	 */
+	private getScrolledOffset(scroller: HTMLElement): number {
+		const tbody = this.tableEl?.querySelector("tbody");
+		if (!tbody) return 0;
+		const rect = scroller.getBoundingClientRect();
+		const tbodyTop = (tbody as HTMLElement).getBoundingClientRect().top;
+		return Math.max(0, rect.top - tbodyTop);
+	}
+
+	/** 当前是否应对这张表启用虚拟化 */
+	private isVirtualizable(): boolean {
+		return (
+			this.tableData.length > VIRTUAL_THRESHOLD && this.stickyRows.size === 0
+		);
+	}
+
+	/** 根据当前滚动位置算出要渲染的行窗口 */
+	private buildVirtualWindow() {
+		const rows = this.tableData.length;
+		if (!this.isVirtualizable()) {
+			if (
+				rows > VIRTUAL_THRESHOLD &&
+				this.stickyRows.size > 0 &&
+				!this.warnedVirtualDisabled
+			) {
+				this.warnedVirtualDisabled = true;
+				new Notice(i18n.t("notifications.virtualDisabledBySticky"));
+			}
+			this.virtualStart = 0;
+			this.virtualEnd = rows;
+			return { start: 0, end: rows, topPad: 0, bottomPad: 0 };
+		}
+		const scroller = this.getScrollContainer();
+		const w = computeVirtualWindow(
+			rows,
+			this.rowHeight,
+			scroller ? this.getScrolledOffset(scroller) : 0,
+			scroller ? scroller.clientHeight : 800,
+			VIRTUAL_OVERSCAN
+		);
+		this.virtualStart = w.start;
+		this.virtualEnd = w.end;
+		return w;
+	}
+
+	/** 滚动时（rAF 合并）重算窗口，变化才重渲染 */
+	private onVirtualScroll() {
+		if (!this.isVirtualizable()) return;
+		if (this.virtualRafId) return;
+		this.virtualRafId = requestAnimationFrame(() => {
+			this.virtualRafId = 0;
+			const scroller = this.getScrollContainer();
+			if (!scroller) return;
+			const w = computeVirtualWindow(
+				this.tableData.length,
+				this.rowHeight,
+				this.getScrolledOffset(scroller),
+				scroller.clientHeight,
+				VIRTUAL_OVERSCAN
+			);
+			if (w.start === this.virtualStart && w.end === this.virtualEnd) return;
+			// 编辑器可能正在被移除的行里，先提交
+			if (this.editingRow >= 0) this.commitCellEdit();
+			this.virtualStart = w.start;
+			this.virtualEnd = w.end;
+			this.refresh();
+		});
+	}
+
+	/** 确保指定行在当前渲染窗口内（虚拟化下搜索跳转用） */
+	private ensureRowRendered(row: number) {
+		if (!this.isVirtualizable()) return;
+		if (row >= this.virtualStart && row < this.virtualEnd) return;
+		const scroller = this.getScrollContainer();
+		if (scroller) {
+			const viewport = scroller.clientHeight || 600;
+			const target = Math.max(0, row * this.rowHeight - Math.floor(viewport / 2));
+			const delta = target - this.getScrolledOffset(scroller);
+			scroller.scrollTop = Math.max(0, scroller.scrollTop + delta);
+		}
+		this.virtualStart = -1;
+		this.virtualEnd = -1;
+		this.refresh();
+	}
+
+	/** 量一下真实行高，让 spacer 高度与渲染行一致 */
+	private measureRowHeight() {
+		if (!this.isVirtualizable()) return;
+		const firstRow = this.tableEl?.querySelector(
+			"tbody tr.csv-data-row"
+		) as HTMLElement | null;
+		if (firstRow && firstRow.offsetHeight > 0) {
+			this.rowHeight = firstRow.offsetHeight;
+		}
+	}
+
+	/** 进入单元格编辑：把共享 input 移进 <td> 并聚焦 */
+	private beginCellEdit(row: number, col: number) {
+		if (row < 0 || col < 0) return;
+		if (!this.tableData[row] || col >= this.tableData[row].length) return;
+
+		// 已在编辑另一格时先提交
+		if (
+			this.editingRow >= 0 &&
+			(this.editingRow !== row || this.editingCol !== col)
+		) {
+			this.commitCellEdit();
+		}
+
+		const td = this.getCellTd(row, col);
+		if (!td) return;
+
+		this.editingRow = row;
+		this.editingCol = col;
+		this.editingOriginalValue = this.tableData[row][col];
+		this.editSnapshotTaken = false;
+
+		const display = td.querySelector(".csv-cell-display") as HTMLElement | null;
+		if (display) display.style.display = "none";
+
+		td.appendChild(this.cellInput);
+		this.cellInput.style.display = "block";
+		this.cellInput.value = this.editingOriginalValue;
+		this.setActiveCell(row, col, td);
+		this.cellInput.focus();
+		const len = this.cellInput.value.length;
+		this.cellInput.setSelectionRange(len, len);
+	}
+
+	/** 提交当前编辑：值已在 input 事件里写回，这里只收尾并刷新显示层 */
+	private commitCellEdit() {
+		if (this.editingRow < 0 || this.editingCol < 0) return;
+		const row = this.editingRow;
+		const col = this.editingCol;
+		this.tableData[row][col] = this.cellInput.value;
+		this.editingRow = -1;
+		this.editingCol = -1;
+		this.editSnapshotTaken = false;
+		this.detachCellEditor();
+		this.updateCellDisplay(row, col);
+		this.requestSave();
+	}
+
+	/** 取消当前编辑（Escape）：恢复原值 */
+	private cancelCellEdit() {
+		if (this.editingRow < 0 || this.editingCol < 0) return;
+		const row = this.editingRow;
+		const col = this.editingCol;
+		this.tableData[row][col] = this.editingOriginalValue;
+		this.editingRow = -1;
+		this.editingCol = -1;
+		this.editSnapshotTaken = false;
+		this.detachCellEditor();
+		this.updateCellDisplay(row, col);
+		if (this.editInput) this.editInput.value = this.editingOriginalValue;
+	}
+
+	/** 提交后把编辑器移回 holder 并隐藏 */
+	private detachCellEditor() {
+		if (this.cellInput) {
+			this.cellInput.style.display = "none";
+			this.cellEditorHolder?.appendChild(this.cellInput);
+		}
+	}
+
+	/** Enter/Tab 提交后移动到相邻单元格继续编辑 */
+	private moveEdit(dRow: number, dCol: number) {
+		const row = this.activeRowIndex >= 0 ? this.activeRowIndex : 0;
+		const col = this.activeColIndex >= 0 ? this.activeColIndex : 0;
+		const maxRow = Math.max(0, this.tableData.length - 1);
+		const maxCol = Math.max(0, (this.tableData[0]?.length || 1) - 1);
+		const nextRow = Math.min(Math.max(row + dRow, 0), maxRow);
+		const nextCol = Math.min(Math.max(col + dCol, 0), maxCol);
+		this.beginCellEdit(nextRow, nextCol);
+	}
+
+	/** 刷新单个单元格的显示层（编辑提交后 / 编辑栏改动后） */
+	private updateCellDisplay(row: number, col: number) {
+		if (this.editingRow === row && this.editingCol === col) return;
+		const td = this.getCellTd(row, col);
+		if (!td || !this.tableData[row]) return;
+		renderCellDisplay(td, this.tableData[row][col], () =>
+			this.beginCellEdit(row, col)
+		);
+	}
+
 	// 设置列宽调整功能
 	private setupColumnResize(handle: HTMLElement, columnIndex: number) {
 		let startX: number;
 		let startWidth: number;
+		// 拖拽前缓存该列的所有单元格，拖动时只改它们的宽度，
+		// 避免像以前那样每个 mousemove 都 this.refresh() 重建整张表（issue #51）
+		let affectedCells: HTMLElement[] = [];
 
 		const onMouseDown = (e: MouseEvent) => {
 			startX = e.clientX;
 			startWidth = this.columnWidths[columnIndex] || 100;
+			// nth-child 从 1 开始，第 1 列是行号列，所以目标列是 columnIndex + 2
+			const selector = `thead tr th:nth-child(${columnIndex + 2}), tbody tr.csv-data-row td:nth-child(${columnIndex + 2})`;
+			affectedCells = Array.from(
+				this.tableEl?.querySelectorAll(selector) || []
+			) as HTMLElement[];
 
 			document.addEventListener("mousemove", onMouseMove);
 			document.addEventListener("mouseup", onMouseUp);
@@ -497,43 +799,21 @@ export class CSVView extends TextFileView {
 			if (width >= 50) {
 				// 最小宽度限制
 				this.columnWidths[columnIndex] = width;
-				this.refresh();
+				for (const cell of affectedCells) {
+					cell.style.width = `${width}px`;
+				}
 			}
 		};
 
 		const onMouseUp = () => {
 			document.removeEventListener("mousemove", onMouseMove);
 			document.removeEventListener("mouseup", onMouseUp);
+			affectedCells = [];
+			// 列宽变化会影响 sticky 列/行号的偏移量，收尾时重算一次
+			this.applyStickyStyles();
 		};
 
 		handle.addEventListener("mousedown", onMouseDown);
-	}
-
-	// 设置输入框自动调整高度
-	private setupAutoResize(input: HTMLInputElement) {
-		// 初始调整
-		this.adjustInputHeight(input);
-
-		// 监听内容变化
-		input.addEventListener("input", () => {
-			if (this.autoResize) {
-				this.adjustInputHeight(input);
-			}
-		});
-	}
-
-	// 调整输入框高度
-	private adjustInputHeight(input: HTMLInputElement) {
-		// Style moved to styles.css: input.style.height = 'auto';
-
-		// 获取内容行数
-		const lineCount = (input.value.match(/\n/g) || []).length + 1;
-		const minHeight = 24; // 最小高度
-		const lineHeight = 20; // 每行高度
-
-		// 设置高度，确保能显示所有内容
-		const newHeight = Math.max(minHeight, lineCount * lineHeight);
-		input.style.height = `${newHeight}px`;
 	}
 
 	// 保存当前状态到历史记录
@@ -797,6 +1077,27 @@ export class CSVView extends TextFileView {
 			// 设置滚动同步（传递新的topScrollContainer）
 			this.setupScrollSync(topScrollContainer, tableContainer);
 
+			// A1（issue #51）：只创建一个共享的单元格编辑器，
+			// 编辑时临时移入目标 <td>，避免每格一个 <input>。
+			this.cellEditorHolder = this.contentEl.createEl("div", {
+				cls: "csv-cell-editor-holder",
+			});
+			this.cellInput = this.cellEditorHolder.createEl("input", {
+				cls: "csv-cell-input csv-cell-input-shared",
+			});
+			this.setupSharedCellEditor();
+			this.setupCellDelegation();
+
+			// A2（issue #51）：滚动时重算虚拟窗口。
+			// 真正的纵向滚动容器可能是 .main-scroll，也可能是 Obsidian 的 .view-content，
+			// 所以用 document + capture 捕获所有 scroll 事件，实际窗口由 getScrollContainer() 判定。
+			this.registerDomEvent(
+				document,
+				"scroll",
+				() => this.onVirtualScroll(),
+				{ capture: true }
+			);
+
 			// 初始化历史记录
 			if (!this.historyManager) {
 				this.historyManager = new TableHistoryManager(
@@ -813,6 +1114,13 @@ export class CSVView extends TextFileView {
 					// Only handle undo/redo when this view is the active leaf
 					if (this.app.workspace.activeLeaf !== this.leaf) return;
 
+					// Ctrl+F / Cmd+F：聚焦表格内搜索框（issue #18）
+					if (isSearchShortcut(event)) {
+						event.preventDefault();
+						this.focusSearch();
+						return;
+					}
+
 					// 检测Ctrl+Z (或Mac上的Cmd+Z)
 					if ((event.ctrlKey || event.metaKey) && event.key === "z") {
 						if (event.shiftKey) {
@@ -827,6 +1135,17 @@ export class CSVView extends TextFileView {
 					}
 				}
 			);
+
+			// 点击表格外部时取消行/列头选中。
+			// 只在这里注册一次；以前放在 renderTable 里，导致每次刷新都往 document 上
+			// 叠加一个永不释放的监听器（列宽拖拽时会瞬间泄漏上百个，issue #51）
+			this.registerDomEvent(document, "click", (e: MouseEvent) => {
+				const target = e.target as HTMLElement | null;
+				if (target?.closest(".csv-col-number, .csv-row-number")) return;
+				this.tableEl
+					?.querySelectorAll(".csv-col-number.active, .csv-row-number.active")
+					.forEach((el) => el.classList.remove("active"));
+			});
 
 			// Ensure tableData is initialized before refreshing
 			if (
@@ -895,16 +1214,27 @@ export class CSVView extends TextFileView {
 	}
 
 	// 简化滚动同步方法
+	// 高频 scroll 事件用 rAF 合并，避免布局抖动以及两个容器互相触发形成回环（issue #51）
 	private setupScrollSync(topScroll: HTMLElement, mainScroll: HTMLElement) {
-		// 监听主表格容器的滚动事件，同步到顶部滚动条
-		mainScroll.addEventListener('scroll', () => {
-			topScroll.scrollLeft = mainScroll.scrollLeft;
-		});
+		let rafId = 0;
+		let source: HTMLElement | null = null;
 
-		// 监听顶部滚动条的滚动事件，同步到主表格
-		topScroll.addEventListener('scroll', () => {
-			mainScroll.scrollLeft = topScroll.scrollLeft;
-		});
+		const flush = () => {
+			rafId = 0;
+			const src = source;
+			source = null;
+			if (!src) return;
+			(src === mainScroll ? topScroll : mainScroll).scrollLeft = src.scrollLeft;
+		};
+
+		const onScroll = (src: HTMLElement) => {
+			source = src;
+			if (!rafId) rafId = requestAnimationFrame(flush);
+		};
+
+		// registerDomEvent 会在视图关闭时自动解绑
+		this.registerDomEvent(mainScroll, "scroll", () => onScroll(mainScroll));
+		this.registerDomEvent(topScroll, "scroll", () => onScroll(topScroll));
 	}
 
 	async onClose() {
@@ -958,33 +1288,21 @@ export class CSVView extends TextFileView {
 	private jumpToCell(row: number, col: number) {
 		// 清除之前的高亮
 		this.clearSearchHighlights();
-		// 找到目标单元格
-		const tableRows = this.tableEl?.querySelectorAll("tr");
-		const targetRowIndex = row === 0 ? 1 : row + 1;
-		if (tableRows && targetRowIndex < tableRows.length) {
-			const targetRow = tableRows[targetRowIndex];
-			const cells = targetRow.querySelectorAll("td, th");
-			const targetCellIndex = col + 1;
-			if (targetCellIndex < cells.length) {
-				const targetCell = cells[targetCellIndex];
-				const input = targetCell.querySelector("input") as HTMLInputElement;
-				if (input) {
-					input.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
-					setTimeout(() => {
-						input.focus();
-						input.select();
-						if (input.parentElement) {
-							input.parentElement.classList.add("csv-search-current");
-							setTimeout(() => {
-								if (input.parentElement) {
-									input.parentElement.classList.remove("csv-search-current");
-								}
-							}, 3000);
-						}
-					}, 100);
-				}
+		// 虚拟化时目标行可能没渲染，先把窗口挪过去
+		this.ensureRowRendered(row);
+		const td = this.getCellTd(row, col);
+		if (!td) return;
+		td.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+		setTimeout(() => {
+			this.beginCellEdit(row, col);
+			const tdNow = this.getCellTd(row, col);
+			if (tdNow) {
+				tdNow.classList.add("csv-search-current");
+				setTimeout(() => {
+					tdNow.classList.remove("csv-search-current");
+				}, 3000);
 			}
-		}
+		}, 100);
 	}
 
 	// 新增：清除搜索高亮
@@ -994,6 +1312,16 @@ export class CSVView extends TextFileView {
 				el.classList.remove("csv-search-current");
 			}
 		});
+	}
+
+	/**
+	 * 聚焦表格内搜索框（Ctrl+F / Cmd+F，issue #18）。
+	 * 搜索栏本身已在 onOpen 中创建，这里只负责把焦点交给它。
+	 */
+	private focusSearch() {
+		if (this.searchBar && typeof this.searchBar.focus === "function") {
+			this.searchBar.focus();
+		}
 	}
 
 	// 新增：源码模式切换
@@ -1053,7 +1381,7 @@ export class CSVView extends TextFileView {
 		});
 			// 计算行号的实际宽度
 			const getRowNumberWidth = (): number => {
-				const firstRowNumber = this.tableEl.querySelector('tbody tr td:first-child') as HTMLElement;
+				const firstRowNumber = this.tableEl.querySelector('tbody tr.csv-data-row td:first-child') as HTMLElement;
 				return firstRowNumber ? firstRowNumber.offsetWidth : 40; // 默认40px
 			};
 
@@ -1117,7 +1445,7 @@ export class CSVView extends TextFileView {
 			}
 			
 			// 行号列在数据行中
-			const rowNumberCells = this.tableEl.querySelectorAll('tbody tr td:first-child');
+			const rowNumberCells = this.tableEl.querySelectorAll('tbody tr.csv-data-row td:first-child');
 			rowNumberCells.forEach(cell => {
 				cell.classList.add('csv-sticky-row-number');
 				(cell as HTMLElement).style.left = '0px';
@@ -1129,7 +1457,7 @@ export class CSVView extends TextFileView {
 		this.stickyRows.forEach(rowIndex => {
 			const stickyTop = calculateStickyRowsHeight(rowIndex);
 			// 数据行（在tbody中，从第1个tr开始）
-			const rowCells = this.tableEl.querySelectorAll(`tbody tr:nth-child(${rowIndex + 1}) td`);
+			const rowCells = this.tableEl.querySelectorAll(`tbody tr[data-row="${rowIndex}"] td`);
 			rowCells.forEach(cell => {
 				cell.classList.add('csv-sticky-row');
 				(cell as HTMLElement).style.top = `${stickyTop}px`;
@@ -1149,20 +1477,11 @@ export class CSVView extends TextFileView {
 			}
 			
 			// 数据列（在tbody的所有行中，跳过行号列）
-			const dataCells = this.tableEl.querySelectorAll(`tbody tr td:nth-child(${colIndex + 2})`);
+			const dataCells = this.tableEl.querySelectorAll(`tbody tr.csv-data-row td:nth-child(${colIndex + 2})`);
 			dataCells.forEach(cell => {
 				cell.classList.add('csv-sticky-col');
 				(cell as HTMLElement).style.left = `${stickyLeft}px`;
 			});
-		});
-
-		console.log('Applied sticky styles:', {
-			stickyHeaders: this.stickyHeaders,
-			stickyRowNumbers: this.stickyRowNumbers,
-			stickyRows: Array.from(this.stickyRows),
-			stickyColumns: Array.from(this.stickyColumns),
-			rowNumberWidth: getRowNumberWidth(),
-			headerHeight: getHeaderHeight()
 		});
 	}
 	moveCol(fromIndex: number, toIndex: number) {
