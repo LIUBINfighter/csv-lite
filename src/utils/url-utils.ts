@@ -8,13 +8,19 @@ const URL_PATTERN = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-
 // Markdown link pattern: [text](url)
 const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
 
+// 复用同一组正则做「是否包含链接」判定：
+// - 不带 g，避免 test() 的 lastIndex 状态问题；
+// - 不再每次调用都 new RegExp（大表渲染时 containsUrl 会被调上万次，issue #51）。
+const URL_TEST_PATTERN = new RegExp(URL_PATTERN.source, "i");
+const MARKDOWN_LINK_TEST_PATTERN = new RegExp(MARKDOWN_LINK_PATTERN.source, "i");
+
 /**
  * Detect if text contains URLs or Markdown links
  */
 export function containsUrl(text: string): boolean {
-  const urlRegex = new RegExp(URL_PATTERN);
-  const markdownRegex = new RegExp(MARKDOWN_LINK_PATTERN);
-  return urlRegex.test(text) || markdownRegex.test(text);
+  // 两种链接都必然包含 "http"，先做一次极廉价的剪枝
+  if (!text.includes("http")) return false;
+  return URL_TEST_PATTERN.test(text) || MARKDOWN_LINK_TEST_PATTERN.test(text);
 }
 
 /**
