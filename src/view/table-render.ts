@@ -23,10 +23,20 @@ export interface TableRenderOptions {
    */
   onEditCell?: (row: number, col: number, td: HTMLElement) => void;
   /**
+   * issue #39：双击表头单元格时触发（编辑表头文本，写回 tableData 第 0 行）。
+   * 单击表头仍然只做列选中。
+   */
+  onEditHeader?: (colIndex: number) => void;
+  /**
    * A2（issue #51）：只渲染 [start, end) 行，上下用 spacer 撑住总高度。
    * 不传则全量渲染（小文件行为完全不变）。
    */
   virtualWindow?: { start: number; end: number; topPad: number; bottomPad: number };
+  /**
+   * issue #39：把第 0 行渲染成表头（thead 显示真实列名），tbody 从第 1 行开始。
+   * 纯视图层开关，不改变 tableData / 文件内容。
+   */
+  firstRowAsHeader?: boolean;
   // 拖拽排序回调
   onColumnReorder?: (from: number, to: number) => void;
   onRowReorder?: (from: number, to: number) => void;
@@ -72,7 +82,9 @@ export function renderTable(options: TableRenderOptions) {
     insertColAt,
     deleteColAt,
     onEditCell,
+    onEditHeader,
     virtualWindow,
+    firstRowAsHeader,
     onColumnReorder,
     onRowReorder,
     stickyRows,
@@ -87,6 +99,7 @@ export function renderTable(options: TableRenderOptions) {
   const SHOW_STRUCTURE_BUTTONS = false;
 
   tableEl.empty();
+  tableEl.classList.toggle("csv-header-row-mode", !!firstRowAsHeader);
 
   // 拖拽状态变量移到函数外部作用域
   if (!(window as any)._csvLiteDragState) {
@@ -123,11 +136,37 @@ export function renderTable(options: TableRenderOptions) {
           draggable: "true",
         },
       });
-      th.textContent = getColumnLabel(index);
+      if (firstRowAsHeader) {
+        // issue #39：表头显示首行的真实列名，列号字母退成小字提示
+        th.classList.add("csv-header-cell");
+        th.createEl("span", {
+          cls: "csv-col-letter",
+          text: getColumnLabel(index),
+        });
+        if (headerCell) {
+          const textEl = th.createEl("span", {
+            cls: "csv-header-text",
+            text: headerCell,
+          });
+          textEl.title = headerCell;
+        }
+        th.title = headerCell
+          ? `${getColumnLabel(index)}: ${headerCell}`
+          : getColumnLabel(index);
+      } else {
+        th.textContent = getColumnLabel(index);
+      }
       th.onclick = (e) => {
         e.stopPropagation();
         selectColumn(index);
       };
+      if (firstRowAsHeader && onEditHeader) {
+        // 双击表头编辑列名（写回 tableData 第 0 行）
+        th.ondblclick = (e) => {
+          e.stopPropagation();
+          onEditHeader(index);
+        };
+      }
 
       // 添加pin/unpin按钮
       if (toggleColumnSticky) {
@@ -201,12 +240,16 @@ export function renderTable(options: TableRenderOptions) {
     });
   }
 
-  // 创建表格主体 - 所有行都作为普通数据行处理
+  // 创建表格主体 - 表头模式下第 0 行已在 thead，其余都作为普通数据行处理
   const tableBody = tableEl.createEl("tbody");
 
   // A2（issue #51）：只渲染可见行窗口，上下用 spacer 撑住总高度，
   // 这样滚动条长度不变、 scrollTop 不跳。
-  const firstRowIndex = virtualWindow ? Math.max(0, virtualWindow.start) : 0;
+  // issue #39：表头模式下 tbody 从第 1 行开始，spacer 高度仍按 tbody 行数计算。
+  const bodyStart = firstRowAsHeader ? 1 : 0;
+  const firstRowIndex = virtualWindow
+    ? Math.max(bodyStart, virtualWindow.start)
+    : bodyStart;
   const lastRowIndex = virtualWindow
     ? Math.min(tableData.length, virtualWindow.end)
     : tableData.length;

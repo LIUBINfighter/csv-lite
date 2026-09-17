@@ -10,7 +10,10 @@ export const zhCN = {
     sourceMode: '源码模式',
     tableMode: '表格模式',
     insertRowBefore: '上方插入行',
-    insertRowAfter: '下方插入行'
+    insertRowAfter: '下方插入行',
+    toggleHeaderRow: '首行为表头',
+    toggleHeaderRowOn: '将首行作为表头显示',
+    toggleHeaderRowOff: '取消首行表头'
   },
   editBar: {
     placeholder: '编辑选中单元格...'
@@ -64,6 +67,7 @@ export const zhCN = {
     noMoreUndo: '没有更多可撤销的操作',
     redo: '已重做操作',
     noMoreRedo: '没有更多可重做的操作',
-    virtualDisabledBySticky: '已固定行，因此对该文件关闭了行虚拟化，大文件可能变慢。取消固定行即可恢复。'
+    virtualDisabledBySticky: '已固定行，因此对该文件关闭了行虚拟化，大文件可能变慢。取消固定行即可恢复。',
+    headerRowProtected: '表头行不能被移动、删除或覆盖。'
   }
 };

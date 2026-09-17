@@ -84,12 +84,16 @@ export function setupHeaderContextMenu(tableEl: HTMLElement, options: HeaderCont
   const menuManager = new MenuManager();
   const handler = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
-    if (target.classList.contains('csv-row-number')) {
+    // 用 closest：表头模式下 th 里还有列名 span，右键可能落在子元素上（issue #39）
+    const rowNumberCell = target.closest('.csv-row-number') as HTMLElement | null;
+    const colNumberCell = target.closest('.csv-col-number') as HTMLElement | null;
+    if (rowNumberCell) {
       event.preventDefault();
-      const tr = target.closest('tr');
+      const tr = rowNumberCell.closest('tr') as HTMLElement | null;
       if (!tr) return;
-      const trs = Array.from(tr.parentElement!.children);
-      const rowIndex = trs.indexOf(tr);
+      // 用 data-row 而不是 indexOf：虚拟化时 tbody 里还有 spacer 行（issue #51）
+      const rowIndex = Number(tr.dataset.row);
+      if (Number.isNaN(rowIndex)) return;
       if (options.selectRow) options.selectRow(rowIndex);
       const items = [
         { label: 'contextMenu.insertRowAbove', onClick: () => options.onInsertRowAbove(rowIndex) },
@@ -102,10 +106,11 @@ export function setupHeaderContextMenu(tableEl: HTMLElement, options: HeaderCont
         if (options.clearSelection) options.clearSelection();
         if (options.onMenuClose) options.onMenuClose();
       });
-    } else if (target.classList.contains('csv-col-number')) {
+    } else if (colNumberCell) {
       event.preventDefault();
       const ths = Array.from(tableEl.querySelectorAll('.csv-col-number'));
-      const colIndex = ths.indexOf(target);
+      const colIndex = ths.indexOf(colNumberCell);
+      if (colIndex < 0) return;
       if (options.selectColumn) options.selectColumn(colIndex);
       const items = [
         { label: 'contextMenu.insertColLeft', onClick: () => options.onInsertColLeft(colIndex) },

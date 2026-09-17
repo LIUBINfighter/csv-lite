@@ -615,6 +615,39 @@ td.csv-row-number{
 	max-height: 25px;
 }
 
+/* issue #39：首行为表头模式 */
+.csv-lite-table.csv-header-row-mode th.csv-col-number {
+	height: auto;
+	min-height: 25px;
+	max-height: none;
+	padding: 3px 6px;
+	white-space: nowrap;
+}
+
+.csv-col-letter {
+	font-size: 0.75em;
+	font-weight: 400;
+	color: var(--text-faint);
+	margin-right: 4px;
+}
+
+.csv-header-text {
+	display: inline-block;
+	max-width: calc(100% - 1.5em);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	vertical-align: bottom;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* 首行为表头开关的激活态 */
+.csv-header-toggle.is-active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
 /* 调整普通单元格的z-index */
 .csv-lite-table td,
 .csv-lite-table

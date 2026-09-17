@@ -7,11 +7,17 @@ import { FileUtils } from "./utils/file-utils";
 interface CSVPluginSettings {
 	csvSettings: string;
 	preferredDelimiter?: string; // user global preference, e.g. ',' ';' '\t' or 'auto'
+	/**
+	 * 「首行为表头」模式按文件记录（issue #39）。
+	 * 只存开启的文件，value 恒为 true；键是 vault 内的文件路径。
+	 */
+	headerRowFiles?: Record<string, boolean>;
 }
 
 const DEFAULT_SETTINGS: CSVPluginSettings = {
 	csvSettings: "default",
 	preferredDelimiter: 'auto',
+	headerRowFiles: {},
 };
 
 export default class CSVPlugin extends Plugin {
@@ -73,6 +79,35 @@ export default class CSVPlugin extends Plugin {
 				});
 			})
 		);
+
+		// 文件重命名时把「首行为表头」的按文件记录迁移到新路径（issue #39）
+		this.registerEvent(
+			this.app.vault.on('rename', (file, oldPath) => {
+				const map = this.settings.headerRowFiles;
+				if (map && map[oldPath]) {
+					delete map[oldPath];
+					map[file.path] = true;
+					this.saveSettings();
+				}
+			})
+		);
+	}
+
+	/** 该文件是否开启了「首行为表头」模式（issue #39） */
+	isHeaderRowEnabled(path: string): boolean {
+		return !!(path && this.settings.headerRowFiles?.[path]);
+	}
+
+	/** 记录/取消某文件的「首行为表头」模式（issue #39，非破坏性，只影响视图） */
+	async setHeaderRowEnabled(path: string, enabled: boolean): Promise<void> {
+		if (!path) return;
+		const map = this.settings.headerRowFiles || (this.settings.headerRowFiles = {});
+		if (enabled) {
+			map[path] = true;
+		} else {
+			delete map[path];
+		}
+		await this.saveSettings();
 	}
 
 	// Create a new CSV in the given folder with an auto-incremented name if necessary

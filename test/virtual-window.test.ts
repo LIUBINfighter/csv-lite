@@ -1,4 +1,7 @@
-import { computeVirtualWindow } from "../src/utils/virtual-window";
+import {
+	computeVirtualWindow,
+	offsetVirtualWindow,
+} from "../src/utils/virtual-window";
 
 describe("computeVirtualWindow (A2 / issue #51)", () => {
 	test("renders only the visible window plus overscan", () => {
@@ -57,5 +60,35 @@ describe("computeVirtualWindow (A2 / issue #51)", () => {
 		const w = computeVirtualWindow(1000, 20, 20 * 50, 400, 0);
 		expect(w.start).toBe(50);
 		expect(w.end).toBe(50 + 20 + 1);
+	});
+});
+
+describe("offsetVirtualWindow (issue #39, first row as header)", () => {
+	test("shifts row indices by the header offset", () => {
+		const w = computeVirtualWindow(999, 24, 500 * 24, 600, 8);
+		const shifted = offsetVirtualWindow(w, 1);
+		expect(shifted.start).toBe(w.start + 1);
+		expect(shifted.end).toBe(w.end + 1);
+	});
+
+	test("spacer heights stay in tbody space (header is not part of them)", () => {
+		const w = computeVirtualWindow(999, 24, 500 * 24, 600, 8);
+		const shifted = offsetVirtualWindow(w, 1);
+		expect(shifted.topPad).toBe(w.topPad);
+		expect(shifted.bottomPad).toBe(w.bottomPad);
+	});
+
+	test("offset 0 keeps the window unchanged", () => {
+		const w = computeVirtualWindow(100, 24, 0, 600, 8);
+		expect(offsetVirtualWindow(w, 0)).toEqual(w);
+	});
+
+	test("body row count excludes the header row", () => {
+		// 1000 行数据 + 1 行表头 => tbody 只有 999 行，底部 spacer 不应多算一行
+		const w = computeVirtualWindow(999, 24, 999999, 600, 8);
+		expect(w.end).toBe(999);
+		const shifted = offsetVirtualWindow(w, 1);
+		expect(shifted.end).toBe(1000);
+		expect(shifted.bottomPad).toBe(0);
 	});
 });
