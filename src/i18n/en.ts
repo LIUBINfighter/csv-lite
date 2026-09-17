@@ -8,7 +8,10 @@ export const enUS = {
     deleteColumn: 'Delete column',
     resetColumnWidth: 'Reset column width',
     sourceMode: 'Source Mode',
-    tableMode: 'Table Mode'
+    tableMode: 'Table Mode',
+    toggleHeaderRow: 'Header Row',
+    toggleHeaderRowOn: 'Treat the first row as a header',
+    toggleHeaderRowOff: 'Stop treating the first row as a header'
   },
   editBar: {
     placeholder: 'Edit selected cell...'
@@ -62,6 +65,7 @@ export const enUS = {
     noMoreUndo: 'There is nothing more to undo',
     redo: 'Redid action',
     noMoreRedo: 'There is nothing more to redo',
-    virtualDisabledBySticky: 'Rows are pinned, so row virtualization is disabled for this file — large files may become slow. Unpin rows to re-enable it.'
+    virtualDisabledBySticky: 'Rows are pinned, so row virtualization is disabled for this file — large files may become slow. Unpin rows to re-enable it.',
+    headerRowProtected: 'The header row cannot be moved, deleted or overwritten.'
   }
 };

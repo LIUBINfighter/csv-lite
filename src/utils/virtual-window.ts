@@ -58,3 +58,20 @@ export function computeVirtualWindow(
 		bottomPad: Math.max(0, (rows - end) * h),
 	};
 }
+
+/**
+ * 把「tbody 行空间」的窗口平移到 tableData 的真实行号上。
+ * 用于「首行为表头」模式：第 0 行在 thead 里，tbody 从第 1 行开始（issue #39）。
+ * spacer 高度（topPad/bottomPad）按 tbody 行数计算，保持不变。
+ */
+export function offsetVirtualWindow(
+	window: VirtualWindow,
+	offset: number
+): VirtualWindow {
+	if (!offset) return window;
+	return {
+		...window,
+		start: window.start + offset,
+		end: window.end + offset,
+	};
+}

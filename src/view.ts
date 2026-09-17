@@ -19,7 +19,7 @@ import { renderTable, renderCellDisplay } from "./view/table-render";
 import { HighlightManager } from "./utils/highlight-manager";
 import { setupHeaderContextMenu } from "./view/header-context-menu";
 import { isSearchShortcut } from "./utils/keyboard-utils";
-import { computeVirtualWindow } from "./utils/virtual-window";
+import { computeVirtualWindow, offsetVirtualWindow } from "./utils/virtual-window";
 
 export const VIEW_TYPE_CSV = "csv-lite-view";
 
@@ -103,6 +103,10 @@ export class CSVView extends TextFileView {
 	private stickyHeaders: boolean = true; // 表头默认固定
 	private stickyRowNumbers: boolean = true; // 行号默认固定
 
+	// issue #39：首行为表头（纯视图层开关，按文件持久化在插件 data.json）
+	private firstRowAsHeader: boolean = false;
+	private headerToggleButton: ButtonComponent | null = null;
+
 	constructor(leaf: any) {
 		super(leaf);
 		this.historyManager = new TableHistoryManager(
@@ -161,6 +165,9 @@ export class CSVView extends TextFileView {
 
 	setViewData(data: string, clear: boolean) {
 		try {
+			// 每个文件独立记住「首行为表头」状态（issue #39）
+			this.loadHeaderRowPreference();
+
 			// 使用新的分隔符设置解析CSV数据
 			this.tableData = CSVUtils.parseCSV(data, {
 				delimiter: this.delimiter,
@@ -282,20 +289,27 @@ export class CSVView extends TextFileView {
 			tableEl: this.tableEl,
 			requestSave: () => this.requestSave(),
 			onEditCell: (row, col) => this.beginCellEdit(row, col),
+			onEditHeader: (col) => this.beginCellEdit(0, col),
 			virtualWindow: this.buildVirtualWindow(),
+			firstRowAsHeader: this.firstRowAsHeader,
 			selectRow: (rowIndex) => this.highlightManager.selectRow(rowIndex),
 			selectColumn: (colIndex) => this.highlightManager.selectColumn(colIndex),
 			getColumnLabel: (index) => this.getColumnLabel(index),
 			setupColumnResize: (handle, columnIndex) => this.setupColumnResize(handle, columnIndex),
 			insertRowAt: (rowIndex, after = false) => {
 				this.saveSnapshot();
-				const idx = after ? rowIndex + 1 : rowIndex;
+				// 表头模式下不允许在表头行上方插行（issue #39）
+				const idx = Math.max(after ? rowIndex + 1 : rowIndex, this.getHeaderRowOffset());
 				this.tableData.splice(idx, 0, Array(this.tableData[0].length).fill(""));
 				this.refresh();
 				this.requestSave();
 			},
 			deleteRowAt: (rowIndex) => {
 				if (this.tableData.length <= 1) return;
+				if (this.isProtectedHeaderRow(rowIndex)) {
+					new Notice(i18n.t("notifications.headerRowProtected"));
+					return;
+				}
 				this.saveSnapshot();
 				this.tableData.splice(rowIndex, 1);
 				this.refresh();
@@ -347,6 +361,8 @@ export class CSVView extends TextFileView {
 			toggleRowSticky: (rowIndex: number) => this.toggleRowSticky(rowIndex),
 			toggleColumnSticky: (colIndex: number) => this.toggleColumnSticky(colIndex),
 		});
+
+		this.updateHeaderToggleButton();
 
 		// 延迟应用sticky样式，确保DOM已完全渲染
 		requestAnimationFrame(() => {
@@ -444,6 +460,54 @@ export class CSVView extends TextFileView {
 			num = Math.floor(num / 26) - 1;
 		} while (num >= 0);
 		return result;
+	}
+
+	// ================= issue #39：首行为表头 =================
+
+	private getMainPlugin(): any {
+		try {
+			return (this.app as any).plugins?.getPlugin?.('csv-lite') || null;
+		} catch (e) {
+			return null;
+		}
+	}
+
+	/** 从插件设置里读取当前文件的表头模式偏好 */
+	private loadHeaderRowPreference() {
+		const path = this.file?.path;
+		const plugin = this.getMainPlugin();
+		this.firstRowAsHeader = !!(path && plugin?.isHeaderRowEnabled?.(path));
+	}
+
+	/** 表头模式下数据行从第 1 行开始（第 0 行渲染在 thead 里） */
+	private getHeaderRowOffset(): number {
+		return this.firstRowAsHeader ? 1 : 0;
+	}
+
+	/** 切换「首行为表头」：只改视图，不写回文件 */
+	private toggleFirstRowAsHeader() {
+		// 先结束正在进行的编辑，再切换渲染方式
+		if (this.editingRow >= 0) this.commitCellEdit();
+		this.firstRowAsHeader = !this.firstRowAsHeader;
+		const path = this.file?.path;
+		const plugin = this.getMainPlugin();
+		if (path && plugin?.setHeaderRowEnabled) {
+			Promise.resolve(plugin.setHeaderRowEnabled(path, this.firstRowAsHeader)).catch(
+				(e) => console.warn('Failed to persist header row setting:', e)
+			);
+		}
+		this.updateHeaderToggleButton();
+		this.refresh();
+	}
+
+	private updateHeaderToggleButton() {
+		const el = this.headerToggleButton?.buttonEl;
+		if (!el) return;
+		el.classList.toggle('is-active', this.firstRowAsHeader);
+		el.setAttribute('aria-pressed', String(this.firstRowAsHeader));
+		el.title = i18n.t(
+			this.firstRowAsHeader ? 'buttons.toggleHeaderRowOff' : 'buttons.toggleHeaderRowOn'
+		);
 	}
 
 	// 设置活动单元格
@@ -554,8 +618,16 @@ export class CSVView extends TextFileView {
 		});
 	}
 
-	/** 根据行列号找到对应的 <td>（用 data-row，兼容虚拟化） */
+	/** 根据行列号找到对应的单元格（用 data-row，兼容虚拟化；表头行在 thead 里） */
 	private getCellTd(row: number, col: number): HTMLElement | null {
+		// issue #39：表头模式下第 0 行渲染在 thead
+		if (this.firstRowAsHeader && row === 0) {
+			return (
+				(this.tableEl?.querySelector(
+					`thead tr th:nth-child(${col + 2})`
+				) as HTMLElement) || null
+			);
+		}
 		const tr = this.tableEl?.querySelector(`tbody tr[data-row="${row}"]`);
 		if (!tr) return null;
 		const cells = tr.querySelectorAll("td");
@@ -594,16 +666,22 @@ export class CSVView extends TextFileView {
 		return Math.max(0, rect.top - tbodyTop);
 	}
 
+	/** tbody 里的数据行数（表头模式下第 0 行在 thead，不参与滚动，issue #39） */
+	private getBodyRowCount(): number {
+		return Math.max(0, this.tableData.length - this.getHeaderRowOffset());
+	}
+
 	/** 当前是否应对这张表启用虚拟化 */
 	private isVirtualizable(): boolean {
 		return (
-			this.tableData.length > VIRTUAL_THRESHOLD && this.stickyRows.size === 0
+			this.getBodyRowCount() > VIRTUAL_THRESHOLD && this.stickyRows.size === 0
 		);
 	}
 
 	/** 根据当前滚动位置算出要渲染的行窗口 */
 	private buildVirtualWindow() {
-		const rows = this.tableData.length;
+		const offset = this.getHeaderRowOffset();
+		const rows = this.getBodyRowCount();
 		if (!this.isVirtualizable()) {
 			if (
 				rows > VIRTUAL_THRESHOLD &&
@@ -613,17 +691,20 @@ export class CSVView extends TextFileView {
 				this.warnedVirtualDisabled = true;
 				new Notice(i18n.t("notifications.virtualDisabledBySticky"));
 			}
-			this.virtualStart = 0;
-			this.virtualEnd = rows;
-			return { start: 0, end: rows, topPad: 0, bottomPad: 0 };
+			this.virtualStart = offset;
+			this.virtualEnd = this.tableData.length;
+			return { start: offset, end: this.tableData.length, topPad: 0, bottomPad: 0 };
 		}
 		const scroller = this.getScrollContainer();
-		const w = computeVirtualWindow(
-			rows,
-			this.rowHeight,
-			scroller ? this.getScrolledOffset(scroller) : 0,
-			scroller ? scroller.clientHeight : 800,
-			VIRTUAL_OVERSCAN
+		const w = offsetVirtualWindow(
+			computeVirtualWindow(
+				rows,
+				this.rowHeight,
+				scroller ? this.getScrolledOffset(scroller) : 0,
+				scroller ? scroller.clientHeight : 800,
+				VIRTUAL_OVERSCAN
+			),
+			offset
 		);
 		this.virtualStart = w.start;
 		this.virtualEnd = w.end;
@@ -638,12 +719,16 @@ export class CSVView extends TextFileView {
 			this.virtualRafId = 0;
 			const scroller = this.getScrollContainer();
 			if (!scroller) return;
-			const w = computeVirtualWindow(
-				this.tableData.length,
-				this.rowHeight,
-				this.getScrolledOffset(scroller),
-				scroller.clientHeight,
-				VIRTUAL_OVERSCAN
+			const offset = this.getHeaderRowOffset();
+			const w = offsetVirtualWindow(
+				computeVirtualWindow(
+					this.getBodyRowCount(),
+					this.rowHeight,
+					this.getScrolledOffset(scroller),
+					scroller.clientHeight,
+					VIRTUAL_OVERSCAN
+				),
+				offset
 			);
 			if (w.start === this.virtualStart && w.end === this.virtualEnd) return;
 			// 编辑器可能正在被移除的行里，先提交
@@ -656,12 +741,18 @@ export class CSVView extends TextFileView {
 
 	/** 确保指定行在当前渲染窗口内（虚拟化下搜索跳转用） */
 	private ensureRowRendered(row: number) {
+		const offset = this.getHeaderRowOffset();
+		// 表头行始终在 thead 里，不需要滚动
+		if (row < offset) return;
 		if (!this.isVirtualizable()) return;
 		if (row >= this.virtualStart && row < this.virtualEnd) return;
 		const scroller = this.getScrollContainer();
 		if (scroller) {
 			const viewport = scroller.clientHeight || 600;
-			const target = Math.max(0, row * this.rowHeight - Math.floor(viewport / 2));
+			const target = Math.max(
+				0,
+				(row - offset) * this.rowHeight - Math.floor(viewport / 2)
+			);
 			const delta = target - this.getScrolledOffset(scroller);
 			scroller.scrollTop = Math.max(0, scroller.scrollTop + delta);
 		}
@@ -702,8 +793,15 @@ export class CSVView extends TextFileView {
 		this.editingOriginalValue = this.tableData[row][col];
 		this.editSnapshotTaken = false;
 
-		const display = td.querySelector(".csv-cell-display") as HTMLElement | null;
-		if (display) display.style.display = "none";
+		if (this.firstRowAsHeader && row === 0) {
+			// 编辑表头：先把列名文字层藏起来（issue #39）
+			td.querySelectorAll(".csv-col-letter, .csv-header-text").forEach((el) => {
+				(el as HTMLElement).style.display = "none";
+			});
+		} else {
+			const display = td.querySelector(".csv-cell-display") as HTMLElement | null;
+			if (display) display.style.display = "none";
+		}
 
 		td.appendChild(this.cellInput);
 		this.cellInput.style.display = "block";
@@ -754,9 +852,12 @@ export class CSVView extends TextFileView {
 	private moveEdit(dRow: number, dCol: number) {
 		const row = this.activeRowIndex >= 0 ? this.activeRowIndex : 0;
 		const col = this.activeColIndex >= 0 ? this.activeColIndex : 0;
+		// 在表头行里按 Tab 横向移动时不要掉进数据区（issue #39）
+		const minRow =
+			this.firstRowAsHeader && row === 0 ? 0 : this.getHeaderRowOffset();
 		const maxRow = Math.max(0, this.tableData.length - 1);
 		const maxCol = Math.max(0, (this.tableData[0]?.length || 1) - 1);
-		const nextRow = Math.min(Math.max(row + dRow, 0), maxRow);
+		const nextRow = Math.min(Math.max(row + dRow, minRow), maxRow);
 		const nextCol = Math.min(Math.max(col + dCol, 0), maxCol);
 		this.beginCellEdit(nextRow, nextCol);
 	}
@@ -764,11 +865,41 @@ export class CSVView extends TextFileView {
 	/** 刷新单个单元格的显示层（编辑提交后 / 编辑栏改动后） */
 	private updateCellDisplay(row: number, col: number) {
 		if (this.editingRow === row && this.editingCol === col) return;
+		// 表头行在 thead 里，刷新方式不同（issue #39）
+		if (this.firstRowAsHeader && row === 0) {
+			this.updateHeaderCellDisplay(col);
+			return;
+		}
 		const td = this.getCellTd(row, col);
 		if (!td || !this.tableData[row]) return;
 		renderCellDisplay(td, this.tableData[row][col], () =>
 			this.beginCellEdit(row, col)
 		);
+	}
+
+	/** 编辑提交后刷新 thead 里的表头文本（issue #39） */
+	private updateHeaderCellDisplay(col: number) {
+		const th = this.getCellTd(0, col);
+		if (!th || !this.tableData[0]) return;
+		const text = this.tableData[0][col] ?? "";
+		const letter = th.querySelector(".csv-col-letter") as HTMLElement | null;
+		if (letter) letter.style.display = "";
+		let textEl = th.querySelector(".csv-header-text") as HTMLElement | null;
+		if (!text) {
+			if (textEl) textEl.remove();
+		} else {
+			if (!textEl) {
+				textEl = th.createEl("span", { cls: "csv-header-text" });
+				if (letter) th.insertBefore(textEl, letter.nextSibling);
+			}
+			// 编辑时文字层被隐藏过，提交后要恢复显示
+			textEl.style.display = "";
+			textEl.textContent = text;
+			textEl.title = text;
+		}
+		th.title = text
+			? `${this.getColumnLabel(col)}: ${text}`
+			: this.getColumnLabel(col);
 	}
 
 	// 设置列宽调整功能
@@ -974,6 +1105,7 @@ export class CSVView extends TextFileView {
 				getCellAddress: (row: number, col: number) => this.getCellAddress(row, col),
 				jumpToCell: (row: number, col: number) => this.jumpToCell(row, col),
 				clearSearchHighlights: () => this.clearSearchHighlights(),
+				getStartRow: () => this.getHeaderRowOffset(),
 			});
 
 			// 撤销按钮
@@ -996,6 +1128,14 @@ export class CSVView extends TextFileView {
 					this.calculateColumnWidths();
 					this.refresh();
 				});
+
+			// 首行为表头开关（issue #39）：只影响视图，按文件记住
+			this.headerToggleButton = new ButtonComponent(buttonsGroup)
+				.setButtonText(i18n.t("buttons.toggleHeaderRow"))
+				.setIcon("heading")
+				.onClick(() => this.toggleFirstRowAsHeader());
+			this.headerToggleButton.buttonEl.classList.add("csv-header-toggle");
+			this.updateHeaderToggleButton();
 
 			// 紧凑型：分隔符下拉（放在重置按钮旁，便于快速切换），使用简短的Label
 			const delimiterContainer = buttonsGroup.createEl('div', { cls: 'csv-delimiter-compact' });
@@ -1338,9 +1478,18 @@ export class CSVView extends TextFileView {
 		this.leaf.detach(); // 新增：切换后关闭当前 leaf
 	}
 
+	/** 表头行不能被移动/删除/被其它行覆盖（issue #39） */
+	private isProtectedHeaderRow(rowIndex: number): boolean {
+		return this.firstRowAsHeader && rowIndex < 1;
+	}
+
 	// 新增：移动行/列方法
 	moveRow(fromIndex: number, toIndex: number) {
 		if (fromIndex < 0 || toIndex < 0 || fromIndex >= this.tableData.length || toIndex >= this.tableData.length) return;
+		if (this.isProtectedHeaderRow(fromIndex) || this.isProtectedHeaderRow(toIndex)) {
+			new Notice(i18n.t("notifications.headerRowProtected"));
+			return;
+		}
 		this.saveSnapshot();
 		const row = this.tableData.splice(fromIndex, 1)[0];
 		this.tableData.splice(toIndex, 0, row);
@@ -1498,13 +1647,18 @@ export class CSVView extends TextFileView {
 	// 右键菜单专用插入/删除行列方法，带快照和保存
 	private refreshInsertRow(rowIdx: number, after: boolean) {
 		this.saveSnapshot();
-		const idx = after ? rowIdx + 1 : rowIdx;
+		// 表头模式下不允许在表头行上方插行（issue #39）
+		const idx = Math.max(after ? rowIdx + 1 : rowIdx, this.getHeaderRowOffset());
 		this.tableData.splice(idx, 0, Array(this.tableData[0].length).fill(""));
 		this.refresh();
 		this.requestSave();
 	}
 	private refreshDeleteRow(rowIdx: number) {
 		if (this.tableData.length <= 1) return;
+		if (this.isProtectedHeaderRow(rowIdx)) {
+			new Notice(i18n.t("notifications.headerRowProtected"));
+			return;
+		}
 		this.saveSnapshot();
 		this.tableData.splice(rowIdx, 1);
 		this.refresh();

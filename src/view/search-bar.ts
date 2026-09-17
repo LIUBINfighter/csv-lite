@@ -7,6 +7,8 @@ export interface SearchBarOptions {
   getCellAddress: (row: number, col: number) => string;
   jumpToCell: (row: number, col: number) => void;
   clearSearchHighlights: () => void;
+  /** 搜索起始行（表头模式下跳过第 0 行，issue #39） */
+  getStartRow?: () => number;
 }
 
 export class SearchBar {
@@ -92,7 +94,8 @@ export class SearchBar {
     }
     const searchTerm = query.toLowerCase().trim();
     const tableData = this.options.getTableData();
-    for (let i = 0; i < tableData.length; i++) {
+    const startRow = Math.max(0, this.options.getStartRow?.() ?? 0);
+    for (let i = startRow; i < tableData.length; i++) {
       for (let j = 0; j < tableData[i].length; j++) {
         const cellValue = tableData[i][j];
         if (cellValue.toLowerCase().includes(searchTerm)) {
