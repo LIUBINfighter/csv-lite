@@ -810,6 +810,94 @@ td.csv-row-number{
 	border-radius: 4px;
 }
 
+/* 源码视图（CodeMirror）容器与编辑器样式。
+   以前通过动态 <style> 注入，现改为静态 styles.css。 */
+.csv-source-editor-container {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.csv-source-toolbar {
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	font-weight: 500;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.csv-source-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.csv-source-button-group {
+	display: flex;
+	gap: 4px;
+}
+
+.csv-source-button {
+	background: var(--interactive-normal);
+	color: var(--text-normal);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	padding: 4px 8px;
+	font-size: 12px;
+	cursor: pointer;
+	transition: all 0.1s ease;
+}
+
+.csv-source-button:hover {
+	background: var(--interactive-hover);
+}
+
+.csv-source-cm-container {
+	flex: 1;
+	overflow: auto;
+	height: 100%;
+}
+
+.csv-source-cm-container .cm-editor {
+	height: 100%;
+}
+
+.csv-source-cm-container .cm-scroller {
+	font-family: var(--font-monospace);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.csv-source-cm-container .cm-content {
+	padding: 12px;
+}
+
+.cm-line .csv-separator-highlight {
+	color: var(--color-accent);
+	font-weight: bold;
+	background: var(--background-modifier-active-hover);
+	border-radius: 2px;
+}
+
+.csv-source-cm-container .cm-cursor {
+	border-left: 2px solid var(--color-accent);
+	background: none;
+	opacity: 1;
+	z-index: 10;
+}
+
+.csv-source-cm-container .cm-gutters {
+	background: var(--background-secondary);
+	color: var(--text-faint);
+	border-right: 1px solid var(--background-modifier-border);
+}
+
+.csv-source-cm-container .cm-lineNumbers .cm-gutterElement {
+	color: var(--text-faint);
+}
+
 /* 暂时隐藏行和列操作按钮 */
 .csv-insert-row-btn,
 .csv-insert-col-btn,

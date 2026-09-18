@@ -8,12 +8,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Use Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "18.x"
 
@@ -22,11 +26,13 @@ jobs:
           npm install
           npm run build
 
-      - name: Package plugin
-        run: |
-          mkdir csv-lite
-          cp main.js manifest.json styles.css csv-lite/
-          zip -r csv-lite.zip csv-lite/
+      - name: Generate artifact attestation
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
 
       - name: Create release
         env:
@@ -37,4 +43,5 @@ jobs:
           gh release create "$tag" \
             --title="$tag" \
             --draft \
-            main.js manifest.json styles.css csv-lite.zip
+            --generate-notes \
+            main.js manifest.json styles.css

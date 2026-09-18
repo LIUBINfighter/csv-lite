@@ -27,14 +27,7 @@ export default class CSVPlugin extends Plugin {
 		await this.loadSettings();
 
 		// 使用 moment.locale() 来安全地获取 Obsidian 的当前语言设置
-		const obsidianLang = moment.locale();
-		i18n.setLocale(obsidianLang);
-		console.log(`CSV Plugin: Setting locale to '${obsidianLang}'`);
-		console.log(
-			`CSV Plugin: Test translation - buttons.undo: '${i18n.t(
-				"buttons.undo"
-			)}'`
-		);
+		i18n.setLocale(moment.locale());
 
 		// 注册CSV视图类型
 		this.registerView(
@@ -56,7 +49,7 @@ export default class CSVPlugin extends Plugin {
 			id: 'csv-lite-create-new-csv-file',
 			name: i18n.t('commands.createNewCsv'),
 			callback: () => {
-				this.createCsvInFolder('');
+				void this.createCsvInFolder('');
 			}
 		});
 
@@ -68,13 +61,12 @@ export default class CSVPlugin extends Plugin {
 						.setIcon('file-plus')
 						.onClick(() => {
 							let defaultFolder = '';
-							if ((file as any).path) {
-								const fp = (file as any).path as string;
+							if (file.path) {
 								// if path has a slash, take parent folder
-								const idx = fp.lastIndexOf('/');
-								if (idx > 0) defaultFolder = fp.substring(0, idx);
+								const idx = file.path.lastIndexOf('/');
+								if (idx > 0) defaultFolder = file.path.substring(0, idx);
 							}
-							this.createCsvInFolder(defaultFolder);
+							void this.createCsvInFolder(defaultFolder);
 						});
 				});
 			})
@@ -87,7 +79,7 @@ export default class CSVPlugin extends Plugin {
 				if (map && map[oldPath]) {
 					delete map[oldPath];
 					map[file.path] = true;
-					this.saveSettings();
+					void this.saveSettings();
 				}
 			})
 		);

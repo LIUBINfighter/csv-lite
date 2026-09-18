@@ -1,5 +1,4 @@
 import { TableUtils } from "../utils/table-utils";
-import { CSVUtils } from "../utils/csv-utils";
 import { i18n } from "../i18n";
 import { setIcon } from "obsidian";
 import { containsUrl, createUrlDisplay } from "../utils/url-utils";
@@ -77,10 +76,6 @@ export function renderTable(options: TableRenderOptions) {
     selectColumn,
     getColumnLabel,
     setupColumnResize,
-    insertRowAt,
-    deleteRowAt,
-    insertColAt,
-    deleteColAt,
     onEditCell,
     onEditHeader,
     virtualWindow,
@@ -102,10 +97,15 @@ export function renderTable(options: TableRenderOptions) {
   tableEl.classList.toggle("csv-header-row-mode", !!firstRowAsHeader);
 
   // 拖拽状态变量移到函数外部作用域
-  if (!(window as any)._csvLiteDragState) {
-    (window as any)._csvLiteDragState = { type: null, index: null };
+  interface DragState {
+    type: 'row' | 'col' | null;
+    index: number | null;
   }
-  const dragState: { type: 'row' | 'col' | null, index: number | null } = (window as any)._csvLiteDragState;
+  const win = window as unknown as { _csvLiteDragState?: DragState };
+  if (!win._csvLiteDragState) {
+    win._csvLiteDragState = { type: null, index: null };
+  }
+  const dragState: DragState = win._csvLiteDragState;
   function setDragState(type: 'row' | 'col' | null, index: number | null) {
     dragState.type = type;
     dragState.index = index;
@@ -124,7 +124,7 @@ export function renderTable(options: TableRenderOptions) {
   const headerRow = tableEl.createEl("thead").createEl("tr");
 
   // 添加左上角单元格
-  const cornerTh = headerRow.createEl("th", { cls: "csv-corner-cell" });
+  headerRow.createEl("th", { cls: "csv-corner-cell" });
 
   // 创建列号行
   if (tableData[0]) {

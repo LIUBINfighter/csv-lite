@@ -63,7 +63,7 @@ export class HighlightManager {
 			`th:nth-child(${colIndex + 2}), td:nth-child(${colIndex + 2})`
 		);
 		columnCells?.forEach((cell) => {
-			if (cell instanceof HTMLElement) {
+			if (cell.instanceOf(HTMLElement)) {
 				cell.classList.add("csv-col-selected");
 			}
 		});
@@ -74,7 +74,7 @@ export class HighlightManager {
 			".csv-row-selected, .csv-col-selected"
 		);
 		selectedElements?.forEach((el) => {
-			if (el instanceof HTMLElement) {
+			if (el.instanceOf(HTMLElement)) {
 				el.classList.remove("csv-row-selected");
 				el.classList.remove("csv-col-selected");
 			}

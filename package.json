@@ -1,6 +1,6 @@
 {
   "name": "obsidian-csv",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "description": "CSV viewer and editor for Obsidian",
   "main": "main.js",
   "scripts": {
@@ -16,13 +16,14 @@
   "dependencies": {
     "@codemirror/commands": "^6.8.1",
     "@codemirror/language": "^6.11.1",
+    "@codemirror/state": "^6.7.5",
+    "@codemirror/view": "^6.43.12",
     "papaparse": "^5.4.1"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",
     "@types/node": "^16.11.6",
     "@types/papaparse": "^5.3.7",
-    "builtin-modules": "^3.3.0",
     "esbuild": "^0.27.2",
     "jest": "^29.7.0",
     "obsidian": "latest",

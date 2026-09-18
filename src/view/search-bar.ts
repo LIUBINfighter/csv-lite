@@ -49,10 +49,10 @@ export class SearchBar {
   }
 
   private setupSearchEvents() {
-    let searchTimeout: NodeJS.Timeout;
+    let searchTimeout: number;
     this.searchInput.addEventListener("input", () => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => {
+      window.clearTimeout(searchTimeout);
+      searchTimeout = window.setTimeout(() => {
         this.performSearch(this.searchInput.value);
       }, 300);
     });
@@ -137,7 +137,7 @@ export class SearchBar {
       const preview = resultItem.createEl("div", {
         cls: "csv-search-result-preview",
       });
-      preview.innerHTML = this.highlightSearchTerm(match.value, query);
+      this.renderHighlightedPreview(preview, match.value, query);
       resultItem.addEventListener("click", () => {
         this.options.jumpToCell(match.row, match.col);
         this.hideSearchResults();
@@ -157,10 +157,34 @@ export class SearchBar {
     this.searchResults.classList.add("show");
   }
 
-  private highlightSearchTerm(text: string, searchTerm: string): string {
-    if (!searchTerm.trim()) return text;
-    const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<span class="csv-search-highlight">$1</span>');
+  /**
+   * 把单元格文本渲染进预览并高亮匹配片段。
+   * 用 DOM 构建而不是拼 innerHTML，避免注入风险。
+   */
+  private renderHighlightedPreview(
+    preview: HTMLElement,
+    text: string,
+    searchTerm: string
+  ) {
+    preview.empty();
+    const needle = searchTerm.trim().toLowerCase();
+    if (!needle) {
+      preview.appendText(text);
+      return;
+    }
+    const haystack = text.toLowerCase();
+    let cursor = 0;
+    let found = haystack.indexOf(needle, cursor);
+    while (found >= 0) {
+      if (found > cursor) preview.appendText(text.slice(cursor, found));
+      preview.createSpan({
+        cls: "csv-search-highlight",
+        text: text.slice(found, found + needle.length),
+      });
+      cursor = found + needle.length;
+      found = haystack.indexOf(needle, cursor);
+    }
+    if (cursor < text.length) preview.appendText(text.slice(cursor));
   }
 
   private navigateSearchResults(direction: number) {

@@ -44,9 +44,9 @@ export class CreateCsvModal extends Modal {
     // buttons
     const btnContainer = contentEl.createDiv({ cls: 'mod-cta-container' });
     const submitBtn = btnContainer.createEl('button', { text: i18n.t('buttons.create') || 'Create' });
-    submitBtn.addEventListener('click', async (e) => {
+    submitBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      await this.handleSubmit();
+      void this.handleSubmit();
     });
 
     const cancelBtn = btnContainer.createEl('button', { text: i18n.t('buttons.cancel') || 'Cancel' });
