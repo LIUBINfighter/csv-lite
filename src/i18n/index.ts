@@ -62,13 +62,13 @@ export class I18n {
 
   // 辅助方法，用于查找翻译
   private getTranslation(key: string, locale: Locale): string | null {
-    const translation = LOCALE[locale];
+    const translation: unknown = LOCALE[locale];
     const keys = key.split('.');
-    let result: any = translation;
+    let result: unknown = translation;
 
     for (const k of keys) {
       if (result && typeof result === 'object' && k in result) {
-        result = result[k];
+        result = (result as Record<string, unknown>)[k];
       } else {
         return null; // 找不到则返回 null
       }

@@ -755,6 +755,19 @@ td.csv-row-number{
 	background-color: var(--background-modifier-hover);
 }
 
+/* 无结果提示 */
+.csv-search-result-empty {
+	color: var(--text-muted);
+	cursor: default;
+}
+
+/* 「还有 N 个结果」提示 */
+.csv-search-result-more {
+	color: var(--text-muted);
+	font-style: italic;
+	cursor: default;
+}
+
 .csv-search-result-cell {
 	font-weight: 600;
 	color: var(--interactive-accent);

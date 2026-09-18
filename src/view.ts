@@ -29,6 +29,14 @@ const VIRTUAL_THRESHOLD = 150;
 // 可视区上下各多渲染几行，避免快速滚动露白。
 const VIRTUAL_OVERSCAN = 8;
 
+/** 主插件在视图侧用到的接口（避免 any） */
+interface CsvLitePluginApi {
+	settings?: { preferredDelimiter?: string };
+	saveSettings?: () => Promise<void>;
+	isHeaderRowEnabled?: (path: string) => boolean;
+	setHeaderRowEnabled?: (path: string, enabled: boolean) => Promise<void>;
+}
+
 export class CSVView extends TextFileView {
 	public file: TFile | null;
 	public headerEl: HTMLElement;
@@ -87,16 +95,14 @@ export class CSVView extends TextFileView {
 	private searchMatches: Array<{row: number, col: number, value: string}> = [];
 	private currentSearchIndex: number = -1;
 
-	// 新增：源码模式相关属性
-	private isSourceMode: boolean = false;
-	private sourceTextarea: HTMLTextAreaElement | null = null;
-	private sourceCursorPos: { start: number, end: number } = { start: 0, end: 0 };
-
 	// 新增：搜索栏属性
 	private searchBar: SearchBar | null = null;
 
 	// 新增：header context menu 解绑函数
 	private headerContextMenuCleanup: (() => void) | null = null;
+
+	// 表格容器的点击处理器（刷新时替换，避免在 this 上挂 expando）
+	private tableClickHandler: ((e: MouseEvent) => void) | null = null;
 
 	// 新增：固定行列功能
 	private stickyRows: Set<number> = new Set();
@@ -234,40 +240,6 @@ export class CSVView extends TextFileView {
 	refresh() {
 		// Safety check: ensure tableEl exists
 		if (!this.contentEl) return;
-		this.contentEl.querySelectorAll('.csv-source-mode').forEach(el => el.remove());
-		// if (this.isSourceMode) {
-		// 	// 源码模式：显示textarea
-		// 	let textarea = this.sourceTextarea;
-		// 	if (!textarea) {
-		// 		textarea = document.createElement('textarea');
-		// 		textarea.className = 'csv-source-mode';
-		// 		textarea.style.width = '100%';
-		// 		textarea.style.height = '60vh';
-		// 		this.sourceTextarea = textarea;
-		// 	}
-		// 	textarea.value = CSVUtils.unparseCSV(this.tableData);
-		// 	this.contentEl.appendChild(textarea);
-		// 	// 恢复光标
-		// 	if (this.sourceCursorPos && textarea) {
-		// 		setTimeout(() => {
-		// 			if (textarea) {
-		// 				textarea.selectionStart = this.sourceCursorPos.start;
-		// 				textarea.selectionEnd = this.sourceCursorPos.end;
-		// 				textarea.focus();
-		// 			}
-		// 		}, 0);
-		// 	}
-		// 	// 监听内容变更
-		// 	textarea.oninput = () => {
-		// 		try {
-		// 			if (textarea) {
-		// 				this.tableData = CSVUtils.parseCSV(textarea.value, { delimiter: this.delimiter, quoteChar: this.quoteChar });
-		// 				this.requestSave();
-		// 			}
-		// 		} catch { /* 插件不可用时忽略 */ }
-		// 	};
-		// 	return;
-		// }
 
 		// renderTable 会清空 tableEl；先把共享编辑器收回来，避免它被一并删掉（issue #51）
 		this.detachCellEditor();
@@ -373,15 +345,14 @@ export class CSVView extends TextFileView {
 			const tableWidth = this.tableEl.offsetWidth;
 			topScroll.empty();
 			const spacer = topScroll.createDiv();
-			spacer.style.width = tableWidth + 'px';
-			spacer.style.height = '1px';
+			spacer.setCssStyles({ width: tableWidth + 'px', height: '1px' });
 		}
 
 		// 新增：每次刷新后为表格父容器绑定点击事件，点击非头部区域时清除高亮
 		const tableContainer = this.tableEl.parentElement;
 		if (tableContainer) {
-			if ((this as any)._csvTableClickHandler) {
-				tableContainer.removeEventListener('click', (this as any)._csvTableClickHandler);
+			if (this.tableClickHandler) {
+				tableContainer.removeEventListener('click', this.tableClickHandler);
 			}
 			const handler = (e: MouseEvent) => {
 				const target = e.target as HTMLElement;
@@ -394,7 +365,7 @@ export class CSVView extends TextFileView {
 				}
 				this.highlightManager.clearSelection();
 			};
-			(this as any)._csvTableClickHandler = handler;
+			this.tableClickHandler = handler;
 			tableContainer.addEventListener('click', handler);
 		}
 
@@ -452,9 +423,12 @@ export class CSVView extends TextFileView {
 
 	// ================= issue #39：首行为表头 =================
 
-	private getMainPlugin(): any {
+	private getMainPlugin(): CsvLitePluginApi | null {
 		try {
-			return (this.app as any).plugins?.getPlugin?.('csv-lite') || null;
+			const app = this.app as unknown as {
+				plugins?: { getPlugin?: (id: string) => CsvLitePluginApi };
+			};
+			return app.plugins?.getPlugin?.('csv-lite') ?? null;
 		} catch {
 			return null;
 		}
@@ -611,16 +585,16 @@ export class CSVView extends TextFileView {
 		// issue #39：表头模式下第 0 行渲染在 thead
 		if (this.firstRowAsHeader && row === 0) {
 			return (
-				(this.tableEl?.querySelector(
+				this.tableEl?.querySelector<HTMLElement>(
 					`thead tr th:nth-child(${col + 2})`
-				) as HTMLElement) || null
+				) || null
 			);
 		}
 		const tr = this.tableEl?.querySelector(`tbody tr[data-row="${row}"]`);
 		if (!tr) return null;
 		const cells = tr.querySelectorAll("td");
 		// cells[0] 是行号列，数据列从 1 开始
-		return (cells[col + 1] as HTMLElement) || null;
+		return cells[col + 1] || null;
 	}
 
 	// ================= A2：行虚拟化（issue #51） =================
@@ -751,9 +725,9 @@ export class CSVView extends TextFileView {
 	/** 量一下真实行高，让 spacer 高度与渲染行一致 */
 	private measureRowHeight() {
 		if (!this.isVirtualizable()) return;
-		const firstRow = this.tableEl?.querySelector(
+		const firstRow = this.tableEl?.querySelector<HTMLElement>(
 			"tbody tr.csv-data-row"
-		) as HTMLElement | null;
+		);
 		if (firstRow && firstRow.offsetHeight > 0) {
 			this.rowHeight = firstRow.offsetHeight;
 		}
@@ -783,15 +757,15 @@ export class CSVView extends TextFileView {
 		if (this.firstRowAsHeader && row === 0) {
 			// 编辑表头：先把列名文字层藏起来（issue #39）
 			td.querySelectorAll(".csv-col-letter, .csv-header-text").forEach((el) => {
-				(el as HTMLElement).style.display = "none";
+				(el as HTMLElement).setCssStyles({ display: "none" });
 			});
 		} else {
-			const display = td.querySelector(".csv-cell-display") as HTMLElement | null;
-			if (display) display.style.display = "none";
+			const display = td.querySelector<HTMLElement>(".csv-cell-display");
+			if (display) display.setCssStyles({ display: "none" });
 		}
 
 		td.appendChild(this.cellInput);
-		this.cellInput.style.display = "block";
+		this.cellInput.setCssStyles({ display: "block" });
 		this.cellInput.value = this.editingOriginalValue;
 		this.setActiveCell(row, col, td);
 		this.cellInput.focus();
@@ -830,7 +804,7 @@ export class CSVView extends TextFileView {
 	/** 提交后把编辑器移回 holder 并隐藏 */
 	private detachCellEditor() {
 		if (this.cellInput) {
-			this.cellInput.style.display = "none";
+			this.cellInput.setCssStyles({ display: "none" });
 			this.cellEditorHolder?.appendChild(this.cellInput);
 		}
 	}
@@ -869,18 +843,18 @@ export class CSVView extends TextFileView {
 		const th = this.getCellTd(0, col);
 		if (!th || !this.tableData[0]) return;
 		const text = this.tableData[0][col] ?? "";
-		const letter = th.querySelector(".csv-col-letter") as HTMLElement | null;
-		if (letter) letter.style.display = "";
-		let textEl = th.querySelector(".csv-header-text") as HTMLElement | null;
+		const letter = th.querySelector<HTMLElement>(".csv-col-letter");
+		if (letter) letter.setCssStyles({ display: "" });
+		let textEl = th.querySelector<HTMLElement>(".csv-header-text");
 		if (!text) {
 			if (textEl) textEl.remove();
 		} else {
 			if (!textEl) {
-				textEl = th.createEl("span", { cls: "csv-header-text" });
+				textEl = th.createSpan({ cls: "csv-header-text" });
 				if (letter) th.insertBefore(textEl, letter.nextSibling);
 			}
 			// 编辑时文字层被隐藏过，提交后要恢复显示
-			textEl.style.display = "";
+			textEl.setCssStyles({ display: "" });
 			textEl.textContent = text;
 			textEl.title = text;
 		}
@@ -918,7 +892,7 @@ export class CSVView extends TextFileView {
 				// 最小宽度限制
 				this.columnWidths[columnIndex] = width;
 				for (const cell of affectedCells) {
-					cell.style.width = `${width}px`;
+					cell.setCssStyles({ width: `${width}px` });
 				}
 			}
 		};
@@ -1015,12 +989,12 @@ export class CSVView extends TextFileView {
 			this.contentEl.empty();
 
 			// 创建操作区
-			this.operationEl = this.contentEl.createEl("div", {
+			this.operationEl = this.contentEl.createDiv({
 				cls: "csv-operations",
 			});
 
 			// 新增：解析器设置UI
-			const parserSettingsEl = this.operationEl.createEl("div", {
+			const parserSettingsEl = this.operationEl.createDiv({
 				cls: "csv-parser-settings",
 			});
 
@@ -1031,7 +1005,7 @@ export class CSVView extends TextFileView {
 				.addDropdown((dropdown: DropdownComponent) => {
 					// 初始值：优先使用主插件的全局偏好
 					try {
-						const mainPlugin: any = (this.app as any).plugins?.getPlugin?.('csv-lite');
+						const mainPlugin = this.getMainPlugin();
 						if (mainPlugin && mainPlugin.settings && mainPlugin.settings.preferredDelimiter) {
 							this.delimiter = mainPlugin.settings.preferredDelimiter;
 						}
@@ -1050,7 +1024,7 @@ export class CSVView extends TextFileView {
 						this.delimiter = value === '\\t' ? '\t' : value;
 						// 保存全局偏好（如果主插件可用）
 						try {
-							const mainPlugin: any = (this.app as any).plugins?.getPlugin?.('csv-lite');
+							const mainPlugin = this.getMainPlugin();
 							if (mainPlugin && typeof mainPlugin.saveSettings === 'function') {
 								mainPlugin.settings = { ...(mainPlugin.settings || {}), preferredDelimiter: this.delimiter };
 								await mainPlugin.saveSettings();
@@ -1075,15 +1049,15 @@ export class CSVView extends TextFileView {
 				});
 
 			// 创建操作按钮容器（外层flex，两端对齐）
-			const buttonContainer = this.operationEl.createEl("div", {
+			const buttonContainer = this.operationEl.createDiv({
 				cls: "csv-operation-buttons",
 			});
 			// 按钮组（左侧）
-			const buttonsGroup = buttonContainer.createEl("div", {
+			const buttonsGroup = buttonContainer.createDiv({
 				cls: "csv-buttons-group"
 			});
 			// 搜索栏（右侧）
-			const searchBarContainer = buttonContainer.createEl("div", {
+			const searchBarContainer = buttonContainer.createDiv({
 				cls: "csv-search-bar-container"
 			});
 			this.searchBar = new SearchBar(searchBarContainer, {
@@ -1126,12 +1100,12 @@ export class CSVView extends TextFileView {
 			this.updateHeaderToggleButton();
 
 			// 紧凑型：分隔符下拉（放在重置按钮旁，便于快速切换），使用简短的Label
-			const delimiterContainer = buttonsGroup.createEl('div', { cls: 'csv-delimiter-compact' });
+			const delimiterContainer = buttonsGroup.createDiv({ cls: 'csv-delimiter-compact' });
 			new Setting(delimiterContainer)
 				.addDropdown((dropdown: DropdownComponent) => {
 					// 初始化值（与 parser settings 保持一致）
 					try {
-						const mainPlugin: any = (this.app as any).plugins?.getPlugin?.('csv-lite');
+						const mainPlugin = this.getMainPlugin();
 						if (mainPlugin && mainPlugin.settings && mainPlugin.settings.preferredDelimiter) {
 							this.delimiter = mainPlugin.settings.preferredDelimiter;
 						}
@@ -1147,7 +1121,7 @@ export class CSVView extends TextFileView {
 						this.delimiter = value === '\\t' ? '\t' : value;
 						// 保存偏好
 						try {
-							const mainPlugin: any = (this.app as any).plugins?.getPlugin?.('csv-lite');
+							const mainPlugin = this.getMainPlugin();
 							if (mainPlugin && typeof mainPlugin.saveSettings === 'function') {
 								mainPlugin.settings = { ...(mainPlugin.settings || {}), preferredDelimiter: this.delimiter };
 								await mainPlugin.saveSettings();
@@ -1162,7 +1136,7 @@ export class CSVView extends TextFileView {
 
 
 			// 编辑栏（sticky工具栏内，按钮和搜索栏之后）
-			this.editBarEl = this.operationEl.createEl("div", {
+			this.editBarEl = this.operationEl.createDiv({
 				cls: "csv-edit-bar",
 			});
 			this.editInput = this.editBarEl.createEl("input", {
@@ -1184,16 +1158,16 @@ export class CSVView extends TextFileView {
 			});
 
 			// 创建顶部横向滚动条（移动到工具栏下方）
-			const topScrollContainer = this.operationEl.createEl("div", {
+			const topScrollContainer = this.operationEl.createDiv({
 				cls: "scroll-container top-scroll",
 			});
 
 			// 创建表格区域 - 移除顶部滚动条
-			const tableWrapper = this.contentEl.createEl("div", {
+			const tableWrapper = this.contentEl.createDiv({
 				cls: "table-wrapper",
 			});
 			// 主表格容器
-			const tableContainer = tableWrapper.createEl("div", {
+			const tableContainer = tableWrapper.createDiv({
 				cls: "table-container main-scroll",
 			});
 			this.tableEl = tableContainer.createEl("table", {
@@ -1207,7 +1181,7 @@ export class CSVView extends TextFileView {
 
 			// A1（issue #51）：只创建一个共享的单元格编辑器，
 			// 编辑时临时移入目标 <td>，避免每格一个 <input>。
-			this.cellEditorHolder = this.contentEl.createEl("div", {
+			this.cellEditorHolder = this.contentEl.createDiv({
 				cls: "csv-cell-editor-holder",
 			});
 			this.cellInput = this.cellEditorHolder.createEl("input", {
@@ -1312,7 +1286,7 @@ export class CSVView extends TextFileView {
 
 			// Try to recover with minimal UI
 			this.contentEl.empty();
-			const errorDiv = this.contentEl.createEl("div", {
+			const errorDiv = this.contentEl.createDiv({
 				cls: "csv-error",
 			});
 			errorDiv.createEl("h3", { text: "Error opening CSV file" });
@@ -1511,18 +1485,17 @@ export class CSVView extends TextFileView {
 		this.tableEl.querySelectorAll('.csv-sticky-row, .csv-sticky-col, .csv-sticky-header, .csv-sticky-row-number').forEach(el => {
 			el.classList.remove('csv-sticky-row', 'csv-sticky-col', 'csv-sticky-header', 'csv-sticky-row-number');
 			// 清除之前设置的内联样式
-			(el as HTMLElement).style.removeProperty('left');
-			(el as HTMLElement).style.removeProperty('top');
+			(el as HTMLElement).setCssStyles({ left: '', top: '' });
 		});
 			// 计算行号的实际宽度
 			const getRowNumberWidth = (): number => {
-				const firstRowNumber = this.tableEl.querySelector('tbody tr.csv-data-row td:first-child') as HTMLElement;
+				const firstRowNumber = this.tableEl.querySelector<HTMLElement>('tbody tr.csv-data-row td:first-child');
 				return firstRowNumber ? firstRowNumber.offsetWidth : 40; // 默认40px
 			};
 
 			// 获取表头的实际高度
 			const getHeaderHeight = (): number => {
-				const headerRow = this.tableEl.querySelector('thead tr') as HTMLElement;
+				const headerRow = this.tableEl.querySelector<HTMLElement>('thead tr');
 				return headerRow ? headerRow.offsetHeight : 30; // 默认30px
 			};
 
@@ -1560,28 +1533,27 @@ export class CSVView extends TextFileView {
 
 		// 默认固定表头行（A、B、C、D...）
 		if (this.stickyHeaders) {
-			const headerCells = this.tableEl.querySelectorAll('thead tr th');
+			const headerCells = this.tableEl.querySelectorAll<HTMLElement>('thead tr th');
 			headerCells.forEach(cell => {
 				cell.classList.add('csv-sticky-header');
-				(cell as HTMLElement).style.top = '0px';
+				cell.setCssStyles({ top: '0px' });
 			});
 		}
 
 		// 默认固定行号列（0、1、2、3...）
 		if (this.stickyRowNumbers) {
 			// 行号列在表头中（左上角）
-			const headerRowNumber = this.tableEl.querySelector('thead tr th:first-child') as HTMLElement;
+			const headerRowNumber = this.tableEl.querySelector<HTMLElement>('thead tr th:first-child');
 			if (headerRowNumber) {
 				headerRowNumber.classList.add('csv-sticky-row-number');
-				headerRowNumber.style.left = '0px';
-				headerRowNumber.style.top = '0px';
+				headerRowNumber.setCssStyles({ left: '0px', top: '0px' });
 			}
 			
 			// 行号列在数据行中
-			const rowNumberCells = this.tableEl.querySelectorAll('tbody tr.csv-data-row td:first-child');
+			const rowNumberCells = this.tableEl.querySelectorAll<HTMLElement>('tbody tr.csv-data-row td:first-child');
 			rowNumberCells.forEach(cell => {
 				cell.classList.add('csv-sticky-row-number');
-				(cell as HTMLElement).style.left = '0px';
+				cell.setCssStyles({ left: '0px' });
 			});
 		}
 
@@ -1589,10 +1561,10 @@ export class CSVView extends TextFileView {
 		this.stickyRows.forEach(rowIndex => {
 			const stickyTop = calculateStickyRowsHeight(rowIndex);
 			// 数据行（在tbody中，从第1个tr开始）
-			const rowCells = this.tableEl.querySelectorAll(`tbody tr[data-row="${rowIndex}"] td`);
+			const rowCells = this.tableEl.querySelectorAll<HTMLElement>(`tbody tr[data-row="${rowIndex}"] td`);
 			rowCells.forEach(cell => {
 				cell.classList.add('csv-sticky-row');
-				(cell as HTMLElement).style.top = `${stickyTop}px`;
+				cell.setCssStyles({ top: `${stickyTop}px` });
 			});
 		});
 
@@ -1601,18 +1573,17 @@ export class CSVView extends TextFileView {
 			const stickyLeft = calculateStickyColumnsWidth(colIndex);
 			
 			// 列头（在thead中，跳过行号列）
-			const headerCell = this.tableEl.querySelector(`thead tr th:nth-child(${colIndex + 2})`) as HTMLElement;
+			const headerCell = this.tableEl.querySelector<HTMLElement>(`thead tr th:nth-child(${colIndex + 2})`);
 			if (headerCell) {
 				headerCell.classList.add('csv-sticky-col');
-				headerCell.style.left = `${stickyLeft}px`;
-				headerCell.style.top = '0px';
+				headerCell.setCssStyles({ left: `${stickyLeft}px`, top: '0px' });
 			}
 			
 			// 数据列（在tbody的所有行中，跳过行号列）
-			const dataCells = this.tableEl.querySelectorAll(`tbody tr.csv-data-row td:nth-child(${colIndex + 2})`);
+			const dataCells = this.tableEl.querySelectorAll<HTMLElement>(`tbody tr.csv-data-row td:nth-child(${colIndex + 2})`);
 			dataCells.forEach(cell => {
 				cell.classList.add('csv-sticky-col');
-				(cell as HTMLElement).style.left = `${stickyLeft}px`;
+				cell.setCssStyles({ left: `${stickyLeft}px` });
 			});
 		});
 	}

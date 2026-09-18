@@ -58,9 +58,9 @@ export function renderCellDisplay(
   const old = td.querySelector(".csv-cell-display");
   if (old) old.remove();
   if (containsUrl(cell)) {
-    td.appendChild(createUrlDisplay(cell, onEditClick));
+    createUrlDisplay(td, cell, onEditClick);
   } else {
-    const display = td.createEl("div", { cls: "csv-cell-display" });
+    const display = td.createDiv({ cls: "csv-cell-display" });
     display.textContent = cell;
     if (cell) display.title = cell;
   }
@@ -139,12 +139,12 @@ export function renderTable(options: TableRenderOptions) {
       if (firstRowAsHeader) {
         // issue #39：表头显示首行的真实列名，列号字母退成小字提示
         th.classList.add("csv-header-cell");
-        th.createEl("span", {
+        th.createSpan({
           cls: "csv-col-letter",
           text: getColumnLabel(index),
         });
         if (headerCell) {
-          const textEl = th.createEl("span", {
+          const textEl = th.createSpan({
             cls: "csv-header-text",
             text: headerCell,
           });
@@ -235,7 +235,7 @@ export function renderTable(options: TableRenderOptions) {
       }
 
       // 在列号单元格中添加拖拽事件处理逻辑
-      const resizeHandle = th.createEl("div", { cls: "resize-handle" });
+      const resizeHandle = th.createDiv({ cls: "resize-handle" });
       setupColumnResize(resizeHandle, index);
     });
   }

@@ -65,6 +65,14 @@ class FakeEl {
 		return el;
 	}
 
+	createDiv(opts?: { cls?: string; text?: string; attr?: Record<string, string> }): FakeEl {
+		return this.createEl("div", opts);
+	}
+
+	createSpan(opts?: { cls?: string; text?: string; attr?: Record<string, string> }): FakeEl {
+		return this.createEl("span", opts);
+	}
+
 	appendChild(child: FakeEl): FakeEl {
 		child.parent = this;
 		this.children.push(child);
