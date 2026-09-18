@@ -44,7 +44,7 @@ export class FileUtils {
 				}
 
 				// Wait before retrying
-				await new Promise((resolve) => setTimeout(resolve, delayMs));
+				await new Promise((resolve) => window.setTimeout(resolve, delayMs));
 			}
 		}
 

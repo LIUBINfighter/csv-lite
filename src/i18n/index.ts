@@ -16,7 +16,6 @@ export class I18n {
   }
 
   setLocale(locale: string) {
-    console.log(`I18n: Attempting to set locale to '${locale}'`);
     const lowerLocale = locale.toLowerCase();
     let targetLocale: Locale = 'en'; // 默认回退到 'en'
 
@@ -31,7 +30,6 @@ export class I18n {
     // 检查目标语言是否存在于我们的翻译文件中，如果不存在，则使用 'en'
     if (targetLocale in LOCALE) {
       this.locale = targetLocale;
-      console.log(`I18n: Successfully set locale to '${this.locale}'`);
     } else {
       this.locale = 'en'; // 最终的保护网
       console.warn(`I18n: Locale '${targetLocale}' is not fully supported, falling back to 'en'`);

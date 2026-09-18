@@ -1,6 +1,4 @@
 import { i18n } from '../i18n';
-import { TableUtils } from '../utils/table-utils';
-import { renderTable } from '../view/table-render';
 
 // src/view/header-context-menu.ts
 // 表头（行/列）右键菜单逻辑
@@ -29,8 +27,7 @@ class MenuManager {
 
   showMenu(items: { label: string; onClick: () => void }[], x: number, y: number, onClose?: () => void) {
     this.closeMenu();
-    this.menuEl = document.createElement('div');
-    this.menuEl.className = 'csv-header-context-menu menu';
+    this.menuEl = document.body.createDiv({ cls: 'csv-header-context-menu menu' });
     Object.assign(this.menuEl.style, {
       position: 'absolute',
       left: `${x}px`,
@@ -39,9 +36,10 @@ class MenuManager {
       minWidth: '160px',
     });
     items.forEach(item => {
-      const div = document.createElement('div');
-      div.className = 'menu-item csv-header-context-menu-item';
-      div.textContent = i18n.t(item.label) || item.label;
+      const div = this.menuEl!.createDiv({
+        cls: 'menu-item csv-header-context-menu-item',
+        text: i18n.t(item.label) || item.label,
+      });
       Object.assign(div.style, {
         padding: '6px 18px',
         cursor: 'pointer',
@@ -54,9 +52,7 @@ class MenuManager {
       };
       div.onmouseenter = () => div.classList.add('is-hovered');
       div.onmouseleave = () => div.classList.remove('is-hovered');
-      this.menuEl!.appendChild(div);
     });
-    document.body.appendChild(this.menuEl);
     // 绑定全局事件
     this.outsideHandler = (e) => {
       if (this.menuEl && !this.menuEl.contains(e.target as Node)) this.closeMenu(onClose);
@@ -64,7 +60,7 @@ class MenuManager {
     this.keyHandler = (e) => {
       if (e.key === 'Escape') this.closeMenu(onClose);
     };
-    setTimeout(() => {
+    window.setTimeout(() => {
       document.addEventListener('mousedown', this.outsideHandler!);
       document.addEventListener('keydown', this.keyHandler!);
     }, 0);
@@ -85,8 +81,8 @@ export function setupHeaderContextMenu(tableEl: HTMLElement, options: HeaderCont
   const handler = (event: MouseEvent) => {
     const target = event.target as HTMLElement;
     // 用 closest：表头模式下 th 里还有列名 span，右键可能落在子元素上（issue #39）
-    const rowNumberCell = target.closest('.csv-row-number') as HTMLElement | null;
-    const colNumberCell = target.closest('.csv-col-number') as HTMLElement | null;
+    const rowNumberCell = target.closest('.csv-row-number');
+    const colNumberCell = target.closest('.csv-col-number');
     if (rowNumberCell) {
       event.preventDefault();
       const tr = rowNumberCell.closest('tr') as HTMLElement | null;
