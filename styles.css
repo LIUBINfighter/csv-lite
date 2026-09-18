@@ -365,14 +365,10 @@ If your plugin does not need CSS, delete this file.
 	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* 确保表格容器支持sticky定位 */
+/* 确保表格容器支持sticky定位（position 与 .table-container 基础规则一致，无需 !important） */
 .table-container {
-	position: relative !important;
-	overflow: auto !important;
-}
-
-.csv-lite-table {
-	position: relative !important;
+	position: relative;
+	overflow: auto;
 }
 
 /* 搜索栏样式 */
@@ -564,23 +560,10 @@ td input:focus {
 	cursor: default;
 }
 
-th.csv-row-number {
-    width: 100px !important;
-	min-width: 100px !important;
-	max-width: 100px !important;
-}
-
-td.csv-row-number{
-	width: 100px !important;
-	min-width: 100px !important;
-	max-width: 100px !important;
-	
-}
-
 .csv-row-number {
-	width: 100px !important;
-	min-width: 100px !important;
-	max-width: 100px !important;
+	width: 100px;
+	min-width: 100px;
+	max-width: 100px;
 	border-right: 2px solid var(--background-modifier-border);
 	position: sticky;
 	left: 0;
@@ -911,15 +894,7 @@ td.csv-row-number{
 	color: var(--text-faint);
 }
 
-/* 暂时隐藏行和列操作按钮 */
-.csv-insert-row-btn,
-.csv-insert-col-btn,
-.csv-del-row-btn,
-.csv-del-col-btn {
-  display: none !important;
-}
-
-/* 插入/删除行列按钮样式 */
+/* 插入/删除行列按钮样式（当前按钮不创建，display:none 停用；见 docs/button-visibility.md） */
 .csv-insert-row-btn,
 .csv-insert-col-btn,
 .csv-del-row-btn,
@@ -1058,7 +1033,7 @@ td.csv-row-number{
 .csv-dragging-row .csv-del-row-btn,
 .csv-dragging-col .csv-insert-col-btn,
 .csv-dragging-col .csv-del-col-btn {
-	display: none !important;
+	display: none;
 }
 
 /* 调整表格容器样式，确保按钮可见 */
