@@ -673,6 +673,27 @@ td input:focus {
 	background-color: var(--interactive-accent-hover);
 }
 
+/* 选中行/列时：链接文字与编辑按钮改用和选中底色对比的颜色，
+   并去掉链接自身的 hover 底色，避免 URL 高亮与行/列高亮叠加后看不清文字 */
+.csv-row-selected .csv-cell-link,
+.csv-col-selected .csv-cell-link,
+.csv-row-selected .csv-cell-edit-btn,
+.csv-col-selected .csv-cell-edit-btn {
+	color: var(--text-on-accent);
+}
+
+.csv-row-selected .csv-cell-link,
+.csv-col-selected .csv-cell-link {
+	border-bottom-color: var(--text-on-accent);
+}
+
+.csv-row-selected .csv-cell-link:hover,
+.csv-col-selected .csv-cell-link:hover {
+	color: var(--text-on-accent);
+	border-bottom-color: var(--text-on-accent);
+	background-color: transparent;
+}
+
 /* 选中行的输入框样式调整 */
 .csv-row-selected td .csv-cell-input {
 	background-color: var(--background-primary);
