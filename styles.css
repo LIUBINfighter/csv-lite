@@ -273,96 +273,104 @@ If your plugin does not need CSS, delete this file.
 	border-color: var(--interactive-accent-hover);
 }
 
-/* Sticky行列样式 */
+/* Sticky行列样式
+   用 .csv-lite-table + 元素名提高特异性，替代原来的 !important。
+   需要压过 .csv-lite-table td/th 的 position/border/background
+   以及 .csv-row-number/.csv-col-number 和选中态（.csv-row-selected 等）的样式，
+   所以统一用 (0,2,1) 起步的选择器，保持与原来 !important 相同的层叠结果。 */
 
 /* 默认固定表头样式（A、B、C、D...） */
-.csv-sticky-header {
-	position: sticky !important;
-	z-index: 20 !important;
-	background: var(--background-secondary) !important;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
-	border-bottom: 2px solid var(--background-modifier-border-hover) !important;
+.csv-lite-table th.csv-sticky-header {
+	position: sticky;
+	z-index: 20;
+	background: var(--background-secondary);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	border-bottom: 2px solid var(--background-modifier-border-hover);
 }
 
 /* 默认固定行号列样式（0、1、2、3...） */
-.csv-sticky-row-number {
-	position: sticky !important;
-	z-index: 20 !important;
-	background: var(--background-secondary) !important;
-	box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15) !important;
-	border-right: 2px solid var(--background-modifier-border-hover) !important;
+.csv-lite-table th.csv-sticky-row-number,
+.csv-lite-table td.csv-sticky-row-number {
+	position: sticky;
+	z-index: 20;
+	background: var(--background-secondary);
+	box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+	border-right: 2px solid var(--background-modifier-border-hover);
 }
 
 /* 左上角单元格（行号表头）同时是表头和行号 */
-.csv-sticky-header.csv-sticky-row-number {
-	z-index: 25 !important;
-	background: var(--background-modifier-hover) !important;
-	border-right: 2px solid var(--background-modifier-border-hover) !important;
-	border-bottom: 2px solid var(--background-modifier-border-hover) !important;
-	box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2) !important;
+.csv-lite-table th.csv-sticky-header.csv-sticky-row-number {
+	z-index: 25;
+	background: var(--background-modifier-hover);
+	border-right: 2px solid var(--background-modifier-border-hover);
+	border-bottom: 2px solid var(--background-modifier-border-hover);
+	box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 /* 用户手动固定行样式 */
-.csv-sticky-row {
-	position: sticky !important;
-	z-index: 15 !important;
-	background: var(--background-primary-alt) !important;
-	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
-	border-bottom: 1px solid var(--interactive-accent-hover) !important;
+.csv-lite-table td.csv-sticky-row {
+	position: sticky;
+	z-index: 15;
+	background: var(--background-primary-alt);
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+	border-bottom: 1px solid var(--interactive-accent-hover);
 }
 
 /* 用户手动固定列样式 */
-.csv-sticky-col {
-	position: sticky !important;
-	z-index: 15 !important;
-	background: var(--background-primary-alt) !important;
-	box-shadow: 2px 0 6px rgba(0, 0, 0, 0.12) !important;
-	border-right: 1px solid var(--interactive-accent-hover) !important;
+.csv-lite-table th.csv-sticky-col,
+.csv-lite-table td.csv-sticky-col {
+	position: sticky;
+	z-index: 15;
+	background: var(--background-primary-alt);
+	box-shadow: 2px 0 6px rgba(0, 0, 0, 0.12);
+	border-right: 1px solid var(--interactive-accent-hover);
 }
 
 /* 用户手动固定的表头列（既是表头又是固定列） */
-.csv-sticky-header.csv-sticky-col {
-	z-index: 22 !important;
-	background: var(--background-secondary) !important;
-	box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.18) !important;
-	border-right: 2px solid var(--interactive-accent) !important;
-	border-bottom: 2px solid var(--background-modifier-border-hover) !important;
+.csv-lite-table th.csv-sticky-header.csv-sticky-col {
+	z-index: 22;
+	background: var(--background-secondary);
+	box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.18);
+	border-right: 2px solid var(--interactive-accent);
+	border-bottom: 2px solid var(--background-modifier-border-hover);
 }
 
 /* 同时是sticky行和列的单元格 */
-.csv-sticky-row.csv-sticky-col {
-	z-index: 18 !important;
-	background: var(--background-secondary-alt) !important;
-	box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.18) !important;
-	border-right: 1px solid var(--interactive-accent-hover) !important;
-	border-bottom: 1px solid var(--interactive-accent-hover) !important;
+.csv-lite-table td.csv-sticky-row.csv-sticky-col {
+	z-index: 18;
+	background: var(--background-secondary-alt);
+	box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.18);
+	border-right: 1px solid var(--interactive-accent-hover);
+	border-bottom: 1px solid var(--interactive-accent-hover);
 }
 
 /* 三重固定：表头+行号+用户固定列（左上角区域的扩展） */
-.csv-sticky-header.csv-sticky-row-number.csv-sticky-col {
-	z-index: 26 !important;
-	background: var(--background-modifier-hover) !important;
-	border-right: 2px solid var(--interactive-accent) !important;
-	border-bottom: 2px solid var(--background-modifier-border-hover) !important;
-	box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.25) !important;
+.csv-lite-table th.csv-sticky-header.csv-sticky-row-number.csv-sticky-col {
+	z-index: 26;
+	background: var(--background-modifier-hover);
+	border-right: 2px solid var(--interactive-accent);
+	border-bottom: 2px solid var(--background-modifier-border-hover);
+	box-shadow: 3px 3px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* 固定列悬停效果增强 */
-.csv-sticky-col:hover,
-.csv-sticky-row:hover {
-	background: var(--background-modifier-hover) !important;
+.csv-lite-table th.csv-sticky-col:hover,
+.csv-lite-table td.csv-sticky-col:hover,
+.csv-lite-table td.csv-sticky-row:hover {
+	background: var(--background-modifier-hover);
 	transition: background-color 0.2s ease;
 }
 
 /* 固定行/列的最后一个单元格添加更明显的边界 */
-.csv-sticky-col:last-of-type {
-	border-right: 3px solid var(--interactive-accent) !important;
-	box-shadow: 3px 0 8px rgba(0, 0, 0, 0.2) !important;
+.csv-lite-table th.csv-sticky-col:last-of-type,
+.csv-lite-table td.csv-sticky-col:last-of-type {
+	border-right: 3px solid var(--interactive-accent);
+	box-shadow: 3px 0 8px rgba(0, 0, 0, 0.2);
 }
 
-.csv-sticky-row:last-child .csv-sticky-row {
-	border-bottom: 3px solid var(--interactive-accent) !important;
-	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2) !important;
+.csv-lite-table .csv-sticky-row:last-child .csv-sticky-row {
+	border-bottom: 3px solid var(--interactive-accent);
+	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* 确保表格容器支持sticky定位（position 与 .table-container 基础规则一致，无需 !important） */
@@ -1119,11 +1127,12 @@ td input:focus {
 }
 
 /* 固定列的左侧边界标记（非首列） */
-.csv-sticky-col:not(:first-child) {
-	border-left: 1.5px solid var(--interactive-accent-hover) !important;
+.csv-lite-table th.csv-sticky-col:not(:first-child),
+.csv-lite-table td.csv-sticky-col:not(:first-child) {
+	border-left: 1.5px solid var(--interactive-accent-hover);
 }
 
 /* 如果是表头固定列也要有左边界 */
-.csv-sticky-header.csv-sticky-col:not(:first-child) {
-	border-left: 2px solid var(--interactive-accent) !important;
+.csv-lite-table th.csv-sticky-header.csv-sticky-col:not(:first-child) {
+	border-left: 2px solid var(--interactive-accent);
 }
