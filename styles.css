@@ -191,7 +191,7 @@ If your plugin does not need CSS, delete this file.
 	display: flex;
  	align-items: center;
 }
-/* 两级/三级类选择器的特异性已高于 Obsidian 的 .setting-item 基础样式，无需 !important */
+/* 两级/三级类选择器的特异性已高于 Obsidian 的 .setting-item 基础样式，无需强制覆盖 */
 .csv-delimiter-compact .setting-item {
 	display: flex;
 	align-items: center;
@@ -275,10 +275,10 @@ If your plugin does not need CSS, delete this file.
 }
 
 /* Sticky行列样式
-   用 .csv-lite-table + 元素名提高特异性，替代原来的 !important。
+   用 .csv-lite-table + 元素名提高特异性，替代原来的强制覆盖写法。
    需要压过 .csv-lite-table td/th 的 position/border/background
    以及 .csv-row-number/.csv-col-number 和选中态（.csv-row-selected 等）的样式，
-   所以统一用 (0,2,1) 起步的选择器，保持与原来 !important 相同的层叠结果。 */
+   所以统一用 (0,2,1) 起步的选择器，保持与原来相同的层叠结果。 */
 
 /* 默认固定表头样式（A、B、C、D...） */
 .csv-lite-table th.csv-sticky-header {
@@ -374,7 +374,7 @@ If your plugin does not need CSS, delete this file.
 	box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* 确保表格容器支持sticky定位（position 与 .table-container 基础规则一致，无需 !important） */
+/* 确保表格容器支持 sticky 定位（position 与 .table-container 基础规则一致，无需强制覆盖） */
 .table-container {
 	position: relative;
 	overflow: auto;
