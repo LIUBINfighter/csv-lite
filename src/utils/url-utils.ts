@@ -3,10 +3,10 @@
  */
 
 // URL regex pattern that matches common URL formats
-const URL_PATTERN = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
+const URL_PATTERN = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/gi;
 
 // Markdown link pattern: [text](url)
-const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
 
 // 复用同一组正则做「是否包含链接」判定：
 // - 不带 g，避免 test() 的 lastIndex 状态问题；
@@ -122,51 +122,55 @@ export function parseTextWithUrls(text: string): TextSegment[] {
 }
 
 /**
- * Create a display element with clickable URLs
+ * 在 parent 里创建带可点击链接的显示层（编辑按钮可选）。
+ * 用 Obsidian 的 createDiv/createSpan 而不是 document.createElement。
  */
-export function createUrlDisplay(text: string, onClick?: () => void): HTMLElement {
-  const display = document.createElement('div');
-  display.className = 'csv-cell-display csv-cell-display-has-url';
+export function createUrlDisplay(
+  parent: HTMLElement,
+  text: string,
+  onClick?: () => void
+): HTMLElement {
+  const display = parent.createDiv({
+    cls: 'csv-cell-display csv-cell-display-has-url',
+  });
   // 截断时用原生 tooltip 展示完整内容，避免 hover 展开造成行高跳动（issue #53）
   display.title = text;
-  
+
   const segments = parseTextWithUrls(text);
-  
+
   for (const segment of segments) {
     if (segment.isUrl && segment.url) {
-      const link = document.createElement('a');
-      link.href = segment.url;
-      // Use displayText if available (for Markdown links), otherwise use text
-      link.textContent = segment.displayText || segment.text;
-      link.className = 'csv-cell-link';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      
+      const link = display.createEl('a', {
+        cls: 'csv-cell-link',
+        text: segment.displayText || segment.text,
+        attr: {
+          href: segment.url,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        },
+      });
+
       // Prevent link click from triggering cell edit
       link.onclick = (e) => {
         e.stopPropagation();
       };
-      
-      display.appendChild(link);
     } else {
-      const span = document.createElement('span');
-      span.textContent = segment.text;
-      display.appendChild(span);
+      display.createSpan({ text: segment.text });
     }
   }
-  
+
   // Add an edit button for cells that are entirely URLs (no other clickable area)
   if (onClick) {
-    const editBtn = document.createElement('span');
-    editBtn.className = 'csv-cell-edit-btn';
-    editBtn.textContent = '✎';
+    const editBtn = display.createSpan({
+      cls: 'csv-cell-edit-btn',
+      text: '✎',
+    });
     editBtn.title = 'Click to edit';
     editBtn.onclick = (e) => {
       e.stopPropagation();
       onClick();
     };
-    display.appendChild(editBtn);
   }
-  
+
   return display;
 }

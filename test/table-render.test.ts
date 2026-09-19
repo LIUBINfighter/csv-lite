@@ -24,11 +24,28 @@ class FakeEl {
 		this.tag = tag;
 	}
 
-	createEl(tag: string, opts?: { cls?: string }): FakeEl {
+	createEl(
+		tag: string,
+		opts?: { cls?: string; text?: string; attr?: Record<string, string> }
+	): FakeEl {
 		const el = new FakeEl(tag);
 		if (opts?.cls) el.className = opts.cls;
+		if (opts?.text !== undefined) el.textContent = opts.text;
+		if (opts?.attr) {
+			el.href = opts.attr.href || "";
+			el.target = opts.attr.target || "";
+			el.rel = opts.attr.rel || "";
+		}
 		this.appendChild(el);
 		return el;
+	}
+
+	createDiv(opts?: { cls?: string; text?: string; attr?: Record<string, string> }): FakeEl {
+		return this.createEl("div", opts);
+	}
+
+	createSpan(opts?: { cls?: string; text?: string; attr?: Record<string, string> }): FakeEl {
+		return this.createEl("span", opts);
 	}
 
 	appendChild(child: FakeEl): FakeEl {

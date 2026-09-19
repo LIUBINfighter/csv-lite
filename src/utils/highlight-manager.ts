@@ -50,9 +50,9 @@ export class HighlightManager {
 
 	private highlightRow(rowIndex: number) {
 		// 用 data-row 定位，兼容行虚拟化（issue #51）
-		const row = this.tableEl?.querySelector(
+		const row = this.tableEl?.querySelector<HTMLElement>(
 			`tbody tr[data-row="${rowIndex}"]`
-		) as HTMLElement | null;
+		);
 		if (row) {
 			row.classList.add("csv-row-selected");
 		}

@@ -111,14 +111,14 @@ export class CSVUtils {
 				const detected = this.detectDelimiter(csvString, parseConfig.quoteChar);
 				parseConfig.delimiter = detected;
 			}
-			const parseResult: any = Papa.parse(csvString, parseConfig as any);
+			const parseResult = Papa.parse<string[]>(csvString, parseConfig);
 
 			if (parseResult.errors && parseResult.errors.length > 0) {
 				console.warn("CSV parse warnings:", parseResult.errors);
 				new Notice(`${i18n.t("csv.parseWarning")} ${parseResult.errors[0].message}`);
 			}
 
-			return parseResult.data as string[][];
+			return parseResult.data;
 		} catch (error) {
 			console.error("CSV parse error:", error);
 			new Notice(i18n.t("csv.parsingFailed"));

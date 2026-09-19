@@ -21,7 +21,7 @@ export class SearchBar {
 
   constructor(parentContainer: HTMLElement, options: SearchBarOptions) {
     this.options = options;
-    this.searchContainer = parentContainer.createEl("div", {
+    this.searchContainer = parentContainer.createDiv({
       cls: "csv-search-container",
     });
     this.searchInput = this.searchContainer.createEl("input", {
@@ -31,7 +31,7 @@ export class SearchBar {
         placeholder: i18n.t("search.placeholder"),
       },
     });
-    this.searchResults = this.searchContainer.createEl("div", {
+    this.searchResults = this.searchContainer.createDiv({
       cls: "csv-search-results",
     });
     this.setupSearchEvents();
@@ -109,32 +109,31 @@ export class SearchBar {
   private displaySearchResults(query: string) {
     this.searchResults.empty();
     if (this.searchMatches.length === 0) {
-      const noResults = this.searchResults.createEl("div", {
-        cls: "csv-search-result-item",
+      this.searchResults.createDiv({
+        cls: "csv-search-result-item csv-search-result-empty",
         text: i18n.t("search.noResults"),
       });
-      noResults.style.color = "var(--text-muted)";
       this.searchResults.classList.add("show");
       return;
     }
     const displayMatches = this.searchMatches.slice(0, 10);
     displayMatches.forEach((match, index) => {
-      const resultItem = this.searchResults.createEl("div", {
+      const resultItem = this.searchResults.createDiv({
         cls: "csv-search-result-item",
       });
-      const cellInfo = resultItem.createEl("div");
-      cellInfo.createEl("span", {
+      const cellInfo = resultItem.createDiv();
+      cellInfo.createSpan({
         cls: "csv-search-result-cell",
         text: this.options.getCellAddress(match.row, match.col),
       });
-      cellInfo.createEl("span", {
+      cellInfo.createSpan({
         cls: "csv-search-result-address",
         text: i18n.t("search.rowColumn", {
           row: (match.row + 1).toString(),
           col: (match.col + 1).toString(),
         }),
       });
-      const preview = resultItem.createEl("div", {
+      const preview = resultItem.createDiv({
         cls: "csv-search-result-preview",
       });
       this.renderHighlightedPreview(preview, match.value, query);
@@ -145,14 +144,12 @@ export class SearchBar {
       resultItem.setAttribute("data-index", index.toString());
     });
     if (this.searchMatches.length > 10) {
-      const moreResults = this.searchResults.createEl("div", {
-        cls: "csv-search-result-item",
+      this.searchResults.createDiv({
+        cls: "csv-search-result-item csv-search-result-more",
         text: i18n.t("search.moreResults", {
           count: (this.searchMatches.length - 10).toString(),
         }),
       });
-      moreResults.style.color = "var(--text-muted)";
-      moreResults.style.fontStyle = "italic";
     }
     this.searchResults.classList.add("show");
   }
