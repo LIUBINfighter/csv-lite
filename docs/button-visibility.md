@@ -9,14 +9,15 @@
 
 ## 修改内容
 
-在 `styles.css` 文件中，以下样式被添加以隐藏这些按钮：
+在 `styles.css` 文件中，以下样式用于隐藏这些按钮（按钮在 `table-render.ts`
+里也不再创建，`SHOW_STRUCTURE_BUTTONS = false`）：
 
 ```css
 .csv-insert-row-btn,
 .csv-insert-col-btn,
 .csv-del-row-btn,
 .csv-del-col-btn {
-  display: none !important;
+  display: none;
 }
 ```
 

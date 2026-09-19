@@ -30,22 +30,26 @@
 - **灵活配置**: 支持任意数量的行列同时固定
 
 ### 样式层次
+
+用 `.csv-lite-table` + 元素名提高选择器特异性，压过表格基础样式和行/列选中态，
+不再使用强制覆盖：
+
 ```css
-.csv-sticky-row {
-  position: sticky !important;
-  top: 0;
-  z-index: 20;
-}
+.csv-lite-table th.csv-sticky-header { position: sticky; z-index: 20; }
 
-.csv-sticky-col {
-  position: sticky !important;
-  left: 0; 
-  z-index: 15;
-}
+.csv-lite-table th.csv-sticky-row-number,
+.csv-lite-table td.csv-sticky-row-number { position: sticky; z-index: 20; }
 
-.csv-sticky-row.csv-sticky-col {
-  z-index: 25; /* 交叉区域最高优先级 */
-}
+.csv-lite-table td.csv-sticky-row { position: sticky; z-index: 15; }
+
+.csv-lite-table th.csv-sticky-col,
+.csv-lite-table td.csv-sticky-col { position: sticky; z-index: 15; }
+
+/* 交叉区域：行+列 / 表头+行号+列 等组合，z-index 依次提高 */
+.csv-lite-table td.csv-sticky-row.csv-sticky-col { z-index: 18; }
+.csv-lite-table th.csv-sticky-header.csv-sticky-col { z-index: 22; }
+.csv-lite-table th.csv-sticky-header.csv-sticky-row-number { z-index: 25; }
+.csv-lite-table th.csv-sticky-header.csv-sticky-row-number.csv-sticky-col { z-index: 26; }
 ```
 
 ## 优势对比

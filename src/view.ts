@@ -877,8 +877,8 @@ export class CSVView extends TextFileView {
 			// nth-child 从 1 开始，第 1 列是行号列，所以目标列是 columnIndex + 2
 			const selector = `thead tr th:nth-child(${columnIndex + 2}), tbody tr.csv-data-row td:nth-child(${columnIndex + 2})`;
 			affectedCells = Array.from(
-				this.tableEl?.querySelectorAll(selector) || []
-			) as HTMLElement[];
+				this.tableEl?.querySelectorAll<HTMLElement>(selector) || []
+			);
 
 			document.addEventListener("mousemove", onMouseMove);
 			document.addEventListener("mouseup", onMouseUp);
