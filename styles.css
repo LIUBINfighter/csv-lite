@@ -191,12 +191,13 @@ If your plugin does not need CSS, delete this file.
 	display: flex;
  	align-items: center;
 }
+/* 两级/三级类选择器的特异性已高于 Obsidian 的 .setting-item 基础样式，无需 !important */
 .csv-delimiter-compact .setting-item {
-	display: flex !important;
-	align-items: center !important;
-	padding-top: 0 !important;
-	padding-bottom: 0 !important; /* 去掉 11.25px 的底部内边距 */
-	margin: 0 !important;
+	display: flex;
+	align-items: center;
+	padding-top: 0;
+	padding-bottom: 0; /* 去掉 11.25px 的底部内边距 */
+	margin: 0;
 }
 .csv-delimiter-compact .setting-item .setting-item-info {
     display: none; /* 隐藏多余描述，保持紧凑 */
@@ -206,14 +207,14 @@ If your plugin does not need CSS, delete this file.
 }
 /* Align dropdown vertically with buttons */
 .csv-delimiter-compact .setting-item-control {
-	margin: 0 !important;
-	padding-left: 0 !important;
-	padding-right: 0 !important;
+	margin: 0;
+	padding-left: 0;
+	padding-right: 0;
 }
 .csv-delimiter-compact .setting-item-control .dropdown {
-	height: 32px !important;
-	padding: 0 8px !important;
-	line-height: 32px !important;
+	height: 32px;
+	padding: 0 8px;
+	line-height: 32px;
 }
 
 /* Pin按钮样式 */
@@ -809,14 +810,16 @@ td input:focus {
 	font-weight: 600;
 }
 
-/* 搜索时高亮当前单元格 */
-.csv-search-current {
-	background-color: var(--text-highlight-bg) !important;
-	border: 2px solid var(--interactive-accent) !important;
+/* 搜索时高亮当前单元格
+   用 .csv-lite-table + 元素名提高特异性，压过 sticky 单元格底色和行/列选中态 */
+.csv-lite-table td.csv-search-current,
+.csv-lite-table th.csv-search-current {
+	background-color: var(--text-highlight-bg);
+	border: 2px solid var(--interactive-accent);
 }
 
-.csv-search-current .csv-cell-input {
-	background-color: var(--text-highlight-bg) !important;
+.csv-lite-table .csv-search-current .csv-cell-input {
+	background-color: var(--text-highlight-bg);
 }
 
 /* 源码模式样式 */
